@@ -1,0 +1,9 @@
+node_modules/
+dist/
+coverage/
+# Prisma client is generated from the schema: npm run prisma:generate
+src/generated/
+.env
+.env.*
+!.env.example
+*.log

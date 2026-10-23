@@ -1,0 +1,12 @@
+{
+  // This workspace only: MedVerify's Flutter app is pinned to 3.47.7 (FVM).
+  // Your global setting (C:\Dev\flutter, 3.38.5) stays in place for other projects.
+  "dart.flutterSdkPath": "C:\\Users\\David\\fvm\\versions\\3.47.7",
+  "search.exclude": {
+    "**/.fvm": true,
+    "server/src/generated": true
+  },
+  "files.watcherExclude": {
+    "**/.fvm": true
+  }
+}
