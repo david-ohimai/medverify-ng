@@ -1,0 +1,45 @@
+# Local infrastructure for MedVerify NG: PostgreSQL (PostGIS + pgvector) and Redis.
+#   npm run db:up      start (builds the Postgres image the first time)
+#   npm run db:stop    stop, keep data
+#   npm run db:wipe    stop and DELETE all data
+services:
+  db:
+    build: ./docker/postgres
+    container_name: medverify-db
+    environment:
+      POSTGRES_USER: medverify
+      POSTGRES_PASSWORD: medverify
+      POSTGRES_DB: medverify
+    ports:
+      # Host port 5433, because a Windows PostgreSQL service may already own 5432.
+      - "5433:5432"
+    volumes:
+      # PostgreSQL 18+ images keep data under /var/lib/postgresql (not .../data).
+      - pgdata:/var/lib/postgresql
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U medverify -d medverify"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:8-alpine
+    container_name: medverify-redis
+    # Append-only file so rate-limit counters and queued jobs survive a restart.
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  redisdata:
