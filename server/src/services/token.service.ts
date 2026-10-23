@@ -14,14 +14,21 @@ export interface TokenPair {
   tokenType: "Bearer";
 }
 
+/** What a token pair is issued for. */
+export interface TokenSubject {
+  id: string;
+  role: DeviceRole;
+  tokenVersion: number;
+}
+
 /**
  * Issues and rotates tokens. A 15-minute access token (JWT) authorises
  * requests; a 30-day refresh token (opaque, stored hashed) gets new ones.
- * Every refresh replaces the refresh token, and presenting an already-used
- * one revokes the whole chain — a stolen token stops working for everyone.
+ * Every refresh replaces the refresh token, and presenting one that was
+ * already rotated revokes the whole chain — a stolen token stops working.
  */
 export const tokenService = {
-  async issuePair(device: { id: string; role: DeviceRole }, familyId: string = randomUUID()): Promise<TokenPair> {
+  async issuePair(device: TokenSubject, familyId: string = randomUUID()): Promise<TokenPair> {
     const refresh = createRefreshToken();
     await refreshTokenRepository.create({
       deviceId: device.id,
@@ -31,7 +38,7 @@ export const tokenService = {
     });
 
     return {
-      accessToken: signAccessToken({ sub: device.id, role: device.role }),
+      accessToken: signAccessToken({ sub: device.id, role: device.role, ver: device.tokenVersion }),
       refreshToken: refresh.token,
       expiresIn: accessTokenTtlSeconds(),
       tokenType: "Bearer",
@@ -46,10 +53,16 @@ export const tokenService = {
     }
 
     if (record.revokedAt) {
-      // A revoked token came back: someone kept a copy. Kill the whole chain.
-      await refreshTokenRepository.revokeFamily(record.familyId);
-      appEvents.emit("token:reuse-detected", { deviceId: record.deviceId, familyId: record.familyId });
-      throw new UnauthorizedError("Refresh token already used", "REFRESH_REUSED");
+      if (record.revokedReason === "rotated") {
+        // A token that was already swapped for a newer one came back: someone
+        // kept a copy. Kill the whole chain.
+        await refreshTokenRepository.revokeFamily(record.familyId);
+        appEvents.emit("token:reuse-detected", { deviceId: record.deviceId, familyId: record.familyId });
+        throw new UnauthorizedError("Refresh token already used", "REFRESH_REUSED");
+      }
+      // Ended by a session reset (re-registration, role change) or by an
+      // earlier reuse detection: stale, not an attack. No security event.
+      throw new UnauthorizedError("Refresh token invalid", "REFRESH_INVALID");
     }
 
     if (record.expiresAt <= new Date()) {
@@ -72,7 +85,11 @@ export const tokenService = {
     appEvents.emit("token:refreshed", { deviceId: record.deviceId });
 
     return {
-      accessToken: signAccessToken({ sub: record.device.id, role: record.device.role }),
+      accessToken: signAccessToken({
+        sub: record.device.id,
+        role: record.device.role,
+        ver: record.device.tokenVersion,
+      }),
       refreshToken: next.token,
       expiresIn: accessTokenTtlSeconds(),
       tokenType: "Bearer",

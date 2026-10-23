@@ -11,14 +11,20 @@ const CHECK_TIMEOUT_MS = 2000;
 
 async function check(name: string, probe: () => Promise<unknown>): Promise<{ name: string; ok: boolean; ms: number; error?: string }> {
   const started = Date.now();
+  let timer: NodeJS.Timeout | undefined;
   try {
     await Promise.race([
       probe(),
-      new Promise((_, reject) => setTimeout(() => reject(new Error("timed out")), CHECK_TIMEOUT_MS)),
+      new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error("timed out")), CHECK_TIMEOUT_MS);
+      }),
     ]);
     return { name, ok: true, ms: Date.now() - started };
   } catch (err) {
     return { name, ok: false, ms: Date.now() - started, error: err instanceof Error ? err.message : "failed" };
+  } finally {
+    // The probe usually wins; don't leave the timeout running for 2 s after every poll.
+    clearTimeout(timer);
   }
 }
 

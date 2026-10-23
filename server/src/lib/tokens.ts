@@ -11,10 +11,12 @@ export interface AccessTokenClaims {
   /** Device id. */
   sub: string;
   role: DeviceRole;
+  /** Device token version when the token was issued (see Device.tokenVersion). */
+  ver: number;
 }
 
 export function signAccessToken(claims: AccessTokenClaims): string {
-  return jwt.sign({ role: claims.role, typ: "access" }, config.JWT_ACCESS_SECRET, {
+  return jwt.sign({ role: claims.role, ver: claims.ver, typ: "access" }, config.JWT_ACCESS_SECRET, {
     algorithm: ALGORITHM,
     expiresIn: config.ACCESS_TOKEN_TTL as NonNullable<SignOptions["expiresIn"]>,
     issuer: ISSUER,
@@ -41,8 +43,11 @@ export function verifyAccessToken(token: string): AccessTokenClaims {
   if (payload.role !== "public" && payload.role !== "regulator") {
     throw new jwt.JsonWebTokenError("Unknown role");
   }
+  if (!Number.isInteger(payload.ver)) {
+    throw new jwt.JsonWebTokenError("Missing token version");
+  }
 
-  return { sub: payload.sub, role: payload.role };
+  return { sub: payload.sub, role: payload.role, ver: payload.ver as number };
 }
 
 /** Seconds until an access token expires — sent to the app as `expiresIn`. */

@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { deviceController } from "../controllers/device.controller.js";
 import { authenticate } from "../middleware/authenticate.js";
-import { apiLimiter, pinLimiter, refreshLimiter, registerLimiter } from "../middleware/rateLimiter.js";
+import { apiLimiter, pinLimiters, refreshLimiter, registerLimiter } from "../middleware/rateLimiter.js";
 import { validate } from "../middleware/validate.js";
 import {
   elevateDeviceSchema,
@@ -117,7 +117,7 @@ deviceRoutes.delete("/me", deviceController.deleteMe);
  *     responses:
  *       200: { description: New token pair with the regulator role }
  *       403: { description: INVALID_PIN }
- *       429: { description: Too many PIN attempts (5 per 15 minutes) }
+ *       429: { description: "Too many wrong PINs: 5 per device per 15 min, 10 per network per hour, 30 across everyone per 15 min" }
  * /api/v1/devices/me/demote:
  *   post:
  *     tags: [Devices]
@@ -126,5 +126,5 @@ deviceRoutes.delete("/me", deviceController.deleteMe);
  *     responses:
  *       200: { description: New token pair with the public role }
  */
-deviceRoutes.post("/me/elevate", pinLimiter, validate(elevateDeviceSchema), deviceController.elevate);
+deviceRoutes.post("/me/elevate", ...pinLimiters, validate(elevateDeviceSchema), deviceController.elevate);
 deviceRoutes.post("/me/demote", deviceController.demote);

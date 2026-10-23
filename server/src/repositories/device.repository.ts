@@ -8,6 +8,7 @@ const deviceSelect = {
   appVersion: true,
   language: true,
   role: true,
+  tokenVersion: true,
   createdAt: true,
   lastSeenAt: true,
 } as const;
@@ -22,20 +23,37 @@ export const deviceRepository = {
     return prisma.device.findUnique({ where: { installIdHash }, select: deviceSelect });
   },
 
+  /** What authenticate needs on every request — two columns, by primary key. */
+  findAuthState(id: string) {
+    return prisma.device.findUnique({ where: { id }, select: { role: true, tokenVersion: true } });
+  },
+
   create(data: { installIdHash: string; platform: DevicePlatform; appVersion: string; language: AppLanguage }) {
     return prisma.device.create({ data, select: deviceSelect });
   },
 
-  /** Re-registration resets the role: regulator mode always needs the PIN again. */
+  /**
+   * Re-registration resets the role (regulator mode always needs the PIN
+   * again) and bumps the token version, so every older access token dies.
+   */
   recordReRegistration(id: string, data: { platform: DevicePlatform; appVersion: string; language: AppLanguage }) {
     return prisma.device.update({
       where: { id },
-      data: { ...data, role: "public", lastSeenAt: new Date() },
+      data: { ...data, role: "public", tokenVersion: { increment: 1 }, lastSeenAt: new Date() },
       select: deviceSelect,
     });
   },
 
-  update(id: string, data: { language?: AppLanguage; role?: DeviceRole; lastSeenAt?: Date }) {
+  /** A role change always bumps the token version: old tokens carry the old role. */
+  changeRole(id: string, role: DeviceRole) {
+    return prisma.device.update({
+      where: { id },
+      data: { role, tokenVersion: { increment: 1 } },
+      select: deviceSelect,
+    });
+  },
+
+  updatePreferences(id: string, data: { language?: AppLanguage }) {
     return prisma.device.update({ where: { id }, data, select: deviceSelect });
   },
 

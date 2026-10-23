@@ -8,6 +8,10 @@ import '../auth_token_source.dart';
 ///
 /// Requests made while recovering wait for the same recovery — the
 /// [AuthTokenSource] guarantees a single refresh in flight.
+///
+/// Every path ends in exactly one handler call (next / resolve / reject):
+/// an exception escaping an async interceptor would leave the request
+/// hanging forever.
 class AuthInterceptor extends Interceptor {
   AuthInterceptor({required this._tokens, required this._retryClient});
 
@@ -18,9 +22,21 @@ class AuthInterceptor extends Interceptor {
 
   static const _retriedFlag = 'auth_retried';
 
+  /// Server codes that mean "this token is no good, get a new one".
+  static const _tokenProblemCodes = {'TOKEN_EXPIRED', 'TOKEN_INVALID', 'TOKEN_MISSING', 'TOKEN_REVOKED'};
+
   @override
   Future<void> onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
-    final token = await _tokens.accessToken();
+    final String? token;
+    try {
+      token = await _tokens.accessToken();
+    } catch (error) {
+      // e.g. Keystore unreadable after a restore, or Keychain locked before first unlock.
+      handler.reject(
+        DioException(requestOptions: options, error: TokenStorageException(error), type: DioExceptionType.unknown),
+      );
+      return;
+    }
     if (token != null) options.headers['Authorization'] = 'Bearer $token';
     handler.next(options);
   }
@@ -36,7 +52,14 @@ class AuthInterceptor extends Interceptor {
       return;
     }
 
-    final newToken = await _tokens.recoverAfterUnauthorized();
+    final failedToken = _bearerOf(options);
+    final String? newToken;
+    try {
+      newToken = await _tokens.recoverAfterUnauthorized(failedToken: failedToken);
+    } catch (_) {
+      handler.next(err);
+      return;
+    }
     if (newToken == null) {
       handler.next(err);
       return;
@@ -49,12 +72,15 @@ class AuthInterceptor extends Interceptor {
       handler.resolve(response);
     } on DioException catch (retryError) {
       handler.next(retryError);
+    } catch (error) {
+      handler.next(DioException(requestOptions: options, error: error));
     }
   }
 
-  /// Only token problems are worth a refresh; other 401s are passed through.
-  bool _isTokenProblem(Object? body) {
-    final code = ApiEnvelope.tryParse(body)?.code;
-    return code == 'TOKEN_EXPIRED' || code == 'TOKEN_INVALID' || code == 'TOKEN_MISSING';
+  bool _isTokenProblem(Object? body) => _tokenProblemCodes.contains(ApiEnvelope.tryParse(body)?.code);
+
+  String? _bearerOf(RequestOptions options) {
+    final header = options.headers['Authorization'];
+    return header is String && header.startsWith('Bearer ') ? header.substring(7) : null;
   }
 }

@@ -7,8 +7,8 @@ const SECRET = "test-secret-that-is-definitely-at-least-32-chars";
 
 describe("access tokens", () => {
   it("round-trips the device id and role", () => {
-    const token = signAccessToken({ sub: "device-1", role: "regulator" });
-    expect(verifyAccessToken(token)).toEqual({ sub: "device-1", role: "regulator" });
+    const token = signAccessToken({ sub: "device-1", role: "regulator", ver: 1 });
+    expect(verifyAccessToken(token)).toEqual({ sub: "device-1", role: "regulator", ver: 1 });
   });
 
   it("expires after the configured TTL (15 minutes)", () => {
@@ -30,7 +30,7 @@ describe("access tokens", () => {
   });
 
   it("rejects a token that is not an access token", () => {
-    const wrongType = jwt.sign({ role: "public", typ: "refresh" }, SECRET, {
+    const wrongType = jwt.sign({ role: "public", ver: 1, typ: "refresh" }, SECRET, {
       subject: "device-1",
       issuer: "medverify-api",
       audience: "medverify-app",
@@ -38,8 +38,17 @@ describe("access tokens", () => {
     expect(() => verifyAccessToken(wrongType)).toThrow("Not an access token");
   });
 
+  it("rejects a token without a version (issued before versions existed)", () => {
+    const unversioned = jwt.sign({ role: "public", typ: "access" }, SECRET, {
+      subject: "device-1",
+      issuer: "medverify-api",
+      audience: "medverify-app",
+    });
+    expect(() => verifyAccessToken(unversioned)).toThrow("Missing token version");
+  });
+
   it("rejects an expired token", () => {
-    const expired = jwt.sign({ role: "public", typ: "access" }, SECRET, {
+    const expired = jwt.sign({ role: "public", ver: 1, typ: "access" }, SECRET, {
       subject: "device-1",
       issuer: "medverify-api",
       audience: "medverify-app",

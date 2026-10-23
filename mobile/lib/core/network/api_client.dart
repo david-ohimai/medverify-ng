@@ -43,6 +43,10 @@ class ApiClient {
     } on TypeError {
       // A parser met a field of the wrong type: the API and app disagree.
       return const Err(UnexpectedFailure('The server sent something we could not read.'));
+    } catch (_) {
+      // Anything else (a plugin or interceptor bug): still a Result, never a
+      // crash — callers rely on this method not throwing.
+      return const Err(UnexpectedFailure());
     }
   }
 }

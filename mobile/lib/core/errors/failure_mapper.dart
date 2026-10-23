@@ -1,15 +1,20 @@
 import 'package:dio/dio.dart';
 
 import '../network/api_envelope.dart';
+import '../network/auth_token_source.dart';
 import 'failure.dart';
 
 /// Turns any error from the network layer into a [Failure] the UI can show.
 /// The server's own message is used when it sent the standard envelope.
 Failure mapDioException(DioException error) {
+  // The auth interceptor couldn't read the token from secure storage.
+  if (error.error is TokenStorageException) return const StorageFailure();
+
   switch (error.type) {
     case DioExceptionType.connectionTimeout:
     case DioExceptionType.sendTimeout:
     case DioExceptionType.receiveTimeout:
+    case DioExceptionType.transformTimeout:
       return const TimeoutFailure();
     case DioExceptionType.connectionError:
       return const NetworkFailure();
@@ -26,9 +31,6 @@ Failure mapDioException(DioException error) {
         ApiEnvelope.tryParse(response.data),
         retryAfterHeader: response.headers.value('retry-after'),
       );
-    case DioExceptionType.transformTimeout:
-      // TODO: Handle this case.
-      throw UnimplementedError();
   }
 }
 

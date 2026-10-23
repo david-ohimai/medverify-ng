@@ -15,7 +15,8 @@ export const refreshTokenRepository = {
         familyId: true,
         expiresAt: true,
         revokedAt: true,
-        device: { select: { id: true, role: true } },
+        revokedReason: true,
+        device: { select: { id: true, role: true, tokenVersion: true } },
       },
     });
   },
@@ -32,7 +33,7 @@ export const refreshTokenRepository = {
     return prisma.$transaction(async (tx) => {
       const revoked = await tx.refreshToken.updateMany({
         where: { id: currentId, revokedAt: null },
-        data: { revokedAt: new Date() },
+        data: { revokedAt: new Date(), revokedReason: "rotated" },
       });
       if (revoked.count === 0) return false;
       await tx.refreshToken.create({ data: replacement });
@@ -43,14 +44,14 @@ export const refreshTokenRepository = {
   revokeFamily(familyId: string) {
     return prisma.refreshToken.updateMany({
       where: { familyId, revokedAt: null },
-      data: { revokedAt: new Date() },
+      data: { revokedAt: new Date(), revokedReason: "reuse_detected" },
     });
   },
 
   revokeAllForDevice(deviceId: string) {
     return prisma.refreshToken.updateMany({
       where: { deviceId, revokedAt: null },
-      data: { revokedAt: new Date() },
+      data: { revokedAt: new Date(), revokedReason: "session_reset" },
     });
   },
 };

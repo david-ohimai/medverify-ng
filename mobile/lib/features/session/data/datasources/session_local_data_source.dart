@@ -12,10 +12,20 @@ class SessionLocalDataSource {
   final SecureStore _store;
   String? _cachedAccessToken;
 
+  /// Shared by every caller, so concurrent first calls can't each generate
+  /// and save a different id.
+  Future<String>? _installId;
+
   /// A random UUID v4 created on first launch and kept for the life of the
   /// install. It is the device's credential, so it never leaves secure storage
   /// except in the registration request.
-  Future<String> installId() async {
+  Future<String> installId() => _installId ??= _loadOrCreateInstallId().catchError((Object error) {
+    // Let the next call try again instead of caching the failure forever.
+    _installId = null;
+    throw error;
+  });
+
+  Future<String> _loadOrCreateInstallId() async {
     final existing = await _store.read(StorageKeys.installId);
     if (existing != null) return existing;
     final created = const Uuid().v4();

@@ -12,6 +12,10 @@ import '../device_info.dart';
 
 /// Owns the device session: silent registration, token storage, and recovery
 /// after a 401. Also the [AuthTokenSource] the network layer uses.
+///
+/// Every operation that reads or writes the session (registration at launch,
+/// recovery after a 401) runs one at a time through [_exclusive], so two of
+/// them can never register twice or overwrite each other's tokens.
 class SessionRepositoryImpl implements SessionRepository, AuthTokenSource {
   SessionRepositoryImpl({
     required this._remote,
@@ -25,25 +29,42 @@ class SessionRepositoryImpl implements SessionRepository, AuthTokenSource {
   final Future<DeviceInfo> Function() _deviceInfo;
   final AppLanguage Function() _language;
 
+  /// The end of the queue of session operations.
+  Future<void> _tail = Future.value();
+
   /// The one recovery in flight. Every request that gets a 401 while it runs
   /// waits for this same future, so the refresh token is used exactly once.
   Future<String?>? _recovery;
 
+  /// Runs [operation] after every earlier session operation has finished.
+  Future<T> _exclusive<T>(Future<T> Function() operation) {
+    final result = _tail.then((_) => operation());
+    // Keep the queue moving even if this operation fails.
+    _tail = result.then<void>((_) {}, onError: (_) {});
+    return result;
+  }
+
   @override
-  Future<Result<Device?>> ensureRegistered() async {
+  Future<Result<Device?>> ensureRegistered() => _exclusive(() async {
     // Registered on an earlier launch: tokens are refreshed lazily on the
     // first 401, so startup never waits for the network.
     if (await _local.refreshToken() != null) return const Success(null);
     return _register();
-  }
+  });
 
   @override
   Future<String?> accessToken() => _local.accessToken();
 
   @override
-  Future<String?> recoverAfterUnauthorized() => _recovery ??= _recover().whenComplete(() => _recovery = null);
+  Future<String?> recoverAfterUnauthorized({required String? failedToken}) =>
+      _recovery ??= _exclusive(() => _recover(failedToken)).whenComplete(() => _recovery = null);
 
-  Future<String?> _recover() async {
+  Future<String?> _recover(String? failedToken) async {
+    // The session moved on while this request was in flight (registration
+    // finished, or an earlier recovery already refreshed): use that token.
+    final current = await _local.accessToken();
+    if (current != null && current != failedToken) return current;
+
     final refreshToken = await _local.refreshToken();
     if (refreshToken != null) {
       switch (await _remote.refresh(refreshToken)) {
@@ -66,6 +87,7 @@ class SessionRepositoryImpl implements SessionRepository, AuthTokenSource {
     };
   }
 
+  /// Only ever called inside [_exclusive].
   Future<Result<Device?>> _register() async {
     final installId = await _local.installId();
     final info = await _deviceInfo();

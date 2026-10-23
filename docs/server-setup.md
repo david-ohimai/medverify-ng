@@ -23,7 +23,7 @@ Shell: **Git Bash** unless noted. Working folder: `medverify-ng/server/`.
 | 6 | `npm run db:up` | Starts Postgres (port 5433) and Redis (6379) in Docker — needs Docker Desktop running ([database guide §1](database-setup.md#1-install-docker-desktop-once)) |
 | 7 | `npm run prisma:migrate` | Creates the tables |
 | 8 | `npm run prisma:generate` | Builds the typed Prisma client into `src/generated/prisma` |
-| 9 | `npm test` | 37 unit + HTTP tests; no database needed |
+| 9 | `npm test` | 54 unit + HTTP tests; no database needed |
 | 10 | `npm run typecheck` | Strict TypeScript check of `src/` and `tests/` |
 | 11 | `npm run dev` | API on http://localhost:3000, restarts on save |
 | 12 | Open http://localhost:3000/api-docs | Swagger UI — try every endpoint |
@@ -165,8 +165,8 @@ npm install xss@latest express-rate-limit@latest rate-limit-redis@latest
 | Sanitising | `middleware/sanitize.ts` | HTML/script tags in any string, **before** validation |
 | Validation (strict) | `middleware/validate.ts` + `validators/` | Wrong shapes, and unknown fields (e.g. sending `"role":"regulator"` on register → 422) |
 | Rate limits in Redis | `middleware/rateLimiter.ts` | Floods, PIN guessing, device-minting. Standard `RateLimit` headers + `Retry-After` |
-| Access tokens | `lib/tokens.ts`, `middleware/authenticate.ts` | HS256 pinned (`alg: none` rejected), issuer/audience/type checked, 15-minute life |
-| Refresh-token rotation + reuse detection | `services/token.service.ts` | A stolen refresh token: reusing an old one revokes the whole chain |
+| Access tokens | `lib/tokens.ts`, `middleware/authenticate.ts` | HS256 pinned (`alg: none` rejected), issuer/audience/type checked, 15-minute life. Each token carries the device's **token version**; `authenticate` checks it against the device (Redis-cached 60 s) so demote, re-registration and delete-my-data revoke old tokens **immediately** (`TOKEN_REVOKED`). The role used for authorisation comes from the device, not the token |
+| Refresh-token rotation + reuse detection | `services/token.service.ts` | A stolen refresh token: reusing a **rotated** one revokes the whole chain. Each revocation records a reason (`rotated` / `session_reset` / `reuse_detected`), so a token ended by a role change is just stale — no false security alert |
 | Hashing | `lib/hash.ts` | DB leak: install ids and refresh tokens are stored as SHA-256 only |
 | Constant-time PIN check | `lib/hash.ts` `secureEquals` | Timing attacks on the regulator PIN |
 | Role guard | `middleware/authorize.ts` | Public devices calling regulator endpoints |
@@ -180,7 +180,9 @@ Rate limits (they stack — a request passes every limiter on its route):
 | `register` | IP | 20 / hour |
 | `refresh` | IP | 30 / 15 min |
 | `api` | device | 300 / 15 min (public), 1000 (regulator) |
-| `pin` | device | 5 / 15 min |
+| `pin-device` | device | 5 **wrong** PINs / 15 min |
+| `pin-ip` | IP | 10 wrong PINs / hour — new device ids don't buy more guesses |
+| `pin-global` | everyone | 30 wrong PINs / 15 min — many IPs don't either (≈2,900 guesses/day max; use 8+ digits beyond the demo) |
 | `scan`, `chat` | device | added with those features |
 
 ### Step 9 — Events and the audit trail

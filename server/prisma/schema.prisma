@@ -36,6 +36,15 @@ enum AppLanguage {
   ig
 }
 
+enum TokenRevokeReason {
+  /// Replaced by a newer token in the same chain (normal refresh).
+  rotated
+  /// Every session ended: re-registration, role change or "delete my data".
+  session_reset
+  /// The chain was killed because a rotated token was presented again.
+  reuse_detected
+}
+
 /// One installed copy of the app. There are no user accounts: the device is the identity.
 model Device {
   id            String         @id @default(uuid()) @db.Uuid
@@ -45,6 +54,9 @@ model Device {
   appVersion    String         @map("app_version") @db.VarChar(20)
   language      AppLanguage    @default(en)
   role          DeviceRole     @default(public)
+  /// Bumped whenever the device's role or session changes. Access tokens carry
+  /// it, and a token with an older version is rejected immediately.
+  tokenVersion  Int            @default(1) @map("token_version")
   createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
   lastSeenAt    DateTime       @default(now()) @map("last_seen_at") @db.Timestamptz(3)
 
@@ -57,13 +69,16 @@ model Device {
 /// Rotating refresh tokens, stored as SHA-256 hashes. Every token in a login
 /// chain shares a familyId so a reused (stolen) token can revoke the whole chain.
 model RefreshToken {
-  id        String    @id @default(uuid()) @db.Uuid
-  deviceId  String    @map("device_id") @db.Uuid
-  tokenHash String    @unique @map("token_hash") @db.Char(64)
-  familyId  String    @map("family_id") @db.Uuid
-  expiresAt DateTime  @map("expires_at") @db.Timestamptz(3)
-  revokedAt DateTime? @map("revoked_at") @db.Timestamptz(3)
-  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  id            String             @id @default(uuid()) @db.Uuid
+  deviceId      String             @map("device_id") @db.Uuid
+  tokenHash     String             @unique @map("token_hash") @db.Char(64)
+  familyId      String             @map("family_id") @db.Uuid
+  expiresAt     DateTime           @map("expires_at") @db.Timestamptz(3)
+  revokedAt     DateTime?          @map("revoked_at") @db.Timestamptz(3)
+  /// Why it stopped working. Only a token revoked by `rotated` coming back
+  /// means theft; one ended by a session reset is just stale.
+  revokedReason TokenRevokeReason? @map("revoked_reason")
+  createdAt     DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
 
   device Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
 

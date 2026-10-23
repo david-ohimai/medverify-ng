@@ -131,7 +131,12 @@ exit
 
 ## 5. Create the tables with Prisma
 
-The first migration (`prisma/migrations/20261023120000_init`) is already in the repo. It enables the `postgis`, `vector` and `pg_trgm` extensions and creates `devices`, `refresh_tokens` and `audit_logs`.
+Two migrations are already in the repo:
+
+| Migration | What it does |
+|---|---|
+| `20261023120000_init` | Enables the `postgis`, `vector` and `pg_trgm` extensions; creates `devices`, `refresh_tokens`, `audit_logs` |
+| `20261023180000_token_version_and_revoke_reason` | Adds `devices.token_version` (instant token revocation) and `refresh_tokens.revoked_reason` |
 
 ```bash
 npm run prisma:migrate      # = prisma migrate dev   → applies every pending migration

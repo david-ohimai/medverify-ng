@@ -97,7 +97,7 @@ First launch: three onboarding slides → choose a language → Home. In the bac
 
 ```bash
 fvm flutter analyze          # "No issues found!"
-fvm flutter test             # 21 tests
+fvm flutter test             # 30 tests
 ```
 
 ### A6. Build an APK to install on the demo phone
@@ -191,7 +191,7 @@ lib/
 1. `core/config/env.dart` — `String.fromEnvironment('API_URL')`; `Env.validate()` throws on startup if it's missing, malformed, or `http://` in a release build.
 2. `core/result/result.dart` and `core/errors/failure.dart` — sealed types, so `switch` must handle every case.
 3. `core/network/api_envelope.dart` — parses the server's `{ success, message, statusCode, code, data, errors, meta }`.
-4. `core/errors/failure_mapper.dart` — timeouts → `TimeoutFailure`, no connection → `NetworkFailure`, 401 keeps the server `code` (`TOKEN_EXPIRED`…), 422 keeps field errors, 429 reads `Retry-After`, 5xx never shows server text.
+4. `core/errors/failure_mapper.dart` — timeouts → `TimeoutFailure`, no connection → `NetworkFailure`, every Dio error type (incl. `transformTimeout`) maps to a failure, 401 keeps the server `code` (`TOKEN_EXPIRED`, `TOKEN_REVOKED`…), 422 keeps field errors, 429 reads `Retry-After`, 5xx never shows server text.
 5. `core/network/api_client.dart` — `get/post/patch/delete<T>(path, parse:)` → `Result<T>`. Nothing above it sees Dio or JSON.
 6. `core/network/auth_token_source.dart` + `interceptors/auth_interceptor.dart` — adds the token; on a 401 with a token code, asks the session to recover once and replays the request with a Dio that has no auth interceptor (no loops).
 7. `core/network/interceptors/safe_log_interceptor.dart` — debug-only, masks tokens/PIN/install id.
@@ -203,7 +203,7 @@ lib/
 
 | Feature | What's in it |
 |---|---|
-| `session` | Silent registration and tokens. `SessionRepositoryImpl` registers on first launch (install id + platform + version + language), stores tokens, and implements `AuthTokenSource`: **one refresh in flight** shared by every request that got a 401; a rejected refresh token clears the session and re-registers; offline keeps tokens. `SessionController` (AsyncNotifier) runs it at launch without blocking the UI. |
+| `session` | Silent registration and tokens. `SessionRepositoryImpl` registers on first launch (install id + platform + version + language), stores tokens, and implements `AuthTokenSource`. Every session operation (launch registration, recovery after a 401) runs **one at a time** through a small queue, so a 401 during first-launch registration waits for it instead of registering a second device; **one refresh in flight** is shared by every request that got a 401, and a late 401 for an already-replaced token just reuses the new one; a rejected refresh token clears the session and re-registers; offline keeps tokens. The install id is created once and shared by concurrent callers. `SessionController` (AsyncNotifier) runs it at launch without blocking the UI. |
 | `onboarding` | 3 slides, language picker, "never 100% safe" promise. `OnboardingController` owns page + language; the screen only owns its `PageController`. |
 | `shell` | `AppShell` = `GlassScaffold` + `AppBackdrop` + `AppTabBar` (`GlassTabBar.bottom` with a sliding glass pill and a `GlassBadge` for alerts). |
 | `home` | Greeting (from `greetingProvider` + injectable clock), AI Insight glass card, quick actions, recent scans, offline banner with retry. |
@@ -248,7 +248,9 @@ runApp(LiquidGlassWidgets.wrap(
 |---|---|
 | `test/core/failure_mapper_test.dart` | Envelope parsing; 401 keeps codes, 403/422/429/5xx mapping, 5xx hides server text |
 | `test/core/api_client_test.dart` | Success parse, typed 4xx failure, offline, wrong-shaped body → failure not crash (fake Dio adapter) |
-| `test/features/session/session_repository_test.dart` | First-launch registration payload; no network on later launches; refresh; **3 concurrent 401s → 1 refresh**; reused token → clear + re-register; offline keeps tokens |
+| `test/features/session/session_repository_test.dart` | First-launch registration payload; no network on later launches; refresh; **3 concurrent 401s → 1 refresh**; reused token → clear + re-register; offline keeps tokens; **401 during first-launch registration → no second registration**; late 401 reuses the new token |
+| `test/features/session/session_local_data_source_test.dart` | Concurrent first calls → one install id; a failed read isn't cached |
+| `test/core/auth_interceptor_test.dart` | `TOKEN_REVOKED` → recover with the failed token → replay; secure storage failing → `StorageFailure`, never a hung request |
 | `test/features/onboarding/onboarding_controller_test.dart` | Page bounds; finish saves language + flag |
 | `test/features/home/greeting_test.dart` | Greeting by hour with an injected clock |
 | `test/widgets/onboarding_screen_test.dart` | Full onboarding flow on a phone-sized screen |

@@ -1,7 +1,9 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:medverify/core/errors/failure.dart';
 import 'package:medverify/core/errors/failure_mapper.dart';
 import 'package:medverify/core/network/api_envelope.dart';
+import 'package:medverify/core/network/auth_token_source.dart';
 
 void main() {
   group('ApiEnvelope.tryParse', () {
@@ -27,6 +29,32 @@ void main() {
       expect(ApiEnvelope.tryParse('<html>Bad gateway</html>'), isNull);
       expect(ApiEnvelope.tryParse({'status': 'ok'}), isNull);
       expect(ApiEnvelope.tryParse(null), isNull);
+    });
+  });
+
+  group('mapDioException', () {
+    final options = RequestOptions(path: '/devices/me');
+
+    test('every timeout type, including transformTimeout, is a TimeoutFailure (never a throw)', () {
+      for (final type in [
+        DioExceptionType.connectionTimeout,
+        DioExceptionType.sendTimeout,
+        DioExceptionType.receiveTimeout,
+        DioExceptionType.transformTimeout,
+      ]) {
+        expect(mapDioException(DioException(requestOptions: options, type: type)), isA<TimeoutFailure>(), reason: '$type');
+      }
+    });
+
+    test('every DioExceptionType maps to a Failure', () {
+      for (final type in DioExceptionType.values) {
+        expect(() => mapDioException(DioException(requestOptions: options, type: type)), returnsNormally, reason: '$type');
+      }
+    });
+
+    test('a token that could not be read from secure storage is a StorageFailure', () {
+      final error = DioException(requestOptions: options, error: const TokenStorageException('locked'));
+      expect(mapDioException(error), isA<StorageFailure>());
     });
   });
 
