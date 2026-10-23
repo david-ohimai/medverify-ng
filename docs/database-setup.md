@@ -18,7 +18,15 @@ Commands are for **Git Bash** (the VS Code terminal can use it). Where PowerShel
 | Redis 8 (rate limits, cache, queues) | `localhost:6379` | no password (local only) |
 | Prisma Studio (browse and edit data) | http://localhost:5555 | — |
 
-**Why port 5433 and not 5432?** This laptop already runs a Windows PostgreSQL service (`postgresql-x64-18`) on 5432. The Docker database uses 5433 so the two never clash. Leave the Windows service alone.
+**Why port 5433 and not 5432?** This laptop also has a Windows PostgreSQL service (`postgresql-x64-18`) on 5432 — it belongs to **KodeBuddy** (`KodeBuddyAI` database), not MedVerify. The Docker database uses 5433 so the two never clash. MedVerify never touches the Windows one.
+
+It's safe to stop when you're not working on KodeBuddy (it doesn't delete any data). PowerShell **as administrator**:
+
+```powershell
+Stop-Service postgresql-x64-18                        # stop now
+Set-Service postgresql-x64-18 -StartupType Manual     # don't start on boot
+Start-Service postgresql-x64-18                       # when you need KodeBuddy again
+```
 
 These passwords are for your laptop only. Never reuse them on a hosted database.
 
@@ -52,19 +60,21 @@ Prisma 7 differences from the bootcamp's Prisma 6 (worth knowing for the defense
 
 ## 1. Install Docker Desktop (once)
 
-1. Install it — either download from docker.com, or in PowerShell:
-   ```powershell
-   winget install --id Docker.DockerDesktop -e
-   ```
-2. During install keep **"Use WSL 2"** ticked. If it asks for WSL, run in PowerShell **as administrator**, then restart Windows:
+1. Install WSL 2 first — PowerShell **as administrator** — then **restart Windows** (the output says changes apply after a reboot):
    ```powershell
    wsl --install
    ```
-3. Open Docker Desktop and wait for **Engine running** (bottom-left).
-4. Check it from a new terminal:
+2. Install Docker Desktop — download from docker.com, or in PowerShell:
+   ```powershell
+   winget install --id Docker.DockerDesktop -e
+   ```
+   Keep **"Use WSL 2"** ticked. On this laptop it installed **per-user**, in `C:\Users\David\AppData\Local\Programs\DockerDesktop` (not `C:\Program Files\Docker`), and added itself to the *user* PATH.
+3. Open Docker Desktop. Accept the terms, skip sign-in (no Docker account needed), and wait for **Engine running** (bottom-left).
+4. **Close VS Code completely and reopen it.** Terminals started before the install keep the old PATH, and new terminal tabs inherit VS Code's environment — so `docker` stays "not recognized" until VS Code itself restarts.
+5. Check it:
    ```bash
-   docker --version
-   docker compose version
+   docker --version          # Docker version 29.x
+   docker compose version    # Docker Compose version v5.x
    ```
 
 ---
@@ -334,7 +344,8 @@ Integration tests that use the real `medverify_test` database arrive with the sc
 |---|---|
 | `password authentication failed for user "medverify"` | You're hitting the **Windows** Postgres on 5432. Check `.env` says `localhost:5433`. |
 | `Bind for 0.0.0.0:5433 failed: port is already allocated` | Something else uses 5433. Change `"5433:5432"` in `docker-compose.yml` and the port in `.env` to another free port. |
-| `docker: command not found` / engine not running | Start Docker Desktop and wait for *Engine running*. Open a new terminal. |
+| `docker: command not found` / `'docker' is not recognized` | Docker was installed after the terminal started. **Close and reopen VS Code** (a new tab isn't enough). Still missing? Check `C:\Users\David\AppData\Local\Programs\DockerDesktop\resources\bin` is on your user PATH. |
+| Engine not running | Start Docker Desktop and wait for *Engine running*. If it asks for a WSL update: `wsl --update` (admin PowerShell), then restart Docker Desktop. |
 | Docker says *WSL update required* | `wsl --update` in an admin PowerShell, then restart Docker Desktop. |
 | `Cannot find module '../generated/prisma/client.js'` | Run `npm run prisma:generate`. |
 | `Environment variable not found: DATABASE_URL` | `.env` is missing or not in `server/`. `cp .env.example .env`. |
