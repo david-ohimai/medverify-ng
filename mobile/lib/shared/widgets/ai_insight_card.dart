@@ -58,7 +58,9 @@ class _InsightRow extends StatelessWidget {
         children: [
           Icon(line.icon, size: 22, color: color),
           const SizedBox(width: AppSpacing.sm),
-          Expanded(child: Text(line.text, style: context.text.bodyLarge?.copyWith(color: color))),
+          Expanded(
+            child: Text(line.text, style: context.text.bodyLarge?.copyWith(color: color)),
+          ),
         ],
       ),
     );
@@ -84,7 +86,10 @@ class AiPill extends StatelessWidget {
         children: [
           const Icon(Iconsax.magic_star, size: 16, color: Colors.white),
           const SizedBox(width: AppSpacing.xs),
-          Text(label, style: context.text.labelLarge?.copyWith(color: Colors.white, fontWeight: FontWeight.w700)),
+          Text(
+            label,
+            style: context.text.labelLarge?.copyWith(color: Colors.white, fontWeight: FontWeight.w700),
+          ),
         ],
       ),
     ),

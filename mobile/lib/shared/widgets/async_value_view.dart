@@ -8,13 +8,7 @@ import 'error_view.dart';
 /// [ErrorView] with retry on failure, the content on success. Keeps loading
 /// and error handling out of every screen.
 class AsyncValueView<T> extends StatelessWidget {
-  const AsyncValueView({
-    required this.value,
-    required this.data,
-    required this.loading,
-    this.onRetry,
-    super.key,
-  });
+  const AsyncValueView({required this.value, required this.data, required this.loading, this.onRetry, super.key});
 
   final AsyncValue<T> value;
   final Widget Function(T data) data;

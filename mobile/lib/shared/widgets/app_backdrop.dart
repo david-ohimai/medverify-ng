@@ -41,11 +41,7 @@ class _Blob extends StatelessWidget {
   @override
   Widget build(BuildContext context) => DecoratedBox(
     decoration: BoxDecoration(
-      gradient: RadialGradient(
-        center: alignment,
-        radius: radius,
-        colors: [color, color.withValues(alpha: 0)],
-      ),
+      gradient: RadialGradient(center: alignment, radius: radius, colors: [color, color.withValues(alpha: 0)]),
     ),
   );
 }

@@ -79,18 +79,26 @@ void main() {
   }
 
   group('ensureRegistered', () {
-    test('first launch: registers with the install id, platform, version and language, then saves the tokens', () async {
-      storeTokensInMemory();
-      stubRegister();
+    test(
+      'first launch: registers with the install id, platform, version and language, then saves the tokens',
+      () async {
+        storeTokensInMemory();
+        stubRegister();
 
-      final result = await repository.ensureRegistered();
+        final result = await repository.ensureRegistered();
 
-      expect(result.valueOrNull, _device);
-      verify(
-        () => remote.register(installId: 'install-1', platform: 'android', appVersion: '1.0.0+1', language: AppLanguage.yo),
-      ).called(1);
-      verify(() => local.saveTokens(_newPair)).called(1);
-    });
+        expect(result.valueOrNull, _device);
+        verify(
+          () => remote.register(
+            installId: 'install-1',
+            platform: 'android',
+            appVersion: '1.0.0+1',
+            language: AppLanguage.yo,
+          ),
+        ).called(1);
+        verify(() => local.saveTokens(_newPair)).called(1);
+      },
+    );
 
     test('later launches: does nothing — no network call at startup', () async {
       storeTokensInMemory(access: 'old-access', refresh: 'old-refresh');

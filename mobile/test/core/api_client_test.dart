@@ -16,7 +16,11 @@ class _FakeAdapter implements HttpClientAdapter {
   final bool offline;
 
   @override
-  Future<ResponseBody> fetch(RequestOptions options, Stream<Uint8List>? requestStream, Future<void>? cancelFuture) async {
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
     if (offline) {
       throw DioException.connectionError(requestOptions: options, reason: 'offline');
     }
@@ -39,7 +43,13 @@ ApiClient _client(_FakeAdapter adapter) {
   return ApiClient(dio);
 }
 
-Map<String, Object?> _envelope({required bool success, required int status, Object? data, String? code, String message = ''}) => {
+Map<String, Object?> _envelope({
+  required bool success,
+  required int status,
+  Object? data,
+  String? code,
+  String message = '',
+}) => {
   'success': success,
   'message': message,
   'statusCode': status,
@@ -61,7 +71,10 @@ void main() {
 
   test('4xx envelope becomes a typed failure', () async {
     final client = _client(
-      _FakeAdapter(status: 403, body: _envelope(success: false, status: 403, code: 'INVALID_PIN', message: 'Incorrect PIN')),
+      _FakeAdapter(
+        status: 403,
+        body: _envelope(success: false, status: 403, code: 'INVALID_PIN', message: 'Incorrect PIN'),
+      ),
     );
 
     final result = await client.post('/devices/me/elevate', body: {'pin': '111111'}, parse: (_) => null);

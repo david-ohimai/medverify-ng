@@ -34,7 +34,10 @@ class PillTabs extends StatelessWidget {
                 ),
                 backgroundColor: context.colors.surface,
                 selectedColor: context.colors.surface,
-                side: BorderSide(color: i == selected ? palette.action : context.colors.outline, width: i == selected ? 1.5 : 1),
+                side: BorderSide(
+                  color: i == selected ? palette.action : context.colors.outline,
+                  width: i == selected ? 1.5 : 1,
+                ),
                 shape: const StadiumBorder(),
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
               ),

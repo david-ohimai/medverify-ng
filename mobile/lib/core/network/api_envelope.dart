@@ -29,12 +29,7 @@ class ApiEnvelope {
       errors: rawErrors is List
           ? rawErrors
                 .whereType<Map<String, dynamic>>()
-                .map(
-                  (e) => FieldError(
-                    field: e['field'] as String?,
-                    message: e['message'] as String? ?? '',
-                  ),
-                )
+                .map((e) => FieldError(field: e['field'] as String?, message: e['message'] as String? ?? ''))
                 .toList(growable: false)
           : const [],
     );

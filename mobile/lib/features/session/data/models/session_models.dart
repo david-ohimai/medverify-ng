@@ -11,10 +11,8 @@ abstract final class SessionModels {
     language: AppLanguage.fromCode(json['language'] as String?),
   );
 
-  static TokenPair tokens(Map<String, dynamic> json) => TokenPair(
-    accessToken: json['accessToken'] as String,
-    refreshToken: json['refreshToken'] as String,
-  );
+  static TokenPair tokens(Map<String, dynamic> json) =>
+      TokenPair(accessToken: json['accessToken'] as String, refreshToken: json['refreshToken'] as String);
 
   /// `data` of POST /devices/register: { device, tokens }.
   static ({Device device, TokenPair tokens}) session(Object? data) {

@@ -26,15 +26,12 @@ sealed class Failure extends Equatable {
 }
 
 final class NetworkFailure extends Failure {
-  const NetworkFailure([
-    super.message = 'No internet connection. Check your network and try again.',
-  ]) : super(code: 'NETWORK');
+  const NetworkFailure([super.message = 'No internet connection. Check your network and try again.'])
+    : super(code: 'NETWORK');
 }
 
 final class TimeoutFailure extends Failure {
-  const TimeoutFailure([
-    super.message = 'The server is taking too long. Please try again.',
-  ]) : super(code: 'TIMEOUT');
+  const TimeoutFailure([super.message = 'The server is taking too long. Please try again.']) : super(code: 'TIMEOUT');
 }
 
 final class UnauthorizedFailure extends Failure {
@@ -69,10 +66,8 @@ final class RateLimitedFailure extends Failure {
 }
 
 final class ServerFailure extends Failure {
-  const ServerFailure([
-    super.message = 'Something went wrong on our side. Please try again.',
-    this.statusCode,
-  ]) : super(code: 'SERVER');
+  const ServerFailure([super.message = 'Something went wrong on our side. Please try again.', this.statusCode])
+    : super(code: 'SERVER');
 
   final int? statusCode;
 
@@ -81,11 +76,9 @@ final class ServerFailure extends Failure {
 }
 
 final class StorageFailure extends Failure {
-  const StorageFailure([super.message = 'Could not read saved data on this phone.'])
-    : super(code: 'STORAGE');
+  const StorageFailure([super.message = 'Could not read saved data on this phone.']) : super(code: 'STORAGE');
 }
 
 final class UnexpectedFailure extends Failure {
-  const UnexpectedFailure([super.message = 'Something unexpected happened.'])
-    : super(code: 'UNEXPECTED');
+  const UnexpectedFailure([super.message = 'Something unexpected happened.']) : super(code: 'UNEXPECTED');
 }

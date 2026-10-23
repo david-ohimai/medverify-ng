@@ -39,7 +39,8 @@ final authenticatedDioProvider = Provider<Dio>((ref) {
   // 401s must reach the interceptor as errors so it can refresh and replay.
   final dio = Dio(_baseOptions()..validateStatus = (status) => status != null && status < 400);
   dio.interceptors.addAll([
-    AuthInterceptor(tokens: ref.watch(authTokenSourceProvider), retryClient: ref.watch(publicDioProvider)),    if (kDebugMode) SafeLogInterceptor(),
+    AuthInterceptor(tokens: ref.watch(authTokenSourceProvider), retryClient: ref.watch(publicDioProvider)),
+    if (kDebugMode) SafeLogInterceptor(),
   ]);
   ref.onDispose(dio.close);
   return dio;

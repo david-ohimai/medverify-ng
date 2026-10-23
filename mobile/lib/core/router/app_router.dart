@@ -36,11 +36,21 @@ final routerProvider = Provider<GoRouter>((ref) {
       StatefulShellRoute.indexedStack(
         builder: (_, _, navigationShell) => AppShell(navigationShell: navigationShell),
         branches: [
-          StatefulShellBranch(routes: [GoRoute(path: AppRoutes.home, builder: (_, _) => const HomeScreen())]),
-          StatefulShellBranch(routes: [GoRoute(path: AppRoutes.history, builder: (_, _) => const HistoryScreen())]),
-          StatefulShellBranch(routes: [GoRoute(path: AppRoutes.scan, builder: (_, _) => const ScanScreen())]),
-          StatefulShellBranch(routes: [GoRoute(path: AppRoutes.alerts, builder: (_, _) => const AlertsScreen())]),
-          StatefulShellBranch(routes: [GoRoute(path: AppRoutes.settings, builder: (_, _) => const SettingsScreen())]),
+          StatefulShellBranch(
+            routes: [GoRoute(path: AppRoutes.home, builder: (_, _) => const HomeScreen())],
+          ),
+          StatefulShellBranch(
+            routes: [GoRoute(path: AppRoutes.history, builder: (_, _) => const HistoryScreen())],
+          ),
+          StatefulShellBranch(
+            routes: [GoRoute(path: AppRoutes.scan, builder: (_, _) => const ScanScreen())],
+          ),
+          StatefulShellBranch(
+            routes: [GoRoute(path: AppRoutes.alerts, builder: (_, _) => const AlertsScreen())],
+          ),
+          StatefulShellBranch(
+            routes: [GoRoute(path: AppRoutes.settings, builder: (_, _) => const SettingsScreen())],
+          ),
         ],
       ),
     ],

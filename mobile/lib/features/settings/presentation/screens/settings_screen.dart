@@ -21,11 +21,7 @@ class SettingsScreen extends ConsumerWidget {
       subtitle: 'Language, appearance and your data',
       slivers: [
         SliverToBoxAdapter(
-          child: PillTabs(
-            labels: _tabs,
-            selected: tab,
-            onSelected: ref.read(settingsTabProvider.notifier).select,
-          ),
+          child: PillTabs(labels: _tabs, selected: tab, onSelected: ref.read(settingsTabProvider.notifier).select),
         ),
         const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.sm)),
         SliverToBoxAdapter(child: tab == 0 ? const PreferencesSection() : const AboutSection()),

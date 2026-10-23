@@ -14,7 +14,11 @@ class _ServerAdapter implements HttpClientAdapter {
   final List<String?> seenTokens = [];
 
   @override
-  Future<ResponseBody> fetch(RequestOptions options, Stream<Uint8List>? requestStream, Future<void>? cancelFuture) async {
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
     final auth = options.headers['Authorization'] as String?;
     seenTokens.add(auth);
     final revoked = auth == 'Bearer stale';

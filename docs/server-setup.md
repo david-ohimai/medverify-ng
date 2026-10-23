@@ -30,6 +30,25 @@ Shell: **Git Bash** unless noted. Working folder: `medverify-ng/server/`.
 | 13 | `curl -s http://localhost:3000/health/ready` | `{"status":"ready",...}` when Postgres and Redis both answer |
 | 14 | `npm run prisma:studio` | See the data at http://localhost:5555 |
 
+End-to-end smoke test (server running, Docker up): walks register → elevate → old token revoked → refresh → reuse detected → delete my data against the real database:
+
+```bash
+npm run smoke
+```
+
+### Continuous integration
+
+`.github/workflows/ci.yml` runs on every pull request and every push to `main`, only for the parts that changed:
+
+| Job | What it proves |
+|---|---|
+| Server · typecheck, test, build | `prisma validate`, strict typecheck, 54 tests, production build |
+| Server · migrations + smoke test | Starts the real Docker Postgres + Redis, applies every migration with `migrate deploy`, checks the extensions, boots the built server and runs `npm run smoke` |
+| Mobile · format, analyze, test | `dart format` (120 columns), `flutter analyze --fatal-infos`, all tests |
+| Mobile · Android APK | Pull requests into `main` only: obfuscated arm64 release APK, downloadable from the run for 5 days |
+
+All Linux runners, cached dependencies, superseded runs cancelled — a full run is roughly 15–20 of the 2,000 free minutes a month on a private repo.
+
 Production build:
 
 ```bash

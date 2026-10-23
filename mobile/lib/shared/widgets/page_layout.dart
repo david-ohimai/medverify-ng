@@ -51,7 +51,11 @@ class PageLayout extends StatelessWidget {
             ),
           ),
         ),
-        for (final sliver in slivers) SliverPadding(padding: EdgeInsets.symmetric(horizontal: side), sliver: sliver),
+        for (final sliver in slivers)
+          SliverPadding(
+            padding: EdgeInsets.symmetric(horizontal: side),
+            sliver: sliver,
+          ),
         const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.tabBarClearance)),
       ],
     );

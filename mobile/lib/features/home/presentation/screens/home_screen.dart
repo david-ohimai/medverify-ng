@@ -68,9 +68,21 @@ class _QuickActions extends StatelessWidget {
           const SizedBox(width: AppSpacing.sm),
           QuickActionTile(icon: Iconsax.keyboard, label: 'NAFDAC no.', tint: palette.info, onTap: null, badge: 'Soon'),
           const SizedBox(width: AppSpacing.sm),
-          QuickActionTile(icon: Iconsax.magic_star, label: 'Ask MedVerify', tint: palette.aiGradient.first, onTap: null, badge: 'Soon'),
+          QuickActionTile(
+            icon: Iconsax.magic_star,
+            label: 'Ask MedVerify',
+            tint: palette.aiGradient.first,
+            onTap: null,
+            badge: 'Soon',
+          ),
           const SizedBox(width: AppSpacing.sm),
-          QuickActionTile(icon: Iconsax.flag, label: 'Report a seller', tint: palette.danger, onTap: null, badge: 'Soon'),
+          QuickActionTile(
+            icon: Iconsax.flag,
+            label: 'Report a seller',
+            tint: palette.danger,
+            onTap: null,
+            badge: 'Soon',
+          ),
         ],
       ),
     );

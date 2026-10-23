@@ -42,13 +42,21 @@ void main() {
         DioExceptionType.receiveTimeout,
         DioExceptionType.transformTimeout,
       ]) {
-        expect(mapDioException(DioException(requestOptions: options, type: type)), isA<TimeoutFailure>(), reason: '$type');
+        expect(
+          mapDioException(DioException(requestOptions: options, type: type)),
+          isA<TimeoutFailure>(),
+          reason: '$type',
+        );
       }
     });
 
     test('every DioExceptionType maps to a Failure', () {
       for (final type in DioExceptionType.values) {
-        expect(() => mapDioException(DioException(requestOptions: options, type: type)), returnsNormally, reason: '$type');
+        expect(
+          () => mapDioException(DioException(requestOptions: options, type: type)),
+          returnsNormally,
+          reason: '$type',
+        );
       }
     });
 

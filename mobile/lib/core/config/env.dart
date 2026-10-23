@@ -13,9 +13,7 @@ abstract final class Env {
   /// instead of on the first request.
   static void validate() {
     if (apiBaseUrl.isEmpty) {
-      throw StateError(
-        'API_URL is not set. Run with --dart-define-from-file=env/dev.json',
-      );
+      throw StateError('API_URL is not set. Run with --dart-define-from-file=env/dev.json');
     }
     final uri = Uri.tryParse(apiBaseUrl);
     if (uri == null || !uri.hasScheme || uri.host.isEmpty) {

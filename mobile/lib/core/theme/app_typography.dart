@@ -8,9 +8,21 @@ abstract final class AppTypography {
     // Risk score inside the verdict ring.
     displayLarge: TextStyle(fontSize: 40, fontWeight: FontWeight.w900, height: 1.1, color: primary),
     // Page titles ("Overview", "Scans").
-    headlineLarge: TextStyle(fontSize: 32, fontWeight: FontWeight.w700, height: 1.15, letterSpacing: -0.5, color: primary),
+    headlineLarge: TextStyle(
+      fontSize: 32,
+      fontWeight: FontWeight.w700,
+      height: 1.15,
+      letterSpacing: -0.5,
+      color: primary,
+    ),
     // Greeting, stat numbers.
-    headlineMedium: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, height: 1.2, letterSpacing: -0.3, color: primary),
+    headlineMedium: TextStyle(
+      fontSize: 28,
+      fontWeight: FontWeight.w700,
+      height: 1.2,
+      letterSpacing: -0.3,
+      color: primary,
+    ),
     headlineSmall: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, height: 1.2, color: primary),
     // Section headers ("Needs your attention").
     titleLarge: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, height: 1.3, color: primary),

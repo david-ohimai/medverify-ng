@@ -24,9 +24,6 @@ class SessionRemoteDataSource {
     parse: SessionModels.session,
   );
 
-  Future<Result<TokenPair>> refresh(String refreshToken) => _client.post(
-    ApiEndpoints.refreshTokens,
-    body: {'refreshToken': refreshToken},
-    parse: SessionModels.refreshed,
-  );
+  Future<Result<TokenPair>> refresh(String refreshToken) =>
+      _client.post(ApiEndpoints.refreshTokens, body: {'refreshToken': refreshToken}, parse: SessionModels.refreshed);
 }
