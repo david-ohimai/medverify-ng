@@ -17,6 +17,9 @@ fail() { echo "  ✗ $1"; echo "    response: $2"; exit 1; }
 call() { curl -s -w '\n%{http_code}' "$@"; }
 body() { echo "$1" | sed '$d'; }
 status() { echo "$1" | tail -n1; }
+# Reads a dotted path from JSON on stdin, e.g. json .data.tokens.accessToken.
+# Uses Node (always present here) rather than jq, so it also runs in Git Bash on Windows.
+json() { node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{let v=JSON.parse(s);for(const k of process.argv[1].split(".").filter(Boolean))v=v?.[k];process.stdout.write(v==null?"null":String(v))})' "$1"; }
 
 echo "Smoke test against $API"
 
@@ -27,12 +30,12 @@ pass "readiness: database and Redis up"
 res=$(call -X POST "$API/devices/register" -H 'Content-Type: application/json' \
   -d "{\"installId\":\"$INSTALL_ID\",\"platform\":\"android\",\"appVersion\":\"1.0.0+1\",\"language\":\"en\"}")
 [ "$(status "$res")" = "201" ] || fail "register a new device" "$res"
-ACCESS=$(body "$res" | jq -r '.data.tokens.accessToken')
-REFRESH=$(body "$res" | jq -r '.data.tokens.refreshToken')
+ACCESS=$(body "$res" | json .data.tokens.accessToken)
+REFRESH=$(body "$res" | json .data.tokens.refreshToken)
 pass "register a new device"
 
 res=$(call "$API/devices/me" -H "Authorization: Bearer $ACCESS")
-[ "$(status "$res")" = "200" ] && [ "$(body "$res" | jq -r '.data.role')" = "public" ] || fail "GET /devices/me as public" "$res"
+[ "$(status "$res")" = "200" ] && [ "$(body "$res" | json .data.role)" = "public" ] || fail "GET /devices/me as public" "$res"
 pass "GET /devices/me as public"
 
 res=$(call -X POST "$API/devices/me/elevate" -H "Authorization: Bearer $ACCESS" -H 'Content-Type: application/json' -d '{"pin":"000000"}')
@@ -41,16 +44,16 @@ pass "wrong PIN is rejected"
 
 res=$(call -X POST "$API/devices/me/elevate" -H "Authorization: Bearer $ACCESS" -H 'Content-Type: application/json' -d "{\"pin\":\"$PIN\"}")
 [ "$(status "$res")" = "200" ] || fail "right PIN unlocks regulator mode" "$res"
-REG_ACCESS=$(body "$res" | jq -r '.data.tokens.accessToken')
-REG_REFRESH=$(body "$res" | jq -r '.data.tokens.refreshToken')
+REG_ACCESS=$(body "$res" | json .data.tokens.accessToken)
+REG_REFRESH=$(body "$res" | json .data.tokens.refreshToken)
 pass "right PIN unlocks regulator mode"
 
 res=$(call "$API/devices/me" -H "Authorization: Bearer $ACCESS")
-[ "$(status "$res")" = "401" ] && [ "$(body "$res" | jq -r '.code')" = "TOKEN_REVOKED" ] || fail "pre-elevation access token is revoked immediately" "$res"
+[ "$(status "$res")" = "401" ] && [ "$(body "$res" | json .code)" = "TOKEN_REVOKED" ] || fail "pre-elevation access token is revoked immediately" "$res"
 pass "pre-elevation access token is revoked immediately"
 
 res=$(call -X POST "$API/devices/refresh" -H 'Content-Type: application/json' -d "{\"refreshToken\":\"$REFRESH\"}")
-[ "$(status "$res")" = "401" ] && [ "$(body "$res" | jq -r '.code')" = "REFRESH_INVALID" ] || fail "pre-elevation refresh token is stale (not flagged as theft)" "$res"
+[ "$(status "$res")" = "401" ] && [ "$(body "$res" | json .code)" = "REFRESH_INVALID" ] || fail "pre-elevation refresh token is stale (not flagged as theft)" "$res"
 pass "pre-elevation refresh token is stale (not flagged as theft)"
 
 res=$(call -X POST "$API/devices/refresh" -H 'Content-Type: application/json' -d "{\"refreshToken\":\"$REG_REFRESH\"}")
@@ -58,7 +61,7 @@ res=$(call -X POST "$API/devices/refresh" -H 'Content-Type: application/json' -d
 pass "refresh rotates the token"
 
 res=$(call -X POST "$API/devices/refresh" -H 'Content-Type: application/json' -d "{\"refreshToken\":\"$REG_REFRESH\"}")
-[ "$(status "$res")" = "401" ] && [ "$(body "$res" | jq -r '.code')" = "REFRESH_REUSED" ] || fail "reusing a rotated refresh token is detected" "$res"
+[ "$(status "$res")" = "401" ] && [ "$(body "$res" | json .code)" = "REFRESH_REUSED" ] || fail "reusing a rotated refresh token is detected" "$res"
 pass "reusing a rotated refresh token is detected"
 
 res=$(call -X DELETE "$API/devices/me" -H "Authorization: Bearer $REG_ACCESS")
