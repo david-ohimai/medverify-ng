@@ -101,6 +101,14 @@ jobs:
           node-version: 24
           cache: npm
           cache-dependency-path: server/package-lock.json
+      # Every script that loads the server's config (seed, server) validates the
+      # whole environment, so the secret must exist before the first of them.
+      # Random per run, masked in the logs, never stored anywhere.
+      - name: Generate a throwaway token secret for this run
+        run: |
+          secret="$(openssl rand -base64 48)"
+          echo "::add-mask::$secret"
+          echo "JWT_ACCESS_SECRET=$secret" >> "$GITHUB_ENV"
       - name: Start PostgreSQL (PostGIS + pgvector) and Redis
         run: docker compose up -d --build --wait
       - name: Install dependencies (including dev tools for the build)
@@ -120,8 +128,6 @@ jobs:
       - name: Build and start the server
         run: |
           npx tsc -p tsconfig.build.json
-          # A throwaway secret for this run only.
-          export JWT_ACCESS_SECRET="$(openssl rand -base64 48)"
           NODE_ENV=production node dist/server.js > server.log 2>&1 &
           for i in $(seq 1 30); do
             curl -sf http://localhost:3000/health/ready > /dev/null && exit 0
