@@ -17,7 +17,8 @@ Your global Flutter (`C:\Dev\flutter`, 3.38.5) is used by Laba and other project
 |---|---|
 | `mobile/.fvmrc` | `{"flutter": "3.47.7"}` — FVM uses this version inside `mobile/` |
 | `.vscode/settings.json` (repo root) | `dart.flutterSdkPath` → `C:\Users\David\fvm\versions\3.47.7`, **this workspace only** |
-| `.vscode/launch.json` | Run configs "mobile (dev)" that pass `--dart-define-from-file=env/dev.json` |
+| `.vscode/launch.json` | Run configs "mobile (dev)" that pass `--dart-define-from-file=env/dev.json` and run the task below first |
+| `.vscode/tasks.json` | "adb reverse API port": forwards the phone's port 3000 to the laptop before every F5 launch (see A3) |
 
 So: open the `medverify-ng` folder in VS Code and it uses 3.47.7 automatically; open Laba and it still uses 3.38.5.
 
@@ -74,10 +75,24 @@ cp env/dev.example.json env/dev.json
 
 | Running on | `API_URL` in `env/dev.json` | Extra step |
 |---|---|---|
-| Android **emulator** | `http://10.0.2.2:3000/api/v1` (the default) | — (10.0.2.2 is the emulator's name for your laptop) |
-| Android **phone over USB** | `http://localhost:3000/api/v1` | `adb reverse tcp:3000 tcp:3000` (forwards the phone's port 3000 to the laptop) |
+| Android **emulator** | `http://10.0.2.2:3000/api/v1` (the example's default) | — (10.0.2.2 is the emulator's name for your laptop; it does **not** exist on a real phone) |
+| Android **phone over USB** (what this laptop uses: Xiaomi 2209116AG) | `http://localhost:3000/api/v1` | `adb reverse tcp:3000 tcp:3000` — forwards the phone's port 3000 to the laptop |
 | Phone on the **same Wi-Fi** | `http://<laptop LAN IP>:3000/api/v1` | Find the IP with `ipconfig` (PowerShell); allow Node through Windows Firewall |
 | Deployed server | `https://<your-app>.onrender.com/api/v1` | Use `env/prod.json` for release builds |
+
+Not sure whether you're on an emulator or a phone? `adb devices -l` — a real phone shows its model (`model:2209116AG`), an emulator shows `emulator-5554`.
+
+**About `adb reverse`:** the rule lives in adb, not on the phone, and it is **lost whenever adb restarts or the phone is unplugged** — `flutter run` can restart adb. Launching with **F5 → "mobile (dev)"** in VS Code re-adds it automatically (`.vscode/tasks.json`). From a terminal, run it again before `flutter run`:
+
+```bash
+adb reverse tcp:3000 tcp:3000
+adb reverse --list                                                   # UsbFfs tcp:3000 tcp:3000
+adb shell curl -s http://localhost:3000/health/live                  # from the phone: {"status":"ok",...}
+```
+
+(`adb` lives in `%LOCALAPPDATA%\Android\Sdk\platform-tools` if it isn't on your PATH.)
+
+`API_URL` is compiled into the app, so after editing `env/dev.json` **stop the app and run it again** — hot reload and hot restart keep the old URL.
 
 Plain `http://` only works in **debug** builds. Release builds refuse it (see Part C, security).
 
@@ -91,7 +106,18 @@ fvm flutter devices                                           # find your emulat
 fvm flutter run --dart-define-from-file=env/dev.json          # or F5 → "mobile (dev)" in VS Code
 ```
 
-First launch: three onboarding slides → choose a language → Home. In the background the app registers silently. Check the server log for `device:registered`, or open Prisma Studio (`cd server && npm run prisma:studio`) and look at the **Device** table.
+First launch: three onboarding slides → choose a language → Home. In the background the app registers silently. The debug console shows `[api] ← 201 /devices/register`; open Prisma Studio (`cd server && npm run prisma:studio`, http://localhost:5555) and the **devices** table has a row for your phone, plus one in **refresh_tokens** and a `device.registered` row in **audit_logs**.
+
+#### If Home shows an orange banner
+
+The banner means silent registration failed. The debug console tells you why:
+
+| Banner | Console | Cause | Fix |
+|---|---|---|---|
+| "The server is taking too long" | `✕ connectionTimeout` after ~15 s | The address doesn't exist from where the app runs — usually `10.0.2.2` on a **real phone** | Use the right `API_URL` for your device (A3), then stop and re-run the app |
+| "No internet connection" | `✕ connectionError` after ~20 ms | Nothing is listening at that address: the `adb reverse` rule is gone, or the server isn't running | `adb reverse tcp:3000 tcp:3000` (and `npm run dev` in `server/`), then tap **Retry** — no rebuild needed |
+
+Retry works once the network path is fixed; only a changed `API_URL` needs a re-run.
 
 ### A5. Check quality
 

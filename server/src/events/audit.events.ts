@@ -7,12 +7,18 @@ import { listen } from "./listen.js";
  * audited lives here, so adding or removing an audit entry never touches
  * business logic.
  */
-function audit(action: string, deviceId: string | null, meta: Record<string, unknown> = {}, entityId?: string) {
+function audit(
+  action: string,
+  deviceId: string | null,
+  meta: Record<string, unknown> = {},
+  entityId?: string,
+  entity = "device"
+) {
   const correlationId = getCorrelationId();
   return auditLogRepository.create({
     deviceId,
     action,
-    entity: "device",
+    entity,
     ...(entityId ? { entityId } : {}),
     meta: meta as never,
     ...(correlationId ? { correlationId } : {}),
@@ -38,4 +44,8 @@ listen("device:deleted", "audit", ({ deviceId }) => audit("device.deleted", null
 
 listen("token:reuse-detected", "audit", ({ deviceId, familyId }) =>
   audit("token.reuse_detected", deviceId, { familyId })
+);
+
+listen("scan:completed", "audit", ({ scanId, deviceId, kind, verdict, riskScore }) =>
+  audit("scan.completed", deviceId, { kind, verdict, riskScore }, scanId, "scan")
 );

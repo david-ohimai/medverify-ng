@@ -11,6 +11,8 @@ import { correlationId, requestLogger } from "./middleware/requestLogger.js";
 import { sanitizeInput } from "./middleware/sanitize.js";
 import { deviceRoutes } from "./routes/device.routes.js";
 import { healthRoutes } from "./routes/health.routes.js";
+import { registryRoutes } from "./routes/registry.routes.js";
+import { scanRoutes, verificationRoutes } from "./routes/verification.routes.js";
 import "./events/index.js";
 
 /**
@@ -81,6 +83,9 @@ export function createApp() {
 
   app.use(healthRoutes);
   app.use(`${API_PREFIX}/devices`, deviceRoutes);
+  app.use(`${API_PREFIX}/products`, registryRoutes);
+  app.use(`${API_PREFIX}/verify`, verificationRoutes);
+  app.use(`${API_PREFIX}/scans`, scanRoutes);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

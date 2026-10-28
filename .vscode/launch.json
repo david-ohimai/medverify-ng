@@ -7,6 +7,7 @@
       "request": "launch",
       "cwd": "mobile",
       "program": "lib/main.dart",
+      "preLaunchTask": "adb reverse API port",
       "args": ["--dart-define-from-file=env/dev.json"]
     },
     {
@@ -16,6 +17,7 @@
       "cwd": "mobile",
       "program": "lib/main.dart",
       "flutterMode": "profile",
+      "preLaunchTask": "adb reverse API port",
       "args": ["--dart-define-from-file=env/dev.json"]
     }
   ]

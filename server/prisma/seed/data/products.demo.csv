@@ -1,0 +1,8 @@
+# FICTIONAL demo rows for development and tests — NOT real NAFDAC registrations.
+# Real data goes in products.csv (see README.md in this folder). X9- numbers are reserved for demo use here.
+nafdac_no,brand_name,generic_name,strength,dosage_form,manufacturer,status,source
+X9-0001,Demoquine,Artemether/Lumefantrine,20 mg/120 mg,Tablet,MedVerify Demo Pharma (fictional),active,demo
+X9-0002,Demoxil,Amoxicillin,500 mg,Capsule,MedVerify Demo Pharma (fictional),active,demo
+X9-0003,Paramed Demo,Paracetamol,500 mg,Tablet,MedVerify Demo Pharma (fictional),active,demo
+X9-0004,Ciproxa Demo,Ciprofloxacin,500 mg,Tablet,MedVerify Demo Pharma (fictional),cancelled,demo
+X9-0005,Oralyte Demo,Oral rehydration salts,20.5 g sachet,Powder,MedVerify Demo Pharma (fictional),active,demo

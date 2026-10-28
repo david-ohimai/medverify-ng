@@ -1,8 +1,31 @@
 # MedVerify NG — MVP Build Plan
 
-> Audience: me (David), building the **Flutter app**, the **backend** and the **AI layer** solo in **2 weeks** (start Fri 23 Oct 2026, code freeze Thu 5 Nov 2026).
-> Goal: a working demo of the proposal in [README.md](README.md) that gets picked for the showcase. Every feature here either **makes the demo land** or **proves the engineering is real**. Anything else waits.
+> Audience: me (David), building MedVerify solo for the **AI Engineering Bootcamp Final Flagship Project** (Cohort 2).
+> Goal: a working backend + AI solution to the group PRD's problem that I can explain and defend on Demo Day. Every feature here either **proves the engineering is real** or **makes the demo land**. Anything else waits.
 > Hard constraint: **nothing that needs payment, a card on file or a subscription.** Every service below has a free tier that works without one (§11).
+
+## Scope — from the official Flagship Project brief (governs everything below)
+
+| The brief says | What it means for MedVerify |
+|---|---|
+| **Deadline: Thursday 5 November 2026** | Everything submitted by then. Plan in §7. |
+| Build a **functional backend and AI-powered solution** for the group PRD's problem; **no frontend or UI required** | The marks are for `server/`: APIs, data handling, business logic, the AI. The Flutter app is a **bonus** — it already looks great; extend it only when the backend for that feature is done and tested. |
+| Not production-ready — a **solid, working core** you can explain and defend | Depth over breadth. Every feature must be something I can whiteboard. |
+| **Individual** implementation of the group problem | My own code, decisions and docs. |
+| Deliverable 1: **GitHub repo** — complete code, clear README, setup/installation, dependencies, docs, **no exposed secrets** | Repo access for the tutor (it's private — add them as a collaborator). `.env` stays git-ignored; CI proves it builds. |
+| Deliverable 2: **Functions Overview Document** — problem, solution, features, how the backend works, how AI is used, tech, key decisions, challenges, future work, repo link | Written on 4 Nov from these docs. |
+| Deliverable 3: **Slide deck** based on that document — problem, solution, what I built, features, technical approach, AI, tech, challenges & lessons, future work, repo | Supports the talk; doesn't repeat the document. |
+| Postman demo is **optional** (can come after Demo Day) | Swagger at `/api-docs` covers API exploration; a Postman collection only if time allows. |
+| Demo Day judges **understanding and communication**, not just whether it works | The defense questions in [docs/server-setup.md](docs/server-setup.md) Part C, and a rehearsal on 4 Nov. |
+
+### Submission checklist (5 Nov)
+
+- [ ] Repo: README with problem, solution, architecture, setup — all commands work from a fresh clone
+- [ ] Repo: no secrets (`git grep` for keys before submitting), tutor has access
+- [ ] Repo: CI green on `main`
+- [ ] Functions Overview Document — every section from the brief, with the repo link
+- [ ] Slide deck — every topic from the brief, with the repo link
+- [ ] Every link opened from a logged-out browser / the tutor's view
 
 ---
 
@@ -355,8 +378,8 @@ All under `/api/v1`. `D` = device token (any role), `R` = regulator role.
 | GET | `/scans/:id` | D | Full scan: verdict, score, confidence, signals, extracted fields, reference image, differences |
 | GET | `/scans` | D | My history, paginated |
 | GET | `/scans/:id/speech?lang=yo` | D | Verdict text in that language (cached) |
-| POST | `/verify/manual` | D | `{ nafdacNo, productName?, batch?, expiry? }` → registry-only verdict |
-| GET | `/products/search?q=` | D | Registry search for the manual-check dropdown |
+| POST | `/verify/manual` | D | `{ nafdacNo, productName?, batchNo?, expiry? }` → registry-only verdict ✅ built |
+| GET | `/products/search?q=` | D | Registry search for the manual-check dropdown ✅ built |
 | POST | `/reports` | D | `{ scanId?, sellerName, area, price?, notes, photos[] }` → `{ reference }` |
 | GET | `/insights/home` | D | AI Insight lines + stat cards + attention items for Home |
 | GET | `/alerts/nearby?lat&lng` | D | Recalls and hotspots near the user (public view) |
@@ -586,28 +609,26 @@ Rules:
 
 ---
 
-## 7. Two-week plan
+## 7. Plan to the deadline (re-planned 28 Oct against the brief)
 
-Rule: **a vertical slice works end-to-end by day 5**, then it only gets better. Freeze features on day 12.
+Backend + AI first — that's what's assessed. Each day ends with tests passing, CI green, and the docs for that day's work updated. Freeze features on 3 Nov.
 
-| Day | Date | Backend / AI | Flutter |
-|---|---|---|---|
-| 1 | Fri 23 Oct | ✅ Server foundation (layers, config, logging, errors, security, Redis rate limits, events, metrics, Swagger, health), Prisma schema + first migration, device registration with rotating tokens, 37 tests. Docker Postgres + Redis per the DB guide; get Gemini + OpenRouter free keys | Project on Flutter 3.47 (FVM), core from Laba (network, failures, storage), theme tokens, Satoshi, router, `AppShimmer` + skeletons, silent registration |
-| 2 | Sat 24 Oct | Registry CSV + seed script; **photograph 8 packs; make 3 props** | Onboarding + device registration, AppScaffold, StatusChip, cards + their skeletons |
-| 3 | Sun 25 Oct | `LlmProvider` (Gemini) + `POST /scans`, Cloudinary, vision `read_label` with JSON schema, registry match | Scanner screen: camera + ML Kit live chips + auto-capture |
-| 4 | Mon 26 Oct | SSE events, batch checks, risk scorer v1 (+ unit tests) | Analysing screen (SSE + polling fallback, shimmering active step) |
-| 5 | Tue 27 Oct | `compare_pack` vision step, `GET /scans/:id` | **Verdict screen v1 → full slice works on a real phone** |
-| 6 | Wed 28 Oct | Eval set + `npm run eval`; tune prompts/weights; OpenRouter fallback adapter | Verdict polish: ring animation, signals, Compare tab, haptics |
-| 7 | Thu 29 Oct | Translation endpoint; Home insights endpoint | Listen + languages (test device voices); Home screen with real data |
-| 8 | Fri 30 Oct | Simulated scans generator; hotspot clustering; alert summaries; Socket.io | Hotspot map + live pulses + alert cards; regulator PIN |
-| 9 | Sat 31 Oct | **Agent loop + public tools** + RAG ingest (DocuChat) | Chat screen + `ToolCallChip` + ✨ FAB everywhere |
-| 10 | Sun 1 Nov | **Regulator tools** (`query_scans`, `get_hotspots`, …), read-only DB user, agent eval questions | "Ask the data" on the Map screen |
-| 11 | Mon 2 Nov | Reports, manual verify, product search; deploy (Render + Neon), rate limits, audit log, delete-my-data | Report (2-step), Manual check, History (+ Hive offline) |
-| 12 | Tue 3 Nov | **Feature freeze.** Re-run eval, fix misses | Settings; 360 dp + dark mode + shimmer/empty/error states on every screen |
-| 13 | Wed 4 Nov | Load test a few parallel scans; BullMQ only if everything else is done | Release APK; app icon + splash |
-| 14 | Thu 5 Nov | Demo rehearsal ×3 on venue-like Wi-Fi + phone hotspot; record backup video | Slides, README update, screenshots |
+| Date | Backend / AI (assessed) | Deliverables / bonus |
+|---|---|---|
+| Fri 23 Oct | ✅ Server foundation, device identity with rotating tokens, security, Redis limits, events, metrics, Swagger, Prisma + Docker, CI with real-DB smoke test | ✅ Flutter app shell with liquid glass (bonus) |
+| **Wed 28 Oct** | ✅ **Registry:** `products`, `batches`, `scans`; Zod-validated CSV import (`npm run seed`); fuzzy search (pg_trgm); `POST /verify/manual` — rule-based verdict with explainable signals, no AI; scan history; Redis cache-aside; 118 tests + real-DB smoke test. (`reference_images` moves to 30 Oct with the photos.) | Collect real registry rows from Greenbook / packs |
+| Thu 29 Oct | **AI layer:** `LlmProvider` (Gemini → OpenRouter fallback), retry + circuit breaker, structured JSON output, prompt versions + `ai_audit_logs` (model control plane). **Scan intake:** `POST /scans` (202), image validation + hash, BullMQ queue + worker, SSE progress | Gemini key |
+| Fri 30 Oct | **Scan pipeline:** vision `read_label` + `compare_pack`, risk scorer (pure, unit-tested, explainable signals), `GET /scans/:id`, history; start the golden eval set | Photograph packs + props |
+| Sat 31 Oct | **Hotspots:** PostGIS locations, simulated pilot scans, `ST_ClusterDBSCAN` as a repeatable BullMQ job, AI-written alert summaries; regulator endpoints | — |
+| Sun 1 Nov | **RAG + agent:** ingest NAFDAC/WHO guidance into pgvector; agent with read-only, Zod-validated tools (public + regulator), iteration/time limits, execution trace | — |
+| Mon 2 Nov | **HITL:** high-risk / low-confidence scans → pharmacist review queue (claim, decide, SLA escalation job). **Eval:** `npm run eval` — verdict accuracy, fakes called genuine, RAG precision, agent tool choice | — |
+| Tue 3 Nov | **Feature freeze.** Deploy (Render + Neon + Render Key Value), fix eval misses, README pass | Postman collection only if time |
+| Wed 4 Nov | Bug fixes only | **Functions Overview Document + slide deck**; rehearse the defense |
+| **Thu 5 Nov** | — | **Submit:** repo, document, slides — check every link |
 
-**Cut list if behind** (in this order): manual check → export CSV → `compare_periods` / `search_reports` tools → back-of-pack photo → local-language voice (keep text) → History offline. **Never cut:** scanner chips, streamed steps, verdict with reasons, live map, agent with at least `check_batch` + `query_scans`.
+**Bonus (Flutter), only once the matching backend is done:** manual-check screen → scan + verdict screens → hotspot map. The app is not required by the brief.
+
+**Cut list if behind** (in this order): Flutter screens → translation/voice → MCP server → AI alert summaries (keep the clusters) → HITL SLA escalation (keep the queue). **Never cut:** registry verify, scan pipeline with an explainable verdict, the eval numbers, the agent with tools, the document and slides.
 
 ---
 

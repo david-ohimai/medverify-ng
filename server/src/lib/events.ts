@@ -1,5 +1,5 @@
 import { EventEmitter } from "node:events";
-import type { DevicePlatform } from "../generated/prisma/enums.js";
+import type { DevicePlatform, ScanKind, Verdict } from "../generated/prisma/enums.js";
 
 /**
  * Every event the app emits, with its payload. Services emit; listeners in
@@ -15,6 +15,7 @@ export interface AppEvents {
   "device:preferences-updated": [{ deviceId: string; changes: Record<string, unknown> }];
   "token:refreshed": [{ deviceId: string }];
   "token:reuse-detected": [{ deviceId: string; familyId: string }];
+  "scan:completed": [{ scanId: string; deviceId: string; kind: ScanKind; verdict: Verdict; riskScore: number }];
 }
 
 export type AppEventName = keyof AppEvents;

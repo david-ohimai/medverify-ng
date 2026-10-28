@@ -1,0 +1,16 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      // A phone on USB reaches the laptop's API at localhost:3000 through this.
+      // adb forgets it whenever it restarts (e.g. on `flutter run`), so the
+      // "mobile (dev)" launch configs run it every time. Harmless for emulators.
+      "label": "adb reverse API port",
+      "type": "process",
+      "command": "${env:LOCALAPPDATA}\\Android\\Sdk\\platform-tools\\adb.exe",
+      "args": ["reverse", "tcp:3000", "tcp:3000"],
+      "presentation": { "reveal": "silent", "close": true },
+      "problemMatcher": []
+    }
+  ]
+}
