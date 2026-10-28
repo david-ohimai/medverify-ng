@@ -11,6 +11,22 @@ describe("parseCsv — products", () => {
     expect(rows[0]).toMatchObject({ nafdac_no: "A4-1234", strength: null, dosage_form: "Tablet", manufacturer: null });
   });
 
+  it("a blank status means the default, active", () => {
+    const { rows, errors } = parseCsv("p.csv", `${HEADER}
+A4-1234,Coartem,Generic,,,,,greenbook
+`, productRow);
+    expect(errors).toEqual([]);
+    expect(rows[0]?.status).toBe("active");
+  });
+
+  it("a # inside a value is data, not a comment", () => {
+    const { rows, errors } = parseCsv("p.csv", `${HEADER}
+A4-1234,Coartem,Generic,,,Lab #2 Ltd,active,greenbook
+`, productRow);
+    expect(errors).toEqual([]);
+    expect(rows[0]?.manufacturer).toBe("Lab #2 Ltd");
+  });
+
   it("reports every bad row with file and line, and ignores # comments", () => {
     const csv = [
       "# a comment line",
@@ -38,6 +54,14 @@ describe("parseCsv — batches", () => {
     expect(errors).toEqual([]);
     expect(rows[0]).toMatchObject({ batch_no: "LT2391", recalled: true, recall_note: "Failed test, see alert" });
     expect(rows[0]?.expiry_date?.toISOString().slice(0, 10)).toBe("2027-08-31");
+  });
+
+  it("keeps a # inside a recall note", () => {
+    const { rows, errors } = parseCsv("b.csv", `${header}
+A4-1234,B1,,2027-08,true,Recall #42 failed assay,nafdac_alert
+`, batchRow);
+    expect(errors).toEqual([]);
+    expect(rows[0]?.recall_note).toBe("Recall #42 failed assay");
   });
 
   it("rejects impossible dates", () => {

@@ -28,6 +28,7 @@ const PRODUCT = {
   dosageForm: "Tablet",
   manufacturer: "Demo",
   status: "active" as const,
+  source: "greenbook" as const,
 };
 
 beforeEach(() => {

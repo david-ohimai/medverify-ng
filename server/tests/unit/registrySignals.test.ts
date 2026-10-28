@@ -3,12 +3,12 @@ import { registrySignals, type RegistryCheckInput } from "../../src/services/ris
 import { assessRisk } from "../../src/services/risk/riskScorer.js";
 
 const TODAY = new Date("2026-10-28T00:00:00Z");
-const product = { nafdacNo: "X9-0001", brandName: "Demoquine", status: "active" as const };
+const product = { nafdacNo: "A4-1234", brandName: "Coartem", status: "active" as const, source: "greenbook" as const };
 const goodBatch = { batchNo: "DQ2401", expiryDate: new Date("2027-08-31T00:00:00Z"), recalled: false, recallNote: null };
 
 function check(overrides: Partial<RegistryCheckInput>) {
   const signals = registrySignals({
-    nafdacNo: "X9-0001",
+    nafdacNo: "A4-1234",
     product,
     nameSimilarity: null,
     batchNo: "DQ2401",
@@ -87,6 +87,12 @@ describe("registrySignals + assessRisk — the manual-check rules", () => {
   it("unknown batch → likely genuine but LOW confidence (our batch records are incomplete)", () => {
     const result = check({ batch: null, batchNo: "ZZ999" });
     expect(result.codes).toContain("BATCH_UNKNOWN");
+    expect(result).toMatchObject({ verdict: "likely_genuine", confidence: "low" });
+  });
+
+  it("a fictional demo record is labelled as such and never more than low confidence", () => {
+    const result = check({ product: { ...product, source: "demo" }, nameSimilarity: 0.9 });
+    expect(result.codes[1]).toBe("DEMO_RECORD");
     expect(result).toMatchObject({ verdict: "likely_genuine", confidence: "low" });
   });
 

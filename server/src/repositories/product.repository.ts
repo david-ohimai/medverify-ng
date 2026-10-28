@@ -10,6 +10,8 @@ export const productSelect = {
   dosageForm: true,
   manufacturer: true,
   status: true,
+  // Always returned, so a fictional demo row can never pass as real NAFDAC data.
+  source: true,
 } as const;
 
 export interface ProductSearchHit {
@@ -21,6 +23,7 @@ export interface ProductSearchHit {
   dosageForm: string | null;
   manufacturer: string | null;
   status: ProductStatus;
+  source: RegistrySource;
   score: number;
 }
 
@@ -34,6 +37,7 @@ function likeLiteral(value: string): string {
  * similarity() for whole strings, word_similarity() for a name inside a longer
  * one ("Coartem" inside "Coartem 80/480 Dispersible"). All raw SQL goes
  * through $queryRaw tagged templates, which Prisma parameterises.
+ * Bulk writes for the seed live in registryImport.repository.ts.
  */
 export const productRepository = {
   findByNafdacNo(nafdacNo: string) {
@@ -75,15 +79,17 @@ export const productRepository = {
   },
 
   /**
-   * Search by NAFDAC number prefix or (fuzzy) name. Number matches rank first,
-   * then by best trigram score.
+   * Search by (fuzzy) name, and by NAFDAC number prefix when the query looks
+   * like the start of one. Number matches rank first, then by trigram score.
+   * `numberPrefix` is null for plain words, so "nafdac" never matches every
+   * number as an empty prefix.
    */
-  search(query: string, numberPrefix: string, limit: number) {
+  search(query: string, numberPrefix: string | null, limit: number) {
     const contains = `%${likeLiteral(query)}%`;
-    const prefix = `${likeLiteral(numberPrefix)}%`;
+    const prefix = numberPrefix === null ? null : `${likeLiteral(numberPrefix)}%`;
     return prisma.$queryRaw<ProductSearchHit[]>`
       SELECT id, nafdac_no AS "nafdacNo", brand_name AS "brandName", generic_name AS "genericName",
-             strength, dosage_form AS "dosageForm", manufacturer, status,
+             strength, dosage_form AS "dosageForm", manufacturer, status, source,
              GREATEST(
                similarity(brand_name, ${query}),
                similarity(generic_name, ${query}),
@@ -91,29 +97,11 @@ export const productRepository = {
                word_similarity(${query}, generic_name)
              )::float8 AS score
       FROM products
-      WHERE nafdac_no LIKE ${prefix}
+      WHERE (${prefix}::text IS NOT NULL AND nafdac_no LIKE ${prefix}::text)
          OR brand_name % ${query} OR generic_name % ${query}
          OR ${query} <% brand_name OR ${query} <% generic_name
          OR brand_name ILIKE ${contains} OR generic_name ILIKE ${contains}
-      ORDER BY (nafdac_no LIKE ${prefix}) DESC, score DESC, brand_name ASC
+      ORDER BY (${prefix}::text IS NOT NULL AND nafdac_no LIKE ${prefix}::text) DESC, score DESC, brand_name ASC
       LIMIT ${limit}`;
-  },
-
-  upsert(data: {
-    nafdacNo: string;
-    brandName: string;
-    genericName: string;
-    strength: string | null;
-    dosageForm: string | null;
-    manufacturer: string | null;
-    status: ProductStatus;
-    source: RegistrySource;
-  }) {
-    return prisma.product.upsert({
-      where: { nafdacNo: data.nafdacNo },
-      create: data,
-      update: data,
-      select: { id: true, nafdacNo: true },
-    });
   },
 };

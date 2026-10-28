@@ -39,7 +39,11 @@ export const productRow = z.object({
   strength: optionalText(80),
   dosage_form: optionalText(60),
   manufacturer: optionalText(160),
-  status: z.enum(["active", "expired", "cancelled"]).default("active"),
+  // A blank cell arrives as "", not undefined — treat it as "use the default".
+  status: z.preprocess(
+    (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+    z.enum(["active", "expired", "cancelled"]).default("active")
+  ),
   source,
 });
 export type ProductRow = z.infer<typeof productRow>;
@@ -72,7 +76,10 @@ export function parseCsv<T>(fileName: string, text: string, schema: z.ZodType<T>
     bom: true,
     skip_empty_lines: true,
     trim: true,
+    // Whole lines starting with # are comments; a # inside a value ("Recall #42",
+    // "Lab #2 Ltd") is data, not the start of a comment.
     comment: "#",
+    comment_no_infix: true,
     info: true,
   }) as Array<{ record: Record<string, string>; info: { lines: number } }>;
 

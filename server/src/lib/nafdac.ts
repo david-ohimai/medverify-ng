@@ -14,8 +14,9 @@ const CANONICAL = /^[A-Z]?\d{1,2}[A-Z]?-\d{4,6}[A-Z]?$/;
 
 export function normalizeNafdacNo(raw: string): string {
   return raw
-    .replace(PREFIX, "")
+    // Dashes first, so "NAFDAC No – A4-1234" (en dash) loses its separator with the prefix.
     .replace(DASHES, "-")
+    .replace(PREFIX, "")
     .toUpperCase()
     .replace(/\s+/g, "")
     .replace(/-+/g, "-");

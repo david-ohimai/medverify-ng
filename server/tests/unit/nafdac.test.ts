@@ -14,6 +14,8 @@ describe("normalizeNafdacNo", () => {
     ["NAFDAC REG NO A4-1234", "A4-1234"],
     ["nafdac no. 04-5678", "04-5678"],
     ["A4--1234", "A4-1234"],
+    ["NAFDAC No – A4-1234", "A4-1234"], // en dash as the separator after the prefix
+    ["NAFDAC No — A4–1234", "A4-1234"],
   ])("%j → %s", (raw, expected) => {
     const normalized = normalizeNafdacNo(raw);
     expect(normalized).toBe(expected);
@@ -43,7 +45,7 @@ describe("parseExpiry", () => {
     expect(parseExpiry("2027-08-15")?.toISOString().slice(0, 10)).toBe("2027-08-15");
   });
 
-  it.each(["2027-13", "2027-00", "2027-02-30", "08/2027", "2027", "soon"])("rejects %j", (value) => {
+  it.each(["2027-13", "2027-00", "2027-02-30", "08/2027", "2027", "soon", "0027-08", "0099-01-01", "2200-01"])("rejects %j", (value) => {
     expect(parseExpiry(value)).toBeNull();
   });
 });

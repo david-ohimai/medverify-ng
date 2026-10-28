@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { nafdacNoField } from "./fields.js";
 
 export const productSearchSchema = z.object({
   query: z.object({
@@ -10,7 +11,8 @@ export type ProductSearchQuery = z.infer<typeof productSearchSchema>["query"];
 
 export const productParamsSchema = z.object({
   params: z.object({
-    nafdacNo: z.string().min(3).max(60),
+    // Same rule as everywhere else: a malformed number is a 422, never a lookup.
+    nafdacNo: nafdacNoField,
   }),
 });
 export type ProductParams = z.infer<typeof productParamsSchema>["params"];

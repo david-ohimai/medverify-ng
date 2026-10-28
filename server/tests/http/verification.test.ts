@@ -74,6 +74,21 @@ describe("GET /api/v1/products/search", () => {
   });
 });
 
+describe("GET /api/v1/products/:nafdacNo", () => {
+  it("validates the number like every other endpoint (422, no lookup)", async () => {
+    const res = await request(app).get("/api/v1/products/hello%20world").set("Authorization", auth);
+    expect(res.status).toBe(422);
+    expect(registryService.getProductWithBatches).not.toHaveBeenCalled();
+  });
+
+  it("passes the normalised number", async () => {
+    vi.mocked(registryService.getProductWithBatches).mockResolvedValue({} as never);
+    const res = await request(app).get("/api/v1/products/a4%20-%201234").set("Authorization", auth);
+    expect(res.status).toBe(200);
+    expect(registryService.getProductWithBatches).toHaveBeenCalledWith("A4-1234");
+  });
+});
+
 describe("scan history", () => {
   it("pages with defaults and returns pagination meta", async () => {
     vi.mocked(scanService.listForDevice).mockResolvedValue({

@@ -7,6 +7,7 @@ export interface RegistryProductFacts {
   nafdacNo: string;
   brandName: string;
   status: "active" | "expired" | "cancelled";
+  source: "greenbook" | "pack_label" | "nafdac_alert" | "demo";
 }
 
 export interface RegistryBatchFacts {
@@ -63,6 +64,16 @@ export function registrySignals(input: RegistryCheckInput): Signal[] {
       severity: "danger",
     });
     return signals;
+  }
+
+  if (product.source === "demo") {
+    signals.push({
+      code: "DEMO_RECORD",
+      label: "Demo record — fictional data, not a real NAFDAC registration",
+      weight: 0,
+      severity: "warning",
+      detail: "This result comes from MedVerify's made-up test data and says nothing about a real medicine.",
+    });
   }
 
   if (product.status !== "active") {

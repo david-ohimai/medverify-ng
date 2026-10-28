@@ -17,7 +17,9 @@ export type SignalCode =
   | "EXPIRED"
   | "EXPIRY_MISMATCH"
   // Limits of a typed-in check
-  | "PACK_NOT_SEEN";
+  | "PACK_NOT_SEEN"
+  // The matched record is fictional test data
+  | "DEMO_RECORD";
 
 export type SignalSeverity = "good" | "info" | "warning" | "danger";
 
@@ -74,7 +76,10 @@ export function assessRisk(signals: readonly Signal[]): RiskAssessment {
   else verdict = "likely_genuine";
 
   let confidence: Confidence;
-  if (verdict !== "likely_genuine" && signals.some((signal) => HARD_EVIDENCE.has(signal.code))) {
+  if (has("DEMO_RECORD")) {
+    // Fictional test data proves nothing about a real medicine.
+    confidence = "low";
+  } else if (verdict !== "likely_genuine" && signals.some((signal) => HARD_EVIDENCE.has(signal.code))) {
     confidence = "high";
   } else if (signals.some((signal) => UNCERTAINTY.has(signal.code))) {
     confidence = "low";

@@ -6,6 +6,13 @@ import { productRepository } from "../repositories/product.repository.js";
 export type RegistryProduct = NonNullable<Awaited<ReturnType<typeof productRepository.findByNafdacNo>>>;
 
 /**
+ * Something that could be the start of a NAFDAC number: begins with an
+ * optional letter then a digit ("A4", "A4-12", "04-5"). Plain words like
+ * "coartem" or "nafdac" are name searches only.
+ */
+const NUMBER_PREFIX = /^[A-Z]?\d[A-Z0-9-]*$/;
+
+/**
  * Read side of the NAFDAC registry. Lookups by number are cache-aside in
  * Redis (10 min; misses 60 s); re-seeding the registry clears the cache.
  */
@@ -24,18 +31,17 @@ export const registryService = {
     return product;
   },
 
-  /** A product and its known batches — for the product detail endpoint. */
-  async getProductWithBatches(rawNafdacNo: string) {
-    const product = await productRepository.findWithBatches(normalizeNafdacNo(rawNafdacNo));
+  /** A product and its known batches. `nafdacNo` is already normalised by the validator. */
+  async getProductWithBatches(nafdacNo: string) {
+    const product = await productRepository.findWithBatches(nafdacNo);
     if (!product) throw new NotFoundError("No product is registered under that NAFDAC number");
     return product;
   },
 
-  /**
-   * Search by number or name. Something that looks like the start of a NAFDAC
-   * number ("A4-12") is also matched as a number prefix.
-   */
+  /** Search by name, and by number prefix when the query looks like one. */
   search(query: string, limit: number) {
-    return productRepository.search(query, normalizeNafdacNo(query), limit);
+    const normalized = normalizeNafdacNo(query);
+    const numberPrefix = normalized.length >= 2 && NUMBER_PREFIX.test(normalized) ? normalized : null;
+    return productRepository.search(query, numberPrefix, limit);
   },
 };

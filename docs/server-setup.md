@@ -23,7 +23,7 @@ Shell: **Git Bash** unless noted. Working folder: `medverify-ng/server/`.
 | 6 | `npm run db:up` | Starts Postgres (port 5433) and Redis (6379) in Docker — needs Docker Desktop running ([database guide §1](database-setup.md#1-install-docker-desktop-once)) |
 | 7 | `npm run prisma:migrate` | Creates the tables |
 | 8 | `npm run prisma:generate` | Builds the typed Prisma client into `src/generated/prisma` |
-| 9 | `npm test` | 118 unit + HTTP tests; no database needed |
+| 9 | `npm test` | 137 unit + HTTP tests; no database needed |
 | 10 | `npm run typecheck` | Strict TypeScript check of `src/` and `tests/` |
 | 11 | `npm run dev` | API on http://localhost:3000, restarts on save |
 | 12 | Open http://localhost:3000/api-docs | Swagger UI — try every endpoint |
@@ -42,7 +42,7 @@ npm run smoke
 
 | Job | What it proves |
 |---|---|
-| Server · typecheck, test, build | `prisma validate`, strict typecheck, 118 tests, production build |
+| Server · typecheck, test, build | `prisma validate`, strict typecheck, 137 tests, production build |
 | Server · migrations + smoke test | Starts the real Docker Postgres + Redis, applies every migration with `migrate deploy`, checks the extensions, seeds the registry, boots the built server and runs `npm run smoke` (device security + registry search + every verdict) |
 | Mobile · format, analyze, test | `dart format` (120 columns), `flutter analyze --fatal-infos`, all tests |
 | Mobile · Android APK | Pull requests into `main` only: obfuscated arm64 release APK, downloadable from the run for 5 days |
@@ -255,7 +255,7 @@ npm run seed
 |---|---|---|
 | Schema | `prisma/schema.prisma` | `products` (unique NAFDAC no., GIN **trigram** indexes on brand and generic name), `batches` (unique per product, expiry, recall flag), `scans` (every check, its verdict and signals as JSONB; deleting a device keeps scans but drops the link) |
 | Normalisation | `lib/nafdac.ts`, `lib/dates.ts` | `"NAFDAC Reg. No: a4 – 1234"` → `A4-1234`; `2027-08` → 31 Aug 2027 (packs print months) |
-| Import | `prisma/seed.ts`, `prisma/seed/registry-import.ts`, `prisma/seed/data/` | Zod-validates every CSV row, reports `file:line field: problem`, writes **nothing** if any row is bad, upserts in one transaction, clears the registry cache. Idempotent. Demo rows are fictional (`X9-`, `source: demo`) |
+| Import | `prisma/seed.ts`, `prisma/seed/registry-import.ts`, `repositories/registryImport.repository.ts`, `prisma/seed/data/` | Zod-validates every CSV row, reports `file:line field: problem`, writes **nothing** if any row is bad. Then, in one transaction, bulk upserts (`INSERT … SELECT FROM unnest(…) ON CONFLICT`, 1,000 rows per statement) and **removes rows no longer in the CSVs**, so the database always matches them. Refuses to empty the registry. Clears the registry cache. Demo rows are fictional (`X9-`, `source: demo`) |
 | Rules | `services/risk/registrySignals.ts` | Registry facts → weighted, explained signals (pure function) |
 | Scorer | `services/risk/riskScorer.ts` | Signals → 0–100 score, verdict, confidence (pure function; reused by the photo pipeline) |
 | Lookup | `services/registry.service.ts`, `repositories/product.repository.ts` | Cache-aside product lookup (10 min, misses 60 s); trigram search and name similarity in parameterised `$queryRaw` |
@@ -274,6 +274,7 @@ The rules (weights add up, clamped 0–100; ≥30 suspicious, ≥65 high risk):
 | `BATCH_KNOWN` | −10 | Only when nothing else about the product or batch is wrong |
 | `BATCH_UNKNOWN` / `BATCH_NOT_GIVEN` | 0 | Lowers **confidence** (our batch records are incomplete) |
 | `PACK_NOT_SEEN` | 0 | Typed-in checks are at most **medium** confidence — fakes copy real numbers |
+| `DEMO_RECORD` | 0 | The match is fictional test data: says so, and confidence is always **low** |
 
 ### Step 11 — Observability
 
@@ -311,6 +312,7 @@ npm pkg set scripts.test="vitest run" scripts.test:watch="vitest"
 | `tests/unit/registrySignals.test.ts` | Every manual-check case: valid, unregistered, cloned number, cancelled, recalled, expired, expiry mismatch, unknown / missing batch |
 | `tests/unit/registry-import.test.ts` | CSV parsing, `file:line` errors, duplicates, orphan batches, the committed demo data is valid and fictional |
 | `tests/unit/verification.service.test.ts` | Lookups only when needed, scan saved, event emitted |
+| `tests/unit/registry.service.test.ts` | When a search query counts as a NAFDAC number prefix ("nafdac" never matches everything) |
 | `tests/http/verification.test.ts` | Auth, input normalisation, 422s, search limits, history paging, UUID params |
 
 ```bash
