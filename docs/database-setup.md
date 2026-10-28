@@ -141,18 +141,22 @@ exit
 
 ## 5. Create the tables with Prisma
 
-Two migrations are already in the repo:
+Three migrations are already in the repo:
 
 | Migration | What it does |
 |---|---|
 | `20261023120000_init` | Enables the `postgis`, `vector` and `pg_trgm` extensions; creates `devices`, `refresh_tokens`, `audit_logs` |
 | `20261023180000_token_version_and_revoke_reason` | Adds `devices.token_version` (instant token revocation) and `refresh_tokens.revoked_reason` |
+| `20261028081747_registry_and_scans` | Creates `products` (with GIN trigram indexes), `batches`, `scans` |
 
 ```bash
 npm run prisma:migrate      # = prisma migrate dev   → applies every pending migration
 npm run prisma:generate     # = prisma generate      → builds src/generated/prisma
 npm run prisma:status       # = prisma migrate status → "Database schema is up to date!"
+npm run seed                # load the registry CSVs → "Registry seeded: 5 products (5 demo), 5 batches"
 ```
+
+`npm run seed` reads `prisma/seed/data/*.csv` — fictional demo rows until you add real ones ([how](../server/prisma/seed/data/README.md)). It's safe to run again any time.
 
 Check the extensions really are there:
 
@@ -163,7 +167,7 @@ npm run db:psql
 SELECT extname, extversion FROM pg_extension ORDER BY extname;
 -- pg_trgm, plpgsql, postgis, vector
 SELECT '[1,2,3]'::vector <-> '[1,2,4]'::vector AS distance;   -- 1
-\dt                                                         -- the three tables + _prisma_migrations
+\dt                                                         -- devices, refresh_tokens, audit_logs, products, batches, scans, _prisma_migrations
 \q
 ```
 

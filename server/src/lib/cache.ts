@@ -33,11 +33,41 @@ export async function cacheDel(key: string): Promise<void> {
   }
 }
 
+/**
+ * Deletes every key matching a pattern, using SCAN (never KEYS, which blocks
+ * Redis while it walks every key). ioredis adds its keyPrefix to commands but
+ * NOT to SCAN patterns or the keys SCAN returns, so the prefix is added to the
+ * pattern here and stripped before DEL re-adds it.
+ */
+export async function cacheDelPattern(pattern: string): Promise<number> {
+  const prefix = redis.options.keyPrefix ?? "";
+  let cursor = "0";
+  let deleted = 0;
+  try {
+    do {
+      const [next, keys] = await redis.scan(cursor, "MATCH", `${prefix}${pattern}`, "COUNT", 200);
+      cursor = next;
+      if (keys.length > 0) {
+        deleted += await redis.del(...keys.map((key) => key.slice(prefix.length)));
+      }
+    } while (cursor !== "0");
+  } catch (err) {
+    logger.warn({ event: "cache:delete-pattern-failed", pattern, message: (err as Error).message }, "Cache pattern delete failed");
+  }
+  return deleted;
+}
+
 export const CACHE_TTL = {
   /** Short: role and token version must take effect quickly even if a delete is missed. */
   deviceAuthState: 60,
+  /** The registry only changes when it is re-seeded, which clears these keys. */
+  registryProduct: 10 * 60,
+  /** Unknown numbers are cached briefly so repeated probing doesn't hit the database. */
+  registryMiss: 60,
 } as const;
 
 export const cacheKeys = {
   deviceAuthState: (deviceId: string) => `device-auth:${deviceId}`,
+  registryProduct: (nafdacNo: string) => `registry:product:${nafdacNo}`,
+  registryAll: "registry:*",
 } as const;

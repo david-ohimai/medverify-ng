@@ -64,6 +64,33 @@ res=$(call -X POST "$API/devices/refresh" -H 'Content-Type: application/json' -d
 [ "$(status "$res")" = "401" ] && [ "$(body "$res" | json .code)" = "REFRESH_REUSED" ] || fail "reusing a rotated refresh token is detected" "$res"
 pass "reusing a rotated refresh token is detected"
 
+# ── Registry + manual verification (needs `npm run seed`; uses the fictional X9- demo rows) ──
+verify() { call -X POST "$API/verify/manual" -H "Authorization: Bearer $REG_ACCESS" -H 'Content-Type: application/json' -d "$1"; }
+
+res=$(call "$API/products/search?q=demoqine" -H "Authorization: Bearer $REG_ACCESS")
+[ "$(status "$res")" = "200" ] && [ "$(body "$res" | json .data.0.nafdacNo)" = "X9-0001" ] || fail "fuzzy search finds Demoquine from a typo" "$res"
+pass "fuzzy search finds Demoquine from a typo (pg_trgm)"
+
+res=$(verify '{"nafdacNo":"x9 - 0001","productName":"Demoquine","batchNo":"dq2401"}')
+[ "$(status "$res")" = "201" ] && [ "$(body "$res" | json .data.verdict)" = "likely_genuine" ] || fail "known batch, messy input → likely genuine" "$res"
+pass "known batch, messy input → likely genuine"
+
+res=$(verify '{"nafdacNo":"X9-0001","batchNo":"DQ2310"}')
+[ "$(body "$res" | json .data.verdict)" = "high_risk" ] || fail "recalled batch → high risk" "$res"
+pass "recalled batch → high risk"
+
+res=$(verify '{"nafdacNo":"X9-0001","productName":"Paramed Demo"}')
+[ "$(body "$res" | json .data.verdict)" = "suspicious" ] || fail "real number on the wrong product → suspicious" "$res"
+pass "real number on the wrong product → suspicious"
+
+res=$(verify '{"nafdacNo":"B7-9999"}')
+[ "$(body "$res" | json .data.verdict)" = "unregistered" ] || fail "unknown number → unregistered" "$res"
+pass "unknown number → unregistered"
+
+res=$(call "$API/scans?limit=2" -H "Authorization: Bearer $REG_ACCESS")
+[ "$(status "$res")" = "200" ] && [ "$(body "$res" | json .meta.total)" = "4" ] || fail "scan history lists this device's 4 checks" "$res"
+pass "scan history lists this device's 4 checks"
+
 res=$(call -X DELETE "$API/devices/me" -H "Authorization: Bearer $REG_ACCESS")
 # The reuse above revoked the whole chain but not the access token, which is still current.
 [ "$(status "$res")" = "200" ] || fail "delete my data" "$res"

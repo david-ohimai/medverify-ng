@@ -30,6 +30,13 @@ export const rateLimitedTotal = new Counter({
   registers: [metricsRegistry],
 });
 
+export const scansTotal = new Counter({
+  name: "scans_total",
+  help: "Completed verifications, by kind and verdict",
+  labelNames: ["kind", "verdict"] as const,
+  registers: [metricsRegistry],
+});
+
 export const securityEventsTotal = new Counter({
   name: "security_events_total",
   help: "Security-relevant events (failed PINs, refresh token reuse)",

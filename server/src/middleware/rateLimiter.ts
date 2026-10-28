@@ -91,6 +91,24 @@ export const apiLimiter = createLimiter({
   keyBy: "device",
 });
 
+/** Verifications: per device. Each one is a DB write, and probing numbers in bulk is abuse. */
+export const verifyLimiter = createLimiter({
+  name: "verify",
+  windowMs: 60 * 1000,
+  limit: { public: 20, regulator: 60 },
+  message: "Too many checks in a minute. Please slow down.",
+  keyBy: "device",
+});
+
+/** Registry search: per device. Generous for type-ahead, but stops scraping the registry. */
+export const searchLimiter = createLimiter({
+  name: "search",
+  windowMs: 60 * 1000,
+  limit: { public: 60, regulator: 120 },
+  message: "Too many searches in a minute. Please slow down.",
+  keyBy: "device",
+});
+
 /**
  * Regulator PIN — three stacked limits on WRONG guesses, because a new device
  * id costs an attacker nothing:

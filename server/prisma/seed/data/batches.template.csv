@@ -1,0 +1,3 @@
+# Copy to batches.csv. Every nafdac_no must exist in a products*.csv file.
+# Dates: YYYY-MM (as printed on packs) or YYYY-MM-DD. recalled: true | false.
+nafdac_no,batch_no,mfg_date,expiry_date,recalled,recall_note,source

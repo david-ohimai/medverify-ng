@@ -45,6 +45,42 @@ enum TokenRevokeReason {
   reuse_detected
 }
 
+/// NAFDAC registration status of a product.
+enum ProductStatus {
+  active
+  expired
+  cancelled
+}
+
+/// Where a registry row came from. `demo` rows are fictional placeholders
+/// for development and tests — never presented as real NAFDAC data.
+enum RegistrySource {
+  greenbook
+  pack_label
+  nafdac_alert
+  demo
+}
+
+enum ScanKind {
+  /// Typed-in NAFDAC number / batch: registry rules only, no AI.
+  manual
+  /// Pack photo: AI reads and compares the pack, then the same rules run.
+  photo
+}
+
+enum Verdict {
+  likely_genuine
+  suspicious
+  high_risk
+  unregistered
+}
+
+enum Confidence {
+  high
+  medium
+  low
+}
+
 /// One installed copy of the app. There are no user accounts: the device is the identity.
 model Device {
   id            String         @id @default(uuid()) @db.Uuid
@@ -62,6 +98,7 @@ model Device {
 
   refreshTokens RefreshToken[]
   auditLogs     AuditLog[]
+  scans         Scan[]
 
   @@map("devices")
 }
@@ -103,4 +140,78 @@ model AuditLog {
   @@index([deviceId])
   @@index([createdAt(sort: Desc)])
   @@map("audit_logs")
+}
+
+/// A registered medicine (one NAFDAC registration number).
+model Product {
+  id           String         @id @default(uuid()) @db.Uuid
+  /// Normalised: upper case, ASCII hyphen, no spaces — e.g. "A4-1234".
+  nafdacNo     String         @unique @map("nafdac_no") @db.VarChar(20)
+  brandName    String         @map("brand_name") @db.VarChar(120)
+  genericName  String         @map("generic_name") @db.VarChar(200)
+  strength     String?        @db.VarChar(80)
+  dosageForm   String?        @map("dosage_form") @db.VarChar(60)
+  manufacturer String?        @db.VarChar(160)
+  status       ProductStatus  @default(active)
+  source       RegistrySource
+  createdAt    DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  batches Batch[]
+  scans   Scan[]
+
+  // Fuzzy name search ("C0artem" still finds Coartem) with pg_trgm.
+  @@index([brandName(ops: raw("gin_trgm_ops"))], type: Gin, map: "products_brand_name_trgm_idx")
+  @@index([genericName(ops: raw("gin_trgm_ops"))], type: Gin, map: "products_generic_name_trgm_idx")
+  @@map("products")
+}
+
+/// A manufacturing batch of a product, as known to the registry (from packs,
+/// manufacturers or NAFDAC recall alerts). The registry will never know every
+/// batch, so an unknown batch lowers confidence rather than raising risk.
+model Batch {
+  id         String         @id @default(uuid()) @db.Uuid
+  productId  String         @map("product_id") @db.Uuid
+  /// Normalised: upper case, no spaces.
+  batchNo    String         @map("batch_no") @db.VarChar(40)
+  mfgDate    DateTime?      @map("mfg_date") @db.Date
+  expiryDate DateTime?      @map("expiry_date") @db.Date
+  recalled   Boolean        @default(false)
+  recallNote String?        @map("recall_note") @db.Text
+  source     RegistrySource
+  createdAt  DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, batchNo])
+  @@map("batches")
+}
+
+/// Every verification — typed in or photographed — with its verdict and the
+/// signals that explain it. Deleting a device keeps its scans for the
+/// hotspot map but removes the link to the device.
+model Scan {
+  id          String     @id @default(uuid()) @db.Uuid
+  deviceId    String?    @map("device_id") @db.Uuid
+  kind        ScanKind
+  /// What the user (or, later, the AI) entered/read, normalised.
+  nafdacNo    String?    @map("nafdac_no") @db.VarChar(20)
+  productName String?    @map("product_name") @db.VarChar(200)
+  batchNo     String?    @map("batch_no") @db.VarChar(40)
+  expiryDate  DateTime?  @map("expiry_date") @db.Date
+  productId   String?    @map("product_id") @db.Uuid
+  verdict     Verdict
+  /// 0 (no concerns) to 100 (highest risk).
+  riskScore   Int        @map("risk_score") @db.SmallInt
+  confidence  Confidence
+  /// The explainable reasons: [{ code, label, weight, detail }].
+  signals     Json       @default("[]")
+  createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  device  Device?  @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+  product Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([deviceId, createdAt(sort: Desc)])
+  @@index([nafdacNo, batchNo])
+  @@map("scans")
 }

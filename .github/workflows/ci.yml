@@ -110,6 +110,8 @@ jobs:
         run: |
           npx prisma migrate deploy
           npx prisma migrate status
+      - name: Seed the registry (validates every CSV row)
+        run: npm run seed
       - name: Check the extensions are installed
         run: |
           docker exec medverify-db psql -U medverify -d medverify -tAc \

@@ -1,0 +1,4 @@
+# Copy to products.csv and add one row per product. Delete these comment lines or keep them (# lines are ignored).
+# source: greenbook (from greenbook.nafdac.gov.ng) | pack_label (read off a genuine pack) | nafdac_alert
+# status: active | expired | cancelled  (as shown on the Greenbook)
+nafdac_no,brand_name,generic_name,strength,dosage_form,manufacturer,status,source
