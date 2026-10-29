@@ -1,3 +1,4 @@
+import { toScanLocation } from "../lib/areas.js";
 import { todayUtc } from "../lib/dates.js";
 import { appEvents } from "../lib/events.js";
 import { productRepository } from "../repositories/product.repository.js";
@@ -31,6 +32,8 @@ export interface VerificationResult {
   failure: { code: string; message: string } | null;
   input: { nafdacNo: string | null; productName: string | null; batchNo: string | null; expiry: string | null };
   product: ScanRecord["product"];
+  /** Nearest known area, if the app sent a location. Coordinates are never returned. */
+  areaName: string | null;
   checkedAt: Date;
   completedAt: Date | null;
   disclaimer: string;
@@ -72,6 +75,7 @@ export function toVerificationResult(scan: ScanRecord): VerificationResult {
       expiry: scan.expiryDate ? scan.expiryDate.toISOString().slice(0, 7) : null,
     },
     product: scan.product,
+    areaName: scan.areaName,
     checkedAt: scan.createdAt,
     completedAt: scan.completedAt,
     disclaimer: DISCLAIMER,
@@ -153,6 +157,7 @@ export const verificationService = {
       productId: check.productId,
       ...check.assessment,
       signals: check.signals as unknown as object[],
+      location: toScanLocation(input),
     });
 
     appEvents.emit("scan:completed", {

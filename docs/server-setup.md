@@ -25,7 +25,8 @@ Shell: **Git Bash** unless noted. Working folder: `medverify-ng/server/`.
 | 8 | `npm run prisma:migrate` | Creates the tables |
 | 9 | `npm run prisma:generate` | Builds the typed Prisma client into `src/generated/prisma` |
 | 9b | `npm run seed` | Loads the registry CSVs, the genuine-pack reference photos and the AI prompt versions |
-| 9c | `npm test` | 186 unit + HTTP tests; no database, Redis or AI key needed |
+| 9b+ | `npm run simulate` | Optional: ~1,400 simulated pilot scans with planted clusters, then clusters them — fills the hotspot map |
+| 9c | `npm test` | 207 unit + HTTP tests; no database, Redis or AI key needed |
 | 10 | `npm run typecheck` | Strict TypeScript check of `src/` and `tests/` |
 | 11 | `npm run dev` | API on http://localhost:3000, restarts on save |
 | 12 | Open http://localhost:3000/api-docs | Swagger UI — try every endpoint |
@@ -44,7 +45,7 @@ npm run smoke
 
 | Job | What it proves |
 |---|---|
-| Server · typecheck, test, build | `prisma validate`, strict typecheck, 186 tests, production build |
+| Server · typecheck, test, build | `prisma validate`, strict typecheck, 207 tests, production build |
 | Server · migrations + smoke test | Starts the real Docker Postgres + Redis, applies every migration with `migrate deploy`, checks the extensions, seeds the registry, boots the built server and runs `npm run smoke` (device security + registry search + every verdict) |
 | Mobile · format, analyze, test | `dart format` (120 columns), `flutter analyze --fatal-infos`, all tests |
 | Mobile · Android APK | Pull requests into `main` only: obfuscated arm64 release APK, downloadable from the run for 5 days |
@@ -248,6 +249,11 @@ Endpoints:
 | GET | `/api/v1/scans`, `/api/v1/scans/:id` | access token | This device's scan history (paginated) / one scan (with `status`: pending → processing → done / failed) |
 | POST | `/api/v1/scans` | access token | Pack photo (multipart field `image`) → **202** `{ scanId, eventsUrl, statusUrl }`; the AI reads it in the background |
 | GET | `/api/v1/scans/:id/events` | access token | **SSE**: `step` events as the pipeline runs, then `verdict` or `error` |
+| GET | `/api/v1/hotspots` | regulator | Active hotspots with their latest alert |
+| GET | `/api/v1/hotspots/alerts` | regulator | Alert cards, newest first (paginated) |
+| GET | `/api/v1/hotspots/stats?window=24h\|7d\|30d` | regulator | Map stat cards and top flagged products |
+| POST | `/api/v1/hotspots/refresh` | regulator | Re-cluster now (202) |
+| GET | `/api/v1/alerts/nearby?lat=&lng=&radiusKm=` | access token | Medium/high hotspots near the user |
 | GET | `/api/v1/ai/status` | regulator | Provider chain, circuit state, today's free quota, active prompt versions, 24 h usage |
 | GET / POST | `/api/v1/ai/prompts` | regulator | List prompt versions / add a new one (optionally activate) |
 | POST | `/api/v1/ai/prompts/:id/activate` | regulator | Switch (or roll back) a task's prompt — takes effect immediately |
@@ -402,6 +408,28 @@ Confidence is now: demo record → low; a hard fact behind a warning → high; a
 
 Every AI attempt also has a hard deadline (`LLM_TIMEOUT_MS`, 30 s): a hung free model is cut off and the fallback answers.
 
+### Step 10e — Hotspots: locations, clustering and AI alerts
+
+```bash
+npm run prisma:migrate -- --name hotspots
+npm run prisma:generate
+npm run seed               # adds the alert_summary prompt version
+npm run simulate           # ~1,400 simulated pilot scans + planted clusters, then clusters them
+npm run simulate -- --clear  # remove the simulated scans again
+```
+
+| Piece | File | What it does |
+|---|---|---|
+| Location | `lib/areas.ts`, `validators/fields.ts` | `lat`/`lng` are optional on `POST /verify/manual` and `POST /scans` (form fields), both or neither. **Rounded to 2 decimals (~1 km) before storing** and named after the nearest known market within 3 km. Coordinates are never returned to devices |
+| Schema | `scans.latitude/longitude/area_name/simulated`, `hotspots`, `hotspot_alerts` | A hotspot keeps its centre, radius, counts, severity, product/batch, area and simulated share; alerts keep the exact facts they were written from |
+| Clustering | `repositories/hotspot.repository.ts` `computeClusters` | **PostGIS `ST_ClusterDBSCAN`** (eps 2 km on EPSG:3857, min 3 scans) over the last 7 days of flagged scans (risk ≥ 30), then per cluster: centroid, radius (`ST_Distance` on geography), counts by reason, `MODE()` of number/batch/name, recall involvement, simulated share |
+| Rules | `services/hotspot/hotspotRules.ts` | Pure functions: severity (recall / ≥ 5 high-risk / ≥ 10 scans → high), matching a new cluster to the hotspot it continues (≤ 3 km, same number — DBSCAN renumbers every run), when it has grown enough for a new alert, the alert facts, and a template alert |
+| Service | `services/hotspot/hotspot.service.ts` | `refresh()`: cluster → continue / open / close hotspots → an alert for each new or grown one. The **`alert_summary`** AI task (light model) writes title, 2-sentence body and recommended action **from the facts only**; if no provider answers, the template does |
+| Jobs | `queues/hotspot.queue.ts`, `workers/hotspot.worker.ts` | BullMQ **job scheduler** every 15 min (`upsertJobScheduler`, idempotent across instances) + a **debounced** run 10 s after any flagged scan (fixed job id → a burst costs one run); concurrency 1 |
+| Simulation | `scripts/simulate-scans.ts` | Seeded, repeatable: background scans at 12 markets over 30 days, plus planted clusters — recalled batch at Idumota (high), unregistered number at Bridgehead Onitsha (high), number on the wrong product at Sabon Gari Kano (medium), expired stock at Aba 20–25 days ago (outside the window). Verdicts come from the real rules; every row is `simulated = true` and every hotspot built from them says `includesSimulatedData` |
+
+Try it (server running): register, elevate with the PIN, then `GET $API/hotspots`, `GET $API/hotspots/stats?window=30d`, `GET $API/hotspots/alerts`. As a public device: `GET "$API/alerts/nearby?lat=6.46&lng=3.39"`. Three flagged checks with a location close together (e.g. an unknown number with `"lat":9.07,"lng":7.47` three times) make a new hotspot within ~10 s.
+
 ### Step 11 — Observability
 
 ```bash
@@ -445,6 +473,8 @@ npm pkg set scripts.test="vitest run" scripts.test:watch="vitest"
 | `tests/unit/photoScan.test.ts` | AI reading → registry facts (normalised, unsure fields dropped); image validation: not an image → 415, too small → 422, resized and **EXIF stripped** |
 | `tests/unit/photoSignals.test.ts` | Visual match / mismatch weights and bands, different product, text anomalies, not compared, poor photo, `BATCH_KNOWN` dropped when the pack looks wrong, the new confidence rules |
 | `tests/unit/reference-import.test.ts` | Reference folder loading: resize + hash, file/folder naming errors, non-images, skipped demo folders |
+| `tests/unit/hotspotRules.test.ts` | Severity bands, cluster continuity (distance, number, claim order), when to re-alert, alert facts, template wording, location rounding and area naming, haversine |
+| `tests/http/hotspots.test.ts` | Regulator-only hotspot endpoints, stats windows, refresh 202, nearby validation, lat/lng both-or-neither, photo upload location rounded |
 | `tests/http/scans.test.ts` | Upload auth, 202 + Location, missing / wrong-field file, 413 over 8 MB, SSE 404 for another device, control plane regulator-only |
 
 ```bash
@@ -466,6 +496,7 @@ npm run typecheck
 | `prisma:generate` / `prisma:studio` / `prisma:reset` | Client / data browser (port 5555) / wipe tables and re-migrate |
 | `seed` | Load the registry CSVs (`-- --no-demo` to skip the fictional rows), sync the reference photos, and ensure every AI task has a stored prompt version |
 | `eval` | Golden eval set (`-- --fresh` for real AI calls) |
+| `simulate` | Replace the simulated pilot scans and re-cluster (`-- --clear` to remove them) |
 | `demo-images` | Redraw the fictional demo packs |
 | `smoke` | End-to-end checks against a running server |
 
@@ -516,4 +547,9 @@ correlationId → requestLogger → helmet → cors → express.json → sanitiz
 | How do you know it works? | `npm run eval`: a golden set of packs with known answers; the headline metric is fakes passed as genuine (must be 0) — `eval/results/latest.md` |
 | Can the AI's opinion of the pack override the registry? | No. A recall, expiry or unregistered number decides on its own; looks only add or remove weight, and a warning built only on looks is never high confidence |
 | What if there's no photo of the genuine pack? | The scan still completes on the registry facts, with `PACK_NOT_COMPARED` capping a clean result at medium confidence |
+| How do you find hotspots? | PostGIS `ST_ClusterDBSCAN` — density-based, so no fixed number of clusters and lone scans are ignored (`repositories/hotspot.repository.ts`) |
+| DBSCAN renumbers clusters every run — how is a hotspot the same hotspot tomorrow? | It's matched to the stored hotspot within 3 km about the same NAFDAC number (`hotspotRules.ts` `matchClusters`) |
+| Doesn't location tracking hurt privacy? | Optional, rounded to ~1 km before storing, never returned to devices; regulators see cluster centres, not scans |
+| Is the map real data? | Simulated pilot data is flagged on every row and every hotspot (`includesSimulatedData`); it's there to demonstrate the pipeline |
+| Can the AI make up an alert? | It only sees the cluster's facts (stored with the alert), is told to say "suspected", and a template takes over if it's unavailable |
 | How do you protect the free quota? | Per-device scan limits, a daily budget per provider in Redis, and a cache keyed by photo hash + prompt version |

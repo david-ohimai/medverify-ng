@@ -49,6 +49,14 @@ export const packCompareSchema = z.object({
 });
 export type PackCompare = z.infer<typeof packCompareSchema>;
 
+/** The alert card regulators read for a hotspot (task: alert_summary). */
+export const alertSummarySchema = z.object({
+  title: z.string().min(5).max(110),
+  body: z.string().min(20).max(560),
+  recommended_action: z.string().min(10).max(280),
+});
+export type AlertSummary = z.infer<typeof alertSummarySchema>;
+
 export interface TaskDefinition<T> {
   schema: z.ZodType<T>;
   tier: ModelTier;
@@ -107,6 +115,27 @@ export const AI_TASKS = {
       ].join("\n"),
     },
   } satisfies TaskDefinition<PackCompare>,
+
+  alert_summary: {
+    schema: alertSummarySchema,
+    tier: "light",
+    maxOutputTokens: 1024,
+    defaultPrompt: {
+      version: 1,
+      notes: "Initial hotspot alert prompt.",
+      system: [
+        "You write short alert cards for drug regulators (NAFDAC officers) in Nigeria about clusters of suspicious medicine scans.",
+        "You are given the facts of one cluster as JSON. Use ONLY those facts — no outside knowledge, no guesses about who is selling.",
+        "- title: under 90 characters; name the product (and batch if given) and the area.",
+        "- registered_product is what the NAFDAC number is registered to; name_on_packs is what the scanned packs said. If registered_product is null, the number is not registered: name the packs by name_on_packs. If the two differ, the number was printed on the wrong product — say so.",
+        "- body: at most 2 sentences: what was seen, how many scans, over what period, and the strongest reason for concern (recalled batch, unregistered number, number on the wrong product, expired, visual differences).",
+        "- recommended_action: one concrete step for an inspector (e.g. inspect named market stalls selling that batch, issue a public alert, collect samples for testing).",
+        "- These are signals from a verification app, not confirmed counterfeits: say 'suspected' or 'flagged', never 'confirmed'.",
+        "- If simulated_share is above 0, end the body with '(includes simulated pilot data)'.",
+        "- Plain English, no markdown, no emojis.",
+      ].join("\n"),
+    },
+  } satisfies TaskDefinition<AlertSummary>,
 } as const;
 
 export type AiTaskName = keyof typeof AI_TASKS;

@@ -141,7 +141,7 @@ exit
 
 ## 5. Create the tables with Prisma
 
-Five migrations are already in the repo:
+Six migrations are already in the repo:
 
 | Migration | What it does |
 |---|---|
@@ -150,6 +150,7 @@ Five migrations are already in the repo:
 | `20261028081747_registry_and_scans` | Creates `products` (with GIN trigram indexes), `batches`, `scans` |
 | `20261029040705_ai_layer_and_photo_scans` | Photo scans: `scans.status` (pending → processing → done / failed), `image_hash`, `extracted`, `failure_code`, `llm_provider`, `completed_at`; verdict/score/confidence nullable until done. Creates `prompt_versions` and `ai_audit_logs` (the model control plane) |
 | `20261029065908_reference_images` | Creates `reference_images` (genuine-pack photos the AI compares scans with, stored as bytes) |
+| `20261029111153_hotspots` | Scan location (`latitude`, `longitude` rounded to ~1 km, `area_name`), `simulated` flag, index on `(created_at, risk_score)`; creates `hotspots` and `hotspot_alerts` |
 
 ```bash
 npm run prisma:migrate      # = prisma migrate dev   → applies every pending migration
@@ -169,7 +170,7 @@ npm run db:psql
 SELECT extname, extversion FROM pg_extension ORDER BY extname;
 -- pg_trgm, plpgsql, postgis, vector
 SELECT '[1,2,3]'::vector <-> '[1,2,4]'::vector AS distance;   -- 1
-\dt                                                         -- devices, refresh_tokens, audit_logs, products, batches, scans, prompt_versions, ai_audit_logs, reference_images, _prisma_migrations
+\dt                                                         -- devices, refresh_tokens, audit_logs, products, batches, scans, prompt_versions, ai_audit_logs, reference_images, hotspots, hotspot_alerts, _prisma_migrations
 \q
 ```
 
@@ -297,6 +298,8 @@ SELECT kind, status, verdict, failure_code, llm_provider, created_at FROM scans 
 SELECT task, provider, model, prompt_version, success, error_code, fallback_used, input_tokens, output_tokens, latency_ms
   FROM ai_audit_logs ORDER BY created_at DESC LIMIT 10;
 SELECT task, version, is_active, created_at FROM prompt_versions ORDER BY task, version;
+SELECT area_name, severity, scan_count, nafdac_no, batch_no, simulated_share, active FROM hotspots ORDER BY severity DESC;
+SELECT severity, generated_by, title FROM hotspot_alerts ORDER BY created_at DESC LIMIT 10;
 ```
 
 ### Redis (rate-limit counters)

@@ -5,7 +5,7 @@ import { authenticate } from "../middleware/authenticate.js";
 import { apiLimiter, scanDailyLimiter, scanUploadLimiter, verifyLimiter } from "../middleware/rateLimiter.js";
 import { uploadImage } from "../middleware/upload.js";
 import { validate } from "../middleware/validate.js";
-import { listScansSchema, scanParamsSchema } from "../validators/scan.validator.js";
+import { listScansSchema, scanParamsSchema, scanUploadSchema } from "../validators/scan.validator.js";
 import { manualVerificationSchema } from "../validators/verification.validator.js";
 
 export const verificationRoutes = Router();
@@ -37,6 +37,8 @@ scanRoutes.use(authenticate, apiLimiter);
  *               productName: { type: string, example: "Coartem", description: "Name on the pack — catches a real number on the wrong product" }
  *               batchNo: { type: string, example: "LT2391" }
  *               expiry: { type: string, example: "2027-08", description: "YYYY-MM as printed, or YYYY-MM-DD" }
+ *               lat: { type: number, example: 6.4553, description: "Optional, with lng. Rounded to ~1 km before storing" }
+ *               lng: { type: number, example: 3.3881 }
  *     responses:
  *       201: { description: Verdict with explainable signals }
  *       422: { description: Not a valid NAFDAC number / bad expiry }
@@ -91,6 +93,8 @@ scanRoutes.get("/", validate(listScansSchema), verificationController.listScans)
  *             required: [image]
  *             properties:
  *               image: { type: string, format: binary, description: "Photo of the side showing the NAFDAC number" }
+ *               lat: { type: number, example: 6.4553, description: "Optional, with lng. Rounded to ~1 km before storing; feeds the hotspot map" }
+ *               lng: { type: number, example: 3.3881 }
  *     responses:
  *       202: { description: "Accepted: { scanId, status: pending, eventsUrl, statusUrl }" }
  *       413: { description: Photo larger than 8 MB }
@@ -99,7 +103,7 @@ scanRoutes.get("/", validate(listScansSchema), verificationController.listScans)
  *       429: { description: Scan limit reached, or today's free AI quota is used up (AI_QUOTA_EXHAUSTED) }
  *       503: { description: No AI provider available (AI_UNAVAILABLE) }
  */
-scanRoutes.post("/", scanUploadLimiter, scanDailyLimiter, uploadImage, photoScanController.submit);
+scanRoutes.post("/", scanUploadLimiter, scanDailyLimiter, uploadImage, validate(scanUploadSchema), photoScanController.submit);
 
 /**
  * @openapi

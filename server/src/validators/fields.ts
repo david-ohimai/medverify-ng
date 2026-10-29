@@ -20,6 +20,20 @@ export const batchNoField = z
   .transform(normalizeBatchNo)
   .refine((value) => value.length >= 2 && value.length <= 40, "Batch number must be 2-40 characters");
 
+/**
+ * Optional scan location. Both or neither; numbers or numeric strings
+ * (multipart form fields arrive as strings). Rounded to ~1 km later.
+ */
+export const locationFields = {
+  lat: z.coerce.number().min(-90).max(90).optional(),
+  lng: z.coerce.number().min(-180).max(180).optional(),
+};
+
+export function bothOrNeither(value: { lat?: number | undefined; lng?: number | undefined }): boolean {
+  return (value.lat === undefined) === (value.lng === undefined);
+}
+export const bothOrNeitherMessage = { message: "Send lat and lng together, or neither", path: ["lat"] };
+
 /** "YYYY-MM" as printed on packs, or a full "YYYY-MM-DD". */
 export const expiryField = z.string().transform((value, ctx) => {
   const date = parseExpiry(value.trim());

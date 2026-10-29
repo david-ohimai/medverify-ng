@@ -1,5 +1,6 @@
 import type { Prisma } from "../generated/prisma/client.js";
 import type { Confidence, ScanKind, Verdict } from "../generated/prisma/enums.js";
+import type { ScanLocation } from "../lib/areas.js";
 import { prisma } from "../lib/prisma.js";
 import { productSelect } from "./product.repository.js";
 
@@ -16,6 +17,7 @@ const scanSelect = {
   confidence: true,
   signals: true,
   failureCode: true,
+  areaName: true,
   createdAt: true,
   completedAt: true,
   product: { select: productSelect },
@@ -37,13 +39,13 @@ export interface ScanOutcome {
 
 export const scanRepository = {
   /** A manual check: verdict known at once. */
-  create(data: ScanOutcome & { deviceId: string; kind: ScanKind }) {
-    return prisma.scan.create({ data: { ...data, completedAt: new Date() }, select: scanSelect });
+  create({ location, ...data }: ScanOutcome & { deviceId: string; kind: ScanKind; location: ScanLocation | null }) {
+    return prisma.scan.create({ data: { ...data, ...location, completedAt: new Date() }, select: scanSelect });
   },
 
   /** A photo scan, accepted and waiting for the worker. */
-  createPending(data: { deviceId: string; imageHash: string }) {
-    return prisma.scan.create({ data: { ...data, kind: "photo", status: "pending" }, select: scanSelect });
+  createPending({ location, ...data }: { deviceId: string; imageHash: string; location: ScanLocation | null }) {
+    return prisma.scan.create({ data: { ...data, ...location, kind: "photo", status: "pending" }, select: scanSelect });
   },
 
   /** What the worker needs; any device. */
@@ -79,6 +81,15 @@ export const scanRepository = {
       data: { status: "failed", failureCode, completedAt: new Date(), ...(extracted ? { extracted } : {}) },
     });
     return count === 1;
+  },
+
+  /** Simulated pilot data: replaced as a whole by `npm run simulate`. */
+  async replaceSimulated(rows: Prisma.ScanCreateManyInput[]): Promise<{ removed: number; added: number }> {
+    return prisma.$transaction(async (tx) => {
+      const { count: removed } = await tx.scan.deleteMany({ where: { simulated: true } });
+      const { count: added } = await tx.scan.createMany({ data: rows.map((row) => ({ ...row, simulated: true })) });
+      return { removed, added };
+    });
   },
 
   /** A device only ever sees its own scans. */

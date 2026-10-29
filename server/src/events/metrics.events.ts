@@ -1,4 +1,11 @@
-import { aiCallDurationSeconds, aiCallsTotal, aiTokensTotal, scanJobsTotal, scansTotal } from "../lib/metrics.js";
+import {
+  aiCallDurationSeconds,
+  aiCallsTotal,
+  aiTokensTotal,
+  hotspotAlertsTotal,
+  scanJobsTotal,
+  scansTotal,
+} from "../lib/metrics.js";
 import { listen } from "./listen.js";
 
 /** Business metrics for /metrics, fed by events so services don't import prom-client. */
@@ -9,6 +16,10 @@ listen("scan:completed", "metrics", ({ kind, verdict }) => {
 
 listen("scan:failed", "metrics", () => {
   scanJobsTotal.inc({ outcome: "failed" });
+});
+
+listen("hotspot:alert-created", "metrics", ({ severity, generatedBy }) => {
+  hotspotAlertsTotal.inc({ severity, generated_by: generatedBy });
 });
 
 listen("ai:called", "metrics", ({ provider, task, success, errorCode, fallbackUsed, latencyMs, inputTokens, outputTokens }) => {

@@ -31,6 +31,7 @@
     "seed": "tsx prisma/seed.ts",
     "smoke": "bash scripts/smoke-test.sh",
     "eval": "tsx scripts/eval.ts",
+    "simulate": "tsx scripts/simulate-scans.ts",
     "demo-images": "tsx scripts/generate-demo-images.ts"
   },
   "dependencies": {
