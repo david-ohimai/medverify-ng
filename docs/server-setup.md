@@ -27,7 +27,7 @@ Shell: **Git Bash** unless noted. Working folder: `medverify-ng/server/`.
 | 9b | `npm run seed` | Loads the registry CSVs, the genuine-pack reference photos and the AI prompt versions |
 | 9b++ | `npm run kb:ingest` | Embeds the official WHO / NAFDAC documents in `kb/documents/` for the assistant (needs the Gemini key; ~1 minute) |
 | 9b+ | `npm run simulate` | Optional: ~1,400 simulated pilot scans with planted clusters, then clusters them — fills the hotspot map |
-| 9c | `npm test` | 247 unit + HTTP tests; no database, Redis or AI key needed |
+| 9c | `npm test` | 264 unit + HTTP tests; no database, Redis or AI key needed |
 | 10 | `npm run typecheck` | Strict TypeScript check of `src/` and `tests/` |
 | 11 | `npm run dev` | API on http://localhost:3000, restarts on save |
 | 12 | Open http://localhost:3000/api-docs | Swagger UI — try every endpoint |
@@ -46,7 +46,7 @@ npm run smoke
 
 | Job | What it proves |
 |---|---|
-| Server · typecheck, test, build | `prisma validate`, strict typecheck, 247 tests, production build |
+| Server · typecheck, test, build | `prisma validate`, strict typecheck, 264 tests, production build |
 | Server · migrations + smoke test | Starts the real Docker Postgres + Redis, applies every migration with `migrate deploy`, checks the extensions, seeds the registry, boots the built server and runs `npm run smoke` (device security + registry search + every verdict) |
 | Mobile · format, analyze, test | `dart format` (120 columns), `flutter analyze --fatal-infos`, all tests |
 | Mobile · Android APK | Pull requests into `main` only: obfuscated arm64 release APK, downloadable from the run for 5 days |
@@ -258,6 +258,10 @@ Endpoints:
 | POST | `/api/v1/assistant/messages` | access token | Ask the assistant — **SSE**: `conversation`, `tool_start`/`tool_end`, `answer`, `citations`, `done` |
 | GET | `/api/v1/assistant/tools` | access token | Tools available to this role |
 | GET | `/api/v1/assistant/conversations/:id` | access token | Transcript with the full tool trace |
+| GET | `/api/v1/reviews?status=` | regulator | Human review queue (escalated, then priority, then deadline) |
+| GET | `/api/v1/reviews/stats` | regulator | Queue health and reviewer agreement rate |
+| GET | `/api/v1/reviews/:id`, `/:id/image` | regulator | Everything the AI read and every signal / the pack photo (kept only while open) |
+| POST | `/api/v1/reviews/:id/claim`, `/:id/decision` | regulator | Claim for an hour (409 if taken) / agree, disagree with a verdict, or inconclusive |
 | GET | `/api/v1/ai/status` | regulator | Provider chain, circuit state, today's free quota, active prompt versions, 24 h usage |
 | GET / POST | `/api/v1/ai/prompts` | regulator | List prompt versions / add a new one (optionally activate) |
 | POST | `/api/v1/ai/prompts/:id/activate` | regulator | Switch (or roll back) a task's prompt — takes effect immediately |
@@ -465,6 +469,39 @@ During testing the model wrote a NAFDAC phone number in the wrong format. The pr
 
 Try it: `POST $API/assistant/messages` with `{"message":"Is Postinor 2 batch T36184B fake?"}` (and `curl -N` to watch the stream). It calls `check_batch`, which finds nothing, then `search_guidance`, which finds NAFDAC Public Alert 027/2025, and it answers with the citation.
 
+### Step 10g — Human in the loop (review queue) and the evaluation report
+
+```bash
+npm run prisma:migrate -- --name scan_reviews
+npm run prisma:generate
+npm run eval:rag           # retrieval: right official document in the top 3?
+npm run eval:report        # docs/eval-results.md from every eval + live review agreement
+```
+
+**Which scans a person checks** (`services/review/reviewRules.ts`, pure and tested). Only photo scans are queued, because a reviewer needs the pack to look at:
+
+| Priority | When | SLA |
+|---|---|---|
+| P1 | The verdict says don't take it (high risk / unregistered) | 4 h |
+| P2 | Suspicious | 24 h |
+| P3 | "Likely genuine", but the photo raised a doubt (poor image, odd spelling, visual differences) — where a fake could slip through | 48 h |
+
+| Piece | File | What it does |
+|---|---|---|
+| Queue | `scan_reviews`, `repositories/review.repository.ts` | Filled automatically when a photo scan finishes (`photoScan.service.ts`), with its reasons and deadline. Listed escalated first, then by priority, then by deadline |
+| Photo retention | same | The pack photo is kept **only while a review is open**: deleted when the review is decided, after at most 7 days, or when the user deletes their data. A scan that isn't queued keeps no photo at all |
+| Claim | `claim()` | **Atomic** (one `UPDATE … WHERE` open / mine / lapsed), so two reviewers can't hold the same review; a claim lapses after an hour |
+| Decide | `decide()` | Only the reviewer who holds the claim can decide: **agree**, **disagree** (with the correct verdict) or **inconclusive**, plus a note for the user. The audit row records the AI's verdict next to the reviewer's |
+| User sees it | `verification.service.ts` | `GET /scans/:id` returns `review` ({ status, decision, verdict, note, message }); when the reviewer disagrees, their verdict becomes the scan's `verdict` and headline |
+| SLA job | `workers/review.worker.ts` | BullMQ job scheduler every 5 minutes: escalate overdue reviews (level + 1, new deadline at half the SLA), release lapsed claims, delete photos past 7 days |
+| Agreement | `GET /reviews/stats` | Open / urgent / overdue counts, and **how often reviewers agree with the system** — a live accuracy signal, also in the eval report |
+
+**Evaluation, all in one place.** `npm run eval:report` writes [docs/eval-results.md](eval-results.md) from:
+- the photo pipeline: 8/8, 0 of 5 fakes passed as genuine;
+- retrieval (`eval/rag-cases.json`): hit@1 15/16, recall@3 16/16, MRR 0.96, and both off-topic questions returned nothing;
+- the assistant: 10/10;
+- live review agreement, once at least 5 decisions exist.
+
 ### Step 11 — Observability
 
 ```bash
@@ -513,6 +550,8 @@ npm pkg set scripts.test="vitest run" scripts.test:watch="vitest"
 | `tests/unit/knowledge.test.ts` | Verified-source allowlist (look-alike hosts, HTTP, ports, credentials), **every committed document is verified**, front matter, chunking, keyword query, rank fusion |
 | `tests/unit/assistant.test.ts` | Role-gated tools, invalid arguments never run, device taken from the token, citation numbering, the agent loop (tool round → answer, max rounds, 404, AI outage, injection logging), citation parsing |
 | `tests/http/assistant.test.ts` | SSE event stream, 404 before streaming, question validation, auth, tools per role, transcripts scoped to the device |
+| `tests/unit/review.test.ts` | Which scans are queued and at what priority, SLA and escalation deadlines, final verdict, enqueue with photo, 409 / 404 on claims, decision validation, the accountability event, the SLA job |
+| `tests/http/reviews.test.ts` | Regulator-only queue and photos, filters, uncached photo, claim / decide as the token's reviewer, decision validation |
 | `tests/http/scans.test.ts` | Upload auth, 202 + Location, missing / wrong-field file, 413 over 8 MB, SSE 404 for another device, control plane regulator-only |
 
 ```bash
@@ -537,6 +576,8 @@ npm run typecheck
 | `simulate` | Replace the simulated pilot scans and re-cluster (`-- --clear` to remove them) |
 | `kb:fetch` / `kb:ingest` | Download the official documents / chunk and embed them (`-- --force` to re-embed) |
 | `eval:agent` | Agent eval: tool choice, citations, exact details → `eval/results/agent-latest.md` |
+| `eval:rag` | Retrieval eval → `eval/results/rag-latest.md` |
+| `eval:report` | Combine every eval + live review agreement → `docs/eval-results.md` |
 | `demo-images` | Redraw the fictional demo packs |
 | `smoke` | End-to-end checks against a running server |
 
@@ -583,7 +624,7 @@ correlationId → requestLogger → helmet → cors → express.json → sanitiz
 | What happens when Gemini is down or rate-limited? | Retry (Retry-After) → circuit breaker → OpenRouter fallback → clear 503/429; every attempt is in `ai_audit_logs` |
 | How do you stop the model hallucinating a NAFDAC number? | Prompt says "null rather than guess"; JSON validated by Zod; fields under 60 % confidence are ignored; the number must match the NAFDAC format; and the **registry**, not the model, decides the verdict |
 | How do you change a prompt safely? | New row in `prompt_versions`, activate it; roll back by activating the old one. Every AI call records its prompt version |
-| What about privacy? | Photos are re-encoded (GPS/EXIF gone), kept in Redis ≤ 30 min, never stored; audit rows hold a hash, not the image |
+| What about privacy? | Photos are re-encoded (GPS/EXIF gone) and kept in Redis ≤ 30 min; only a scan queued for human review keeps its photo, until the decision (≤ 7 days); audit rows hold a hash, not the image |
 | How do you know it works? | `npm run eval`: a golden set of packs with known answers; the headline metric is fakes passed as genuine (must be 0) — `eval/results/latest.md` |
 | Can the AI's opinion of the pack override the registry? | No. A recall, expiry or unregistered number decides on its own; looks only add or remove weight, and a warning built only on looks is never high confidence |
 | What if there's no photo of the genuine pack? | The scan still completes on the registry facts, with `PACK_NOT_COMPARED` capping a clean result at medium confidence |
@@ -596,4 +637,7 @@ correlationId → requestLogger → helmet → cors → express.json → sanitiz
 | How do you stop it making things up? | Facts only from tools; guidance answers cite [n] from retrieved passages; off-topic passages are filtered by a measured similarity threshold; "no official guidance" when nothing matches; numbers copied exactly; `npm run eval:agent` checks it |
 | Can the model run arbitrary queries? | No — it picks from fixed tools whose arguments are Zod-validated and which call read-only services. The role in the token decides which tools exist |
 | Why hybrid search? | Embeddings catch meaning ("scratch code" → MAS); keywords catch exact codes (batch T36184B); RRF merges them without calibrating scores |
+| Where is the human in the loop? | Scans that say "don't take it", are suspicious, or look doubtful go to a review queue with SLAs and escalation; the reviewer's verdict reaches the user; agreement is measured (`services/review/`) |
+| Didn't you say photos are never stored? | They aren't, except for a scan a human must review: then only until the decision, at most 7 days, and never after "delete my data" |
+| How do you measure the system? | `docs/eval-results.md`: photo pipeline, retrieval, assistant, and live reviewer agreement |
 | How do you protect the free quota? | Per-device scan limits, a daily budget per provider in Redis, and a cache keyed by photo hash + prompt version |

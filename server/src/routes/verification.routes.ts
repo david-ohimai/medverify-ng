@@ -81,7 +81,8 @@ scanRoutes.get("/", validate(listScansSchema), verificationController.listScans)
  *       Returns **202** at once with a scanId. The photo is validated by decoding it (JPEG, PNG,
  *       WebP or HEIC; at least 480 px on the short side; max 8 MB), re-encoded without metadata,
  *       and queued. Follow `eventsUrl` (SSE) for live progress, or poll `statusUrl`.
- *       The photo is never stored: it is deleted once the worker has read it.
+ *       The photo is deleted once the worker has read it — unless the scan is queued for human review,
+ *       which keeps it only until the decision (at most 7 days).
  *       Limits: 10 per minute and 60 per day per device.
  *     security: [{ bearerAuth: [] }]
  *     requestBody:

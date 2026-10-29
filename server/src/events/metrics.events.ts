@@ -5,6 +5,7 @@ import {
   assistantAnswersTotal,
   assistantToolCallsTotal,
   hotspotAlertsTotal,
+  reviewsTotal,
   scanJobsTotal,
   scansTotal,
 } from "../lib/metrics.js";
@@ -22,6 +23,18 @@ listen("scan:failed", "metrics", () => {
 
 listen("hotspot:alert-created", "metrics", ({ severity, generatedBy }) => {
   hotspotAlertsTotal.inc({ severity, generated_by: generatedBy });
+});
+
+listen("review:queued", "metrics", ({ priority }) => {
+  reviewsTotal.inc({ event: "queued", detail: `p${priority}` });
+});
+
+listen("review:decided", "metrics", ({ decision }) => {
+  reviewsTotal.inc({ event: "decided", detail: decision });
+});
+
+listen("review:escalated", "metrics", ({ level }) => {
+  reviewsTotal.inc({ event: "escalated", detail: `level${Math.min(level, 3)}` });
 });
 
 listen("assistant:answered", "metrics", ({ rounds, provider }) => {

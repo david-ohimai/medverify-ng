@@ -87,6 +87,13 @@ export const assistantToolCallsTotal = new Counter({
   registers: [metricsRegistry],
 });
 
+export const reviewsTotal = new Counter({
+  name: "scan_reviews_total",
+  help: "Human review queue events: queued (by priority), decided (by decision), escalated",
+  labelNames: ["event", "detail"] as const,
+  registers: [metricsRegistry],
+});
+
 export const securityEventsTotal = new Counter({
   name: "security_events_total",
   help: "Security-relevant events (failed PINs, refresh token reuse)",

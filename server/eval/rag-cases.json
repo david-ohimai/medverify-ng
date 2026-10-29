@@ -1,0 +1,23 @@
+{
+  "$comment": "Retrieval eval for the knowledge base: for each question, which official document(s) hold the answer. `expect: []` means the question is off-topic and nothing should be returned. `npm run eval:rag`.",
+  "cases": [
+    { "question": "How do I report a suspected fake medicine to NAFDAC?", "expect": ["nafdac-alert-027-2025", "nafdac-alert-028-2025", "nafdac-alert-37-2025", "nafdac-alert-031-2024", "nafdac-alert-07-2024", "nafdac-alert-042-2026", "nafdac-alert-08-2025", "nafdac-curbing-sf"] },
+    { "question": "Is Postinor 2 batch T36184B counterfeit?", "expect": ["nafdac-alert-027-2025"] },
+    { "question": "Fake NAFDAC number 02-3457 on artemether lumefantrine 80/480", "expect": ["nafdac-alert-042-2026"] },
+    { "question": "Counterfeit Aflotin tablets batch", "expect": ["nafdac-alert-08-2025"] },
+    { "question": "Is multi-dose artemether lumefantrine dry powder suspension still registered?", "expect": ["nafdac-alert-09-2026"] },
+    { "question": "Falsified oxytocin injection alert", "expect": ["nafdac-alert-028-2025"] },
+    { "question": "Betaclox substandard and falsified", "expect": ["nafdac-alert-37-2025"] },
+    { "question": "Suspected falsified chloroquine tablets", "expect": ["nafdac-alert-07-2024"] },
+    { "question": "How does the scratch-and-text PIN verification work?", "expect": ["nafdac-mas"] },
+    { "question": "Which short codes do MAS providers like Sproxil use?", "expect": ["nafdac-mas"] },
+    { "question": "What technologies does NAFDAC use to detect fake drugs, like Truscan or Minilab?", "expect": ["nafdac-curbing-sf"] },
+    { "question": "Where can I find the official list of NAFDAC-approved medicines?", "expect": ["nafdac-greenbook"] },
+    { "question": "What is the difference between substandard and falsified medical products?", "expect": ["who-sf-fact-sheet", "who-sf-scope-scale-harm"] },
+    { "question": "What proportion of medicines in low- and middle-income countries are substandard or falsified?", "expect": ["who-sf-fact-sheet", "who-sf-scope-scale-harm"] },
+    { "question": "What is the WHO Global Surveillance and Monitoring System?", "expect": ["who-sf-activities", "who-sf-fact-sheet", "who-sf-scope-scale-harm"] },
+    { "question": "Is it risky to buy medicines online?", "expect": ["who-sf-fact-sheet", "who-sf-scope-scale-harm", "nafdac-curbing-sf"] },
+    { "question": "Best jollof rice recipe", "expect": [] },
+    { "question": "Who won the football match yesterday?", "expect": [] }
+  ]
+}

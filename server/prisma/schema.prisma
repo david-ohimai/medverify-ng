@@ -251,7 +251,7 @@ model Scan {
   confidence  Confidence?
   /// The explainable reasons: [{ code, label, weight, detail }].
   signals     Json        @default("[]")
-  /// SHA-256 of the uploaded photo. The photo itself is never stored.
+  /// SHA-256 of the uploaded photo. The photo itself isn't kept, unless the scan is queued for human review (scan_reviews).
   imageHash   String?     @map("image_hash") @db.Char(64)
   /// Everything the AI read from the label, with per-field confidence.
   extracted   Json?
@@ -273,6 +273,7 @@ model Scan {
   device      Device?      @relation(fields: [deviceId], references: [id], onDelete: SetNull)
   product     Product?     @relation(fields: [productId], references: [id], onDelete: SetNull)
   aiAuditLogs AiAuditLog[]
+  review      ScanReview?
 
   @@index([deviceId, createdAt(sort: Desc)])
   @@index([nafdacNo, batchNo])
@@ -367,12 +368,12 @@ model KbDocument {
 /// base is a few hundred chunks, so search is an exact scan — an HNSW index
 /// only pays off at tens of thousands of rows.
 model KbChunk {
-  id         String                     @id @default(uuid()) @db.Uuid
-  documentId String                     @map("document_id") @db.VarChar(80)
+  id         String                      @id @default(uuid()) @db.Uuid
+  documentId String                      @map("document_id") @db.VarChar(80)
   position   Int
   /// Nearest heading above the passage.
-  section    String?                    @db.VarChar(300)
-  content    String                     @db.Text
+  section    String?                     @db.VarChar(300)
+  content    String                      @db.Text
   /// gemini-embedding-001, 768 dimensions, normalised.
   embedding  Unsupported("vector(768)")?
 
@@ -385,11 +386,11 @@ model KbChunk {
 /// One chat with the assistant. Its role is fixed when it starts, so a
 /// conversation can't gain regulator tools later.
 model AssistantConversation {
-  id        String   @id @default(uuid()) @db.Uuid
-  deviceId  String?  @map("device_id") @db.Uuid
+  id        String     @id @default(uuid()) @db.Uuid
+  deviceId  String?    @map("device_id") @db.Uuid
   role      DeviceRole
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  createdAt DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   device   Device?            @relation(fields: [deviceId], references: [id], onDelete: Cascade)
   messages AssistantMessage[]
@@ -422,6 +423,57 @@ model AssistantMessage {
 
   @@index([conversationId, createdAt])
   @@map("assistant_messages")
+}
+
+enum ReviewStatus {
+  /// Waiting for a reviewer.
+  open
+  /// A reviewer is working on it (the claim lapses after an hour).
+  claimed
+  decided
+}
+
+enum ReviewDecision {
+  /// The reviewer agrees with the AI-assisted verdict.
+  agree
+  /// The reviewer sets a different verdict.
+  disagree
+  /// The photo can't settle it (blurry, wrong side): ask the user to rescan or visit a pharmacist.
+  inconclusive
+}
+
+/// Human in the loop: a photo scan the system isn't sure about, or that
+/// says "don't take it", waits here for a pharmacist / NAFDAC reviewer
+/// (regulator mode). The photo is kept only while the review is open —
+/// at most 7 days — then deleted.
+model ScanReview {
+  id              String          @id @default(uuid()) @db.Uuid
+  scanId          String          @unique @map("scan_id") @db.Uuid
+  status          ReviewStatus    @default(open)
+  /// 1 = urgent (says don't take it), 2 = suspicious, 3 = "genuine" but unsure.
+  priority        Int             @db.SmallInt
+  /// Why it was queued, e.g. ["HIGH_RISK"], ["LOW_CONFIDENCE_GENUINE", "POOR_IMAGE"].
+  reasons         String[]
+  slaDeadline     DateTime        @map("sla_deadline") @db.Timestamptz(3)
+  /// How many times it has missed its deadline (each miss escalates it).
+  escalationLevel Int             @default(0) @map("escalation_level") @db.SmallInt
+  /// The pack photo (re-encoded JPEG), deleted when decided or after 7 days.
+  imageData       Bytes?          @map("image_data")
+  claimedBy       String?         @map("claimed_by") @db.Uuid
+  claimedAt       DateTime?       @map("claimed_at") @db.Timestamptz(3)
+  decision        ReviewDecision?
+  /// For "disagree": the verdict the reviewer sets.
+  reviewedVerdict Verdict?        @map("reviewed_verdict")
+  /// Shown to the user with their scan.
+  reviewerNote    String?         @map("reviewer_note") @db.VarChar(500)
+  decidedBy       String?         @map("decided_by") @db.Uuid
+  decidedAt       DateTime?       @map("decided_at") @db.Timestamptz(3)
+  createdAt       DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  scan Scan @relation(fields: [scanId], references: [id], onDelete: Cascade)
+
+  @@index([status, priority, slaDeadline])
+  @@map("scan_reviews")
 }
 
 /// Model control plane: every prompt the AI uses is a numbered version.

@@ -5,6 +5,7 @@ import { productRepository } from "../repositories/product.repository.js";
 import { scanRepository, type ScanRecord } from "../repositories/scan.repository.js";
 import type { ManualVerificationInput } from "../validators/verification.validator.js";
 import { registryService } from "./registry.service.js";
+import { finalVerdict } from "./review/reviewRules.js";
 import { registrySignals } from "./risk/registrySignals.js";
 import { adviceFor, assessRisk, DISCLAIMER, type RiskAssessment, type Signal } from "./risk/riskScorer.js";
 
@@ -30,6 +31,15 @@ export interface VerificationResult {
   advice: string;
   signals: Signal[];
   failure: { code: string; message: string } | null;
+  /** Human review: queued (open/claimed) or decided — the reviewer's verdict wins when they disagree. */
+  review: {
+    status: "open" | "claimed" | "decided";
+    decision: "agree" | "disagree" | "inconclusive" | null;
+    verdict: ScanRecord["verdict"];
+    note: string | null;
+    decidedAt: Date | null;
+    message: string;
+  } | null;
   input: { nafdacNo: string | null; productName: string | null; batchNo: string | null; expiry: string | null };
   product: ScanRecord["product"];
   /** Nearest known area, if the app sent a location. Coordinates are never returned. */
@@ -39,8 +49,29 @@ export interface VerificationResult {
   disclaimer: string;
 }
 
+const REVIEW_MESSAGES = {
+  pending: "A pharmacist will double-check this scan.",
+  agree: "A pharmacist reviewed this scan and agrees.",
+  disagree: "A pharmacist reviewed this scan and changed the verdict.",
+  inconclusive: "A pharmacist couldn't settle it from the photo. Show the pack to a pharmacist before taking it.",
+} as const;
+
+function reviewView(scan: ScanRecord): VerificationResult["review"] {
+  const review = scan.review;
+  if (!review) return null;
+  return {
+    status: review.status,
+    decision: review.decision,
+    verdict: finalVerdict(scan.verdict, review),
+    note: review.reviewerNote,
+    decidedAt: review.decidedAt,
+    message: review.decision ? REVIEW_MESSAGES[review.decision] : REVIEW_MESSAGES.pending,
+  };
+}
+
 function headlineFor(scan: ScanRecord, signals: Signal[]): { headline: string; advice: string } {
-  if (scan.status === "done" && scan.verdict) return adviceFor(scan.verdict, signals);
+  const verdict = finalVerdict(scan.verdict, scan.review);
+  if (scan.status === "done" && verdict) return adviceFor(verdict, verdict === scan.verdict ? signals : []);
   if (scan.status === "failed") {
     return {
       headline: "Couldn't check this photo",
@@ -58,12 +89,13 @@ export function toVerificationResult(scan: ScanRecord): VerificationResult {
     scanId: scan.id,
     kind: scan.kind,
     status: scan.status,
-    verdict: scan.verdict,
+    verdict: finalVerdict(scan.verdict, scan.review),
     riskScore: scan.riskScore,
     confidence: scan.confidence,
     headline,
     advice,
     signals,
+    review: reviewView(scan),
     failure:
       scan.status === "failed"
         ? { code: scan.failureCode ?? "INTERNAL_ERROR", message: advice }

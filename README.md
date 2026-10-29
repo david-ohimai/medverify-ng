@@ -8,7 +8,7 @@
 
 ### Now being built
 
-The proposal is being built as a working MVP — plan in [mvp.md](mvp.md).
+The proposal is being built as a working MVP — plan in [mvp.md](mvp.md), evaluation in [docs/eval-results.md](docs/eval-results.md).
 
 | Part | Stack | Guide |
 |---|---|---|

@@ -21,6 +21,7 @@ const scanSelect = {
   createdAt: true,
   completedAt: true,
   product: { select: productSelect },
+  review: { select: { status: true, decision: true, reviewedVerdict: true, reviewerNote: true, decidedAt: true } },
 } as const;
 
 export type ScanRecord = NonNullable<Awaited<ReturnType<typeof scanRepository.findForDevice>>>;

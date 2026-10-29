@@ -10,6 +10,7 @@ import { scanProgress } from "./lib/scanProgress.js";
 import { closeHotspotQueue } from "./queues/hotspot.queue.js";
 import { closeQueues } from "./queues/scan.queue.js";
 import { registerHotspotTrigger, startHotspotWorker } from "./workers/hotspot.worker.js";
+import { closeReviewQueue, startReviewWorker } from "./workers/review.worker.js";
 import { startScanWorker } from "./workers/scan.worker.js";
 
 let server: Server | undefined;
@@ -33,7 +34,7 @@ async function start(): Promise<void> {
 
   // Flagged manual checks happen here, so this process always asks for hotspot refreshes.
   registerHotspotTrigger();
-  if (config.SCAN_WORKER_ENABLED) workers = [startScanWorker(), await startHotspotWorker()];
+  if (config.SCAN_WORKER_ENABLED) workers = [startScanWorker(), await startHotspotWorker(), await startReviewWorker()];
 
   server = createApp().listen(config.PORT, () => {
     logger.info(
@@ -57,7 +58,7 @@ async function shutdown(signal: string): Promise<void> {
   });
   await Promise.allSettled(workers.map((worker) => worker.close()));
   llmService.shutdown();
-  await Promise.allSettled([closeQueues(), closeHotspotQueue(), scanProgress.close(), prisma.$disconnect(), redis.quit()]);
+  await Promise.allSettled([closeQueues(), closeHotspotQueue(), closeReviewQueue(), scanProgress.close(), prisma.$disconnect(), redis.quit()]);
   logger.info({ event: "server:stopped" }, "Shutdown complete");
   process.exit(0);
 }

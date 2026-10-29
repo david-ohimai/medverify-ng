@@ -6,6 +6,7 @@ import { appEvents } from "../lib/events.js";
 import { ForbiddenError, NotFoundError } from "../lib/errors.js";
 import { secureEquals, sha256 } from "../lib/hash.js";
 import { deviceRepository, type DeviceRecord } from "../repositories/device.repository.js";
+import { reviewRepository } from "../repositories/review.repository.js";
 import type {
   ElevateDeviceInput,
   RegisterDeviceInput,
@@ -152,6 +153,8 @@ export const deviceService = {
 
   /** "Delete my data" (NDPA 2023). Removes the device; its tokens stop working immediately. */
   async remove(deviceId: string): Promise<void> {
+    // Photos kept for human review leave with the user (the anonymised scans stay for the hotspot map).
+    await reviewRepository.deletePhotosForDevice(deviceId);
     await deviceRepository.delete(deviceId);
     await cacheDel(cacheKeys.deviceAuthState(deviceId));
     appEvents.emit("device:deleted", { deviceId });

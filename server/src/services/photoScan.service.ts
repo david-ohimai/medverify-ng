@@ -16,6 +16,7 @@ import { scanProgress, type ScanProgressEvent } from "../lib/scanProgress.js";
 import { getScanQueue, scanImageStore } from "../queues/scan.queue.js";
 import { referenceImageRepository } from "../repositories/referenceImage.repository.js";
 import { scanRepository } from "../repositories/scan.repository.js";
+import { reviewService } from "./review/review.service.js";
 import { combineSignals, photoSignals, type ComparisonOutcome } from "./risk/photoSignals.js";
 import { assessRisk, type RiskAssessment, type Signal } from "./risk/riskScorer.js";
 import { checkAgainstRegistry, SCAN_FAILURES, toVerificationResult } from "./verification.service.js";
@@ -339,7 +340,32 @@ export const photoScanService = {
         riskScore: analysis.assessment.riskScore,
       });
     }
-    await scanProgress.publish(scanId, { type: "verdict", scanId, result: toVerificationResult(done) });
+    // A human double-checks the scans that matter most; the photo goes with the review.
+    let queuedForReview = false;
+    try {
+      queuedForReview = await reviewService.enqueueIfNeeded({
+        id: scanId,
+        deviceId: scan.deviceId,
+        kind: "photo",
+        verdict: analysis.assessment.verdict,
+        confidence: analysis.assessment.confidence,
+        signals: analysis.signals,
+        createdAt: done.createdAt,
+        image: data,
+      });
+    } catch (err) {
+      logger.error({ event: "review:enqueue-failed", scanId, message: (err as Error).message }, "Could not queue the scan for review");
+    }
+
+    await scanProgress.publish(scanId, {
+      type: "verdict",
+      scanId,
+      result: toVerificationResult(
+        queuedForReview
+          ? { ...done, review: { status: "open", decision: null, reviewedVerdict: null, reviewerNote: null, decidedAt: null } }
+          : done
+      ),
+    });
     await scanImageStore.remove(scanId);
   },
 

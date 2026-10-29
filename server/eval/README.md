@@ -38,6 +38,14 @@ The current fixtures are **drawn**, fictional demo packs (`npm run demo-images`,
    `expect` takes `verdict` (accepted verdicts), `failure` (e.g. `NOT_A_MEDICINE_PACK`), `nafdacNo`, `batchNo`, `signals` (all required) and `anySignal` (at least one).
 5. `npm run seed && npm run eval -- --fresh`.
 
+## Retrieval eval
+
+`npm run eval:rag` asks the knowledge search the questions in `rag-cases.json` and checks that the official document holding the answer ranks first (hit@1) or in the top three (recall@3), and that off-topic questions return nothing. Results: `results/rag-latest.md`.
+
+## Everything in one page
+
+`npm run eval:report` combines the photo, retrieval and assistant results with live reviewer agreement into `docs/eval-results.md`.
+
 ## Agent eval
 
 `npm run eval:agent` asks the assistant the questions in `agent-cases.json` (public and regulator) and checks that it calls the right tools, cites official sources when it should, quotes exact details (e-mail addresses, batch numbers) and stays in scope. Results: `results/agent-latest.md`.

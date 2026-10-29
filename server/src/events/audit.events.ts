@@ -57,6 +57,21 @@ listen("scan:failed", "audit", ({ scanId, deviceId, failureCode }) =>
   audit("scan.failed", deviceId, { failureCode }, scanId, "scan")
 );
 
+listen("review:queued", "audit", ({ reviewId, scanId, priority, reasons }) =>
+  audit("review.queued", null, { scanId, priority, reasons }, reviewId, "scan_review")
+);
+
+listen("review:claimed", "audit", ({ reviewId, reviewerId }) => audit("review.claimed", reviewerId, {}, reviewId, "scan_review"));
+
+// Who decided what, against what the system said: the accountability trail for HITL.
+listen("review:decided", "audit", ({ reviewId, scanId, reviewerId, decision, aiVerdict, reviewedVerdict }) =>
+  audit("review.decided", reviewerId, { scanId, decision, aiVerdict, reviewedVerdict }, reviewId, "scan_review")
+);
+
+listen("review:escalated", "audit", ({ reviewId, scanId, priority, level }) =>
+  audit("review.escalated", null, { scanId, priority, level }, reviewId, "scan_review")
+);
+
 listen("assistant:answered", "audit", ({ conversationId, deviceId, rounds, tools, provider }) =>
   audit("assistant.answered", deviceId, { rounds, tools, provider }, conversationId, "conversation")
 );
