@@ -8,9 +8,12 @@ import '../../../../core/extensions/context_x.dart';
 import '../../../../core/router/app_routes.dart';
 import '../../../../core/theme/app_dimens.dart';
 import '../../../../shared/widgets/ai_insight_card.dart';
+import '../../../../shared/widgets/async_value_view.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/page_layout.dart';
 import '../../../../shared/widgets/quick_action_tile.dart';
+import '../../../scan/presentation/providers/scan_providers.dart';
+import '../../../scan/presentation/widgets/scan_tile.dart';
 import '../providers/home_providers.dart';
 import '../widgets/connection_banner.dart';
 
@@ -20,23 +23,25 @@ class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) => PageLayout(
-    title: ref.watch(greetingProvider),
-    subtitle: AppConstants.tagline,
-    slivers: const [
-      SliverToBoxAdapter(child: ConnectionBanner()),
-      SliverToBoxAdapter(child: _Insights()),
-      SliverToBoxAdapter(child: SectionHeader(title: 'Quick actions')),
-      SliverToBoxAdapter(child: _QuickActions()),
-      SliverToBoxAdapter(child: SectionHeader(title: 'Recent scans')),
-      SliverToBoxAdapter(
-        child: EmptyState(
-          icon: Iconsax.receipt_item,
-          title: 'Nothing scanned yet',
-          message: 'Your last few scans will appear here.',
+  Widget build(BuildContext context, WidgetRef ref) => RefreshIndicator(
+    onRefresh: () => ref.refresh(historyProvider.future),
+    child: PageLayout(
+      title: ref.watch(greetingProvider),
+      subtitle: AppConstants.tagline,
+      slivers: [
+        const SliverToBoxAdapter(child: ConnectionBanner()),
+        const SliverToBoxAdapter(child: _Insights()),
+        const SliverToBoxAdapter(child: SectionHeader(title: 'Quick actions')),
+        const SliverToBoxAdapter(child: _QuickActions()),
+        SliverToBoxAdapter(
+          child: SectionHeader(
+            title: 'Recent checks',
+            action: TextButton(onPressed: () => context.go(AppRoutes.history), child: const Text('See all')),
+          ),
         ),
-      ),
-    ],
+        const SliverToBoxAdapter(child: _RecentScans()),
+      ],
+    ),
   );
 }
 
@@ -66,25 +71,46 @@ class _QuickActions extends StatelessWidget {
             onTap: () => context.go(AppRoutes.scan),
           ),
           const SizedBox(width: AppSpacing.sm),
-          QuickActionTile(icon: Iconsax.keyboard, label: 'NAFDAC no.', tint: palette.info, onTap: null, badge: 'Soon'),
+          QuickActionTile(
+            icon: Iconsax.keyboard,
+            label: 'NAFDAC no.',
+            tint: palette.info,
+            onTap: () => context.push(AppRoutes.manualCheck),
+          ),
           const SizedBox(width: AppSpacing.sm),
           QuickActionTile(
             icon: Iconsax.magic_star,
             label: 'Ask MedVerify',
             tint: palette.aiGradient.first,
-            onTap: null,
-            badge: 'Soon',
+            onTap: () => context.push(AppRoutes.assistant),
           ),
           const SizedBox(width: AppSpacing.sm),
           QuickActionTile(
-            icon: Iconsax.flag,
-            label: 'Report a seller',
+            icon: Iconsax.notification,
+            label: 'Alerts near me',
             tint: palette.danger,
-            onTap: null,
-            badge: 'Soon',
+            onTap: () => context.go(AppRoutes.alerts),
           ),
         ],
       ),
     );
   }
+}
+
+class _RecentScans extends ConsumerWidget {
+  const _RecentScans();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) => AsyncValueView(
+    value: ref.watch(recentScansProvider),
+    loading: const ScanTileSkeleton(),
+    onRetry: () => ref.invalidate(historyProvider),
+    data: (scans) => scans.isEmpty
+        ? const EmptyState(
+            icon: Iconsax.receipt_item,
+            title: 'Nothing checked yet',
+            message: 'Your last few checks will appear here.',
+          )
+        : Column(children: [for (final scan in scans) ScanTile(scan: scan)]),
+  );
 }

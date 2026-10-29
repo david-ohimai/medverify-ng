@@ -1,6 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- Release builds talk to the API; the template only adds this in debug. -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Coarse only: the server rounds locations to ~1 km anyway, so precise
+         GPS would collect more than is ever used. Optional — asked on the
+         Alerts tab and before a scan, and the app works without it. -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
 
     <!-- allowBackup=false: tokens and the install id must never be copied to a
          cloud backup or restored onto another phone.
@@ -51,6 +55,11 @@
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
+        </intent>
+        <!-- Opening an official WHO / NAFDAC source cited by the assistant. -->
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="https"/>
         </intent>
     </queries>
 </manifest>

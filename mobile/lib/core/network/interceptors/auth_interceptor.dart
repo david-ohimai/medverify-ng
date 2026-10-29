@@ -68,6 +68,8 @@ class AuthInterceptor extends Interceptor {
     try {
       options.headers['Authorization'] = 'Bearer $newToken';
       options.extra[_retriedFlag] = true;
+      // A multipart body can only be sent once; replay a fresh copy.
+      if (options.data is FormData) options.data = (options.data as FormData).clone();
       final response = await _retryClient.fetch<Object?>(options);
       handler.resolve(response);
     } on DioException catch (retryError) {
@@ -77,7 +79,10 @@ class AuthInterceptor extends Interceptor {
     }
   }
 
-  bool _isTokenProblem(Object? body) => _tokenProblemCodes.contains(ApiEnvelope.tryParse(body)?.code);
+  /// A streamed response (SSE) hasn't been read, so its code is unknown; on
+  /// our authenticated routes a 401 always means the token, so recover.
+  bool _isTokenProblem(Object? body) =>
+      body is ResponseBody || _tokenProblemCodes.contains(ApiEnvelope.tryParse(body)?.code);
 
   String? _bearerOf(RequestOptions options) {
     final header = options.headers['Authorization'];
