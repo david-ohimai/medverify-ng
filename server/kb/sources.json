@@ -1,0 +1,89 @@
+{
+  "$comment": "The knowledge base the assistant answers from. ONLY official pages from the World Health Organization (who.int) and NAFDAC (nafdac.gov.ng) — the fetcher and the ingester both refuse any other host. `npm run kb:fetch` downloads each page into kb/documents/<id>.md (with its URL, retrieval date and a content hash); review the diff, then `npm run kb:ingest`.",
+  "sources": [
+    {
+      "id": "who-sf-fact-sheet",
+      "url": "https://www.who.int/news-room/fact-sheets/detail/substandard-and-falsified-medical-products",
+      "publisher": "World Health Organization",
+      "topic": "What substandard and falsified medicines are, their scale and harm, and WHO's response"
+    },
+    {
+      "id": "who-sf-scope-scale-harm",
+      "url": "https://www.who.int/news-room/questions-and-answers/item/substandard-and-falsified-medical-products-scope-scale-and-harm",
+      "publisher": "World Health Organization",
+      "topic": "Questions and answers: scope, scale and harm of substandard and falsified medical products"
+    },
+    {
+      "id": "who-sf-activities",
+      "url": "https://www.who.int/news-room/questions-and-answers/item/substandard-and-falsified-who-activities",
+      "publisher": "World Health Organization",
+      "topic": "Questions and answers: what WHO does about substandard and falsified medical products"
+    },
+    {
+      "id": "nafdac-curbing-sf",
+      "url": "https://nafdac.gov.ng/curbing-substandard-falsified-sfs-and-counterfeit-medicines/",
+      "publisher": "NAFDAC",
+      "topic": "How NAFDAC detects and curbs substandard, falsified and counterfeit medicines"
+    },
+    {
+      "id": "nafdac-mas",
+      "url": "https://nafdac.gov.ng/our-services/pharmacovigilance-post-market-surveillance/mobile-authentication-service-mas/",
+      "publisher": "NAFDAC",
+      "topic": "Mobile Authentication Service: scratch-and-text verification of medicines"
+    },
+    {
+      "id": "nafdac-greenbook",
+      "url": "https://nafdac.gov.ng/regulatory-resources/download-nafdac-greenbook/",
+      "publisher": "NAFDAC",
+      "topic": "The NAFDAC Greenbook / Approved Medicines app: the official list of registered medicines"
+    },
+    {
+      "id": "nafdac-alert-042-2026",
+      "url": "https://nafdac.gov.ng/public-alert-no-042-2026-alert-on-the-seizure-of-suspected-substandard-and-falsified-bppl-artemether-lumefantrine-80mg-480mg/",
+      "publisher": "NAFDAC",
+      "topic": "Public Alert 042/2026: suspected falsified BPPL Artemether/Lumefantrine 80/480 mg seized in Kano"
+    },
+    {
+      "id": "nafdac-alert-09-2026",
+      "url": "https://nafdac.gov.ng/public-alert-no-09-2026-public-reminder-of-nafdacs-regulatory-directive-on-the-discontinued-registration-of-multi-dose-artemether-lumefantrine-dry-powder-for-oral-suspension/",
+      "publisher": "NAFDAC",
+      "topic": "Public Alert 09/2026: discontinued registration of multi-dose artemether/lumefantrine dry powder for oral suspension"
+    },
+    {
+      "id": "nafdac-alert-08-2025",
+      "url": "https://nafdac.gov.ng/public-alert-no-08-2025-alert-on-the-presence-of-counterfeit-artemether-lumefantrine-tablets-circulating-under-brand-name-aflotin-20-120-in-nigeria/",
+      "publisher": "NAFDAC",
+      "topic": "Public Alert 08/2025: counterfeit Aflotin 20/120 (artemether/lumefantrine) tablets"
+    },
+    {
+      "id": "nafdac-alert-027-2025",
+      "url": "https://nafdac.gov.ng/public-alert-no-027-2025-alert-on-confirmed-counterfeit-postinor2-levonorgestrel-0-75mg-in-nigeria/",
+      "publisher": "NAFDAC",
+      "topic": "Public Alert 027/2025: confirmed counterfeit Postinor-2 (levonorgestrel 0.75 mg)"
+    },
+    {
+      "id": "nafdac-alert-028-2025",
+      "url": "https://nafdac.gov.ng/public-alert-no-028-2025-alert-on-unregistered-falsified-oxytocin-injection/",
+      "publisher": "NAFDAC",
+      "topic": "Public Alert 028/2025: unregistered, falsified oxytocin injection"
+    },
+    {
+      "id": "nafdac-alert-37-2025",
+      "url": "https://nafdac.gov.ng/public-alert-no-37-2025-alert-on-the-report-of-substandard-and-falsified-sf-betaclox-found-in-nigeria/",
+      "publisher": "NAFDAC",
+      "topic": "Public Alert 37/2025: substandard and falsified Betaclox found in Nigeria"
+    },
+    {
+      "id": "nafdac-alert-031-2024",
+      "url": "https://nafdac.gov.ng/public-alert-no-031-2024-illegal-sale-of-substandard-and-falsified-sf-colamar-artemether-lumefantrine-20-120mg-oral-suspension/",
+      "publisher": "NAFDAC",
+      "topic": "Public Alert 031/2024: substandard and falsified Colamar artemether/lumefantrine oral suspension"
+    },
+    {
+      "id": "nafdac-alert-07-2024",
+      "url": "https://nafdac.gov.ng/public-alert-no-07-2024-alert-on-suspected-falsified-chloroquine-tablets/",
+      "publisher": "NAFDAC",
+      "topic": "Public Alert 07/2024: suspected falsified chloroquine tablets"
+    }
+  ]
+}

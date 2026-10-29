@@ -35,6 +35,9 @@ function scripted(name: ProviderName, replies: Reply[]) {
       if (reply instanceof LlmError) throw reply;
       return { text: reply, model: `${name}-model`, usage: { inputTokens: 100, outputTokens: 20 } };
     },
+    chat: async () => {
+      throw new Error("not used in these tests");
+    },
   };
   return { provider, calls };
 }
@@ -122,6 +125,9 @@ describe("llmService.run", () => {
             reject(new LlmError("timed out", "gemini", "TIMEOUT", true))
           );
         }),
+      chat: async () => {
+        throw new Error("not used");
+      },
     };
     const openrouter = scripted("openrouter", [JSON.stringify(LABEL)]);
     const result = await service([hanging, openrouter.provider]).run("read_label", image, ctx);

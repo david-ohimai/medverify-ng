@@ -1,6 +1,7 @@
 import OpenAI, { APIConnectionTimeoutError, APIError, APIUserAbortError } from "openai";
+import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 import { config } from "../../lib/config.js";
-import { codeForStatus, isRetryableStatus, LlmError, type GenerateJsonRequest, type LlmProvider } from "../types.js";
+import { codeForStatus, isRetryableStatus, LlmError, type ChatRequest, type GenerateJsonRequest, type LlmProvider } from "../types.js";
 
 function retryAfterMs(headers: Headers | undefined): number | undefined {
   const value = headers?.get("retry-after");
@@ -94,6 +95,77 @@ export function createOpenRouterProvider(apiKey: string): LlmProvider {
         }
         return {
           text,
+          model: completion.model || model,
+          usage: {
+            inputTokens: completion.usage?.prompt_tokens ?? null,
+            outputTokens: completion.usage?.completion_tokens ?? null,
+          },
+        };
+      } catch (err) {
+        throw toLlmError(err);
+      }
+    },
+
+    async chat(request: ChatRequest) {
+      const messages: ChatCompletionMessageParam[] = [
+        { role: "system", content: request.system },
+        ...request.messages.map((message): ChatCompletionMessageParam => {
+          if (message.role === "user") return { role: "user", content: message.text };
+          if (message.role === "tool") return { role: "tool", tool_call_id: message.callId, content: JSON.stringify(message.result) };
+          return {
+            role: "assistant",
+            content: message.text,
+            ...(message.toolCalls.length > 0
+              ? {
+                  tool_calls: message.toolCalls.map((call) => ({
+                    id: call.id,
+                    type: "function" as const,
+                    function: { name: call.name, arguments: JSON.stringify(call.args) },
+                  })),
+                }
+              : {}),
+          };
+        }),
+      ];
+
+      try {
+        const completion = await client.chat.completions.create(
+          {
+            model,
+            temperature: 0.2,
+            max_tokens: request.maxOutputTokens,
+            messages,
+            ...(request.tools.length > 0
+              ? {
+                  tools: request.tools.map((tool) => ({
+                    type: "function" as const,
+                    function: { name: tool.name, description: tool.description, parameters: tool.parameters },
+                  })),
+                }
+              : {}),
+          },
+          request.signal ? { signal: request.signal } : undefined
+        );
+
+        const message = completion.choices[0]?.message;
+        const toolCalls = (message?.tool_calls ?? [])
+          .filter((call) => call.type === "function")
+          .map((call) => {
+            let args: Record<string, unknown> = {};
+            try {
+              args = JSON.parse(call.function.arguments || "{}") as Record<string, unknown>;
+            } catch {
+              // Malformed arguments are caught by the tool's own validation.
+            }
+            return { id: call.id, name: call.function.name, args };
+          });
+        const text = message?.content?.trim() || null;
+        if (!text && toolCalls.length === 0) {
+          throw new LlmError(`OpenRouter returned nothing (${completion.choices[0]?.finish_reason ?? "EMPTY"})`, "openrouter", "EMPTY_RESPONSE", false);
+        }
+        return {
+          text,
+          toolCalls,
           model: completion.model || model,
           usage: {
             inputTokens: completion.usage?.prompt_tokens ?? null,

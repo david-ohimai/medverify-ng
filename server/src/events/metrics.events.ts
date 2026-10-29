@@ -2,6 +2,8 @@ import {
   aiCallDurationSeconds,
   aiCallsTotal,
   aiTokensTotal,
+  assistantAnswersTotal,
+  assistantToolCallsTotal,
   hotspotAlertsTotal,
   scanJobsTotal,
   scansTotal,
@@ -20,6 +22,14 @@ listen("scan:failed", "metrics", () => {
 
 listen("hotspot:alert-created", "metrics", ({ severity, generatedBy }) => {
   hotspotAlertsTotal.inc({ severity, generated_by: generatedBy });
+});
+
+listen("assistant:answered", "metrics", ({ rounds, provider }) => {
+  assistantAnswersTotal.inc({ rounds: String(rounds), provider });
+});
+
+listen("assistant:tool-called", "metrics", ({ tool, ok }) => {
+  assistantToolCallsTotal.inc({ tool, ok: String(ok) });
 });
 
 listen("ai:called", "metrics", ({ provider, task, success, errorCode, fallbackUsed, latencyMs, inputTokens, outputTokens }) => {

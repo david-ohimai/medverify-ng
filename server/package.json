@@ -31,7 +31,10 @@
     "seed": "tsx prisma/seed.ts",
     "smoke": "bash scripts/smoke-test.sh",
     "eval": "tsx scripts/eval.ts",
+    "eval:agent": "tsx scripts/eval-agent.ts",
     "simulate": "tsx scripts/simulate-scans.ts",
+    "kb:fetch": "tsx scripts/kb-fetch.ts",
+    "kb:ingest": "tsx scripts/kb-ingest.ts",
     "demo-images": "tsx scripts/generate-demo-images.ts"
   },
   "dependencies": {
@@ -62,6 +65,7 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@mozilla/readability": "^0.6.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
@@ -72,10 +76,13 @@
     "@types/supertest": "^7.2.1",
     "@types/swagger-jsdoc": "^6.0.4",
     "@types/swagger-ui-express": "^4.1.8",
+    "@types/turndown": "^5.0.6",
+    "linkedom": "^0.18.14",
     "pino-pretty": "^13.2.0",
     "prisma": "7.10.1",
     "supertest": "^7.3.1",
     "tsx": "^4.23.15",
+    "turndown": "^7.2.4",
     "typescript": "^7.0.2",
     "vitest": "^5.0.5"
   }

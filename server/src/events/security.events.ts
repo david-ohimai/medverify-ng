@@ -9,6 +9,10 @@ listen("device:elevation-failed", "security", ({ deviceId }) => {
   logger.warn({ event: "security:pin-failed", deviceId }, "Wrong regulator PIN");
 });
 
+listen("assistant:injection-suspected", "security", () => {
+  securityEventsTotal.inc({ event: "prompt_injection_suspected" });
+});
+
 listen("token:reuse-detected", "security", ({ deviceId, familyId }) => {
   securityEventsTotal.inc({ event: "refresh_reuse" });
   logger.warn({ event: "security:refresh-reuse", deviceId, familyId }, "Refresh token reused — token chain revoked");

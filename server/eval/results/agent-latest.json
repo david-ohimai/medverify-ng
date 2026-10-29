@@ -1,0 +1,115 @@
+{
+  "ranAt": "2026-10-29T20:40:16.471Z",
+  "results": [
+    {
+      "id": "report-fake",
+      "passed": true,
+      "problems": [],
+      "called": [
+        "search_guidance"
+      ],
+      "citations": 2,
+      "ms": 3128,
+      "answer": "You can report suspected substandard or falsified medicines to NAFDAC using the following channels:\n\n* Report to your nearest NAFDAC office [1].\n* Call NAFDAC on **0800-1-NAFDAC (1800-1-623322)** [1] or **0800-162-3322** [2].\n* Send an email to **sf.alert@nafdac.gov.ng** [2].\n* Report side effects or adverse events via the Med-safety mobile application (available on Android and iOS) or by email to **pharmacovigilance@nafdac.gov.ng** [2]."
+    },
+    {
+      "id": "counterfeit-batch-alert",
+      "passed": true,
+      "problems": [],
+      "called": [
+        "check_batch",
+        "search_guidance"
+      ],
+      "citations": 1,
+      "ms": 2910,
+      "answer": "Yes. According to NAFDAC Public Alert No. 027/2025, batch T36184B of Postinor 2 is a confirmed counterfeit (Type 1) product that was not imported by the marketing authorization holder [1]. \n\nThe alert notes that the falsified pack may feature the spelling error **\"Veify\"** instead of \"Verify\" on the pin sticker and **\"Distnibuted\"** instead of \"distributed\" on the back [1]. \n\nIf you have this batch, do not use it. You can report it to NAFDAC by calling **0800-162-3322** or emailing **sf.alert@nafdac.gov.ng** [1]. Consult a pharmacist if you are in doubt [1]."
+    },
+    {
+      "id": "mas-scratch-code",
+      "passed": true,
+      "problems": [],
+      "called": [
+        "search_guidance"
+      ],
+      "citations": 1,
+      "ms": 2649,
+      "answer": "The scratch code is part of NAFDAC's Mobile Authentication Service (MAS) scheme to help consumers detect substandard and falsified medicines at the point of purchase [1]. \n\n* You scratch the panel on the pack to reveal a unique, one-time use PIN [1].\n* You send this PIN via SMS (toll-free) to the short code printed on the pack [1].\n* You receive a text message response stating whether the product is genuine or suspected fake [1]."
+    },
+    {
+      "id": "who-scale",
+      "passed": true,
+      "problems": [],
+      "called": [
+        "search_guidance"
+      ],
+      "citations": 2,
+      "ms": 2526,
+      "answer": "- At least 1 in 10 medicines in low- and middle-income countries are substandard or falsified [2].\n- Low- and middle-income countries, as well as areas of conflict or civil unrest with very weak or non-existent health systems, bear the greatest burden of these products [1].\n- Countries spend an estimated US$ 30.5 billion per year on substandard and falsified medical products [2]."
+    },
+    {
+      "id": "check-number-and-batch",
+      "passed": true,
+      "problems": [],
+      "called": [
+        "check_product"
+      ],
+      "citations": 0,
+      "ms": 1890,
+      "answer": "This check uses fictional demo data and does not reflect a real NAFDAC registration or product. \n\nHowever, according to the test records for NAFDAC number **X9-0001** and batch **DQ2310**:\n* **Verdict:** High risk — do not take it.\n* **Reason:** Batch DQ2310 has been recalled (Demo recall: failed dissolution test).\n* **Advice:** Don't take this medicine. Show it to a pharmacist or report it to NAFDAC. \n\nRemember that fakes often copy real numbers, and this result is based on made-up test data."
+    },
+    {
+      "id": "batch-recalled",
+      "passed": true,
+      "problems": [],
+      "called": [
+        "check_batch"
+      ],
+      "citations": 0,
+      "ms": 1706,
+      "answer": "Batch DQ2310 (Demoquine, NAFDAC registration X9-0001) has been recalled due to a failed dissolution test. Please note that this is a fictional demo record and not a real NAFDAC registration."
+    },
+    {
+      "id": "find-by-name",
+      "passed": true,
+      "problems": [],
+      "called": [
+        "search_registry"
+      ],
+      "citations": 0,
+      "ms": 1593,
+      "answer": "The NAFDAC number for Demoxil is **X9-0002**. \n\nPlease note that this is a fictional demo record and not a real NAFDAC registration."
+    },
+    {
+      "id": "warnings-near-market",
+      "passed": true,
+      "problems": [],
+      "called": [
+        "alerts_near_area"
+      ],
+      "citations": 0,
+      "ms": 1967,
+      "answer": "There is a high-severity warning for a suspected batch of Curamax near Bridgehead market, Onitsha: batch number `CX0001` (NAFDAC number `X9-0999`). \n\nPlease note that this record involves simulated data. If you have purchased or encountered this product, please check the pack carefully or consult a qualified pharmacist."
+    },
+    {
+      "id": "regulator-priorities",
+      "passed": true,
+      "problems": [],
+      "called": [
+        "hotspot_overview",
+        "hotspot_alerts"
+      ],
+      "citations": 0,
+      "ms": 13810,
+      "answer": "Based on the 7-day hotspot data, inspectors should prioritize:\n\n1. **Idumota market, Lagos** — high severity. 18 high-risk scans of recalled Demoquine batch DQ2310. Recall involved; collect samples and inspect stalls selling this batch.\n2. **Bridgehead market, Onitsha** — high severity. 13 flagged scans of Curamax batch CX0001 carrying unregistered NAFDAC number X9-0999. Inspect stalls and collect samples for lab testing.\n3. **Sabon Gari market, Kano** — medium severity. 8 scans of batch PM2402 with NAFDAC number X9-0001 printed on the wrong product. Verify product registration details at market stalls.\n\nNote: these results include simulated pilot data (demo records marked X9-)."
+    },
+    {
+      "id": "off-topic",
+      "passed": true,
+      "problems": [],
+      "called": [],
+      "citations": 0,
+      "ms": 1270,
+      "answer": "I am only able to help with questions about medicines, their safety and verification, and MedVerify. If you have any questions about checking a medicine or NAFDAC verification, please let me know."
+    }
+  ]
+}

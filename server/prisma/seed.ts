@@ -16,7 +16,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { clearPromptCache } from "../src/ai/prompts.js";
-import { AI_TASK_NAMES, AI_TASKS } from "../src/ai/tasks.js";
+import { defaultPromptFor, PROMPT_TASKS } from "../src/ai/tasks.js";
 import { cacheDelPattern, cacheKeys } from "../src/lib/cache.js";
 import { promptRepository } from "../src/repositories/prompt.repository.js";
 import { referenceImageRepository } from "../src/repositories/referenceImage.repository.js";
@@ -153,12 +153,12 @@ async function main(): Promise<void> {
  * keeps it — so re-seeding never undoes a prompt change made through the API.
  */
 async function seedPrompts(): Promise<void> {
-  for (const task of AI_TASK_NAMES) {
-    const { version, system, notes } = AI_TASKS[task].defaultPrompt;
+  for (const task of PROMPT_TASKS) {
+    const { version, system, notes } = defaultPromptFor(task);
     await promptRepository.ensure(task, version, system, notes);
     await clearPromptCache(task);
   }
-  console.log(`Prompt versions ensured for: ${AI_TASK_NAMES.join(", ")}.`);
+  console.log(`Prompt versions ensured for: ${PROMPT_TASKS.join(", ")}.`);
 }
 
 main()

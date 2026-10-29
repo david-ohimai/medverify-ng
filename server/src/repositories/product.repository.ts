@@ -62,6 +62,22 @@ export const productRepository = {
     });
   },
 
+  /** Every product that has a batch with this number (batch numbers aren't unique across makers). */
+  findBatchesByNo(batchNo: string) {
+    return prisma.batch.findMany({
+      where: { batchNo },
+      select: {
+        batchNo: true,
+        mfgDate: true,
+        expiryDate: true,
+        recalled: true,
+        recallNote: true,
+        product: { select: productSelect },
+      },
+      take: 10,
+    });
+  },
+
   findBatch(productId: string, batchNo: string) {
     return prisma.batch.findUnique({
       where: { productId_batchNo: { productId, batchNo } },

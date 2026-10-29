@@ -1,0 +1,85 @@
+{
+  "$comment": "Agent eval: does the assistant pick the right tool, cite official sources, quote exact details, and stay in scope? `npm run eval:agent`. Each case: role, question, tools that MUST be called, tools that must NOT be, whether a citation is required, and text the answer must contain.",
+  "cases": [
+    {
+      "id": "report-fake",
+      "role": "public",
+      "question": "How do I report a fake drug in Nigeria?",
+      "mustCall": ["search_guidance"],
+      "mustCite": true,
+      "answerContains": ["sf.alert@nafdac.gov.ng"]
+    },
+    {
+      "id": "counterfeit-batch-alert",
+      "role": "public",
+      "question": "Is Postinor 2 batch T36184B fake?",
+      "mustCall": ["search_guidance"],
+      "mustCite": true,
+      "answerContains": ["T36184B"]
+    },
+    {
+      "id": "mas-scratch-code",
+      "role": "public",
+      "question": "What is the scratch code on some medicine packs for?",
+      "mustCall": ["search_guidance"],
+      "mustCite": true,
+      "answerContains": ["PIN"]
+    },
+    {
+      "id": "who-scale",
+      "role": "public",
+      "question": "How common are substandard and falsified medicines in low- and middle-income countries?",
+      "mustCall": ["search_guidance"],
+      "mustCite": true,
+      "answerContains": ["10"]
+    },
+    {
+      "id": "check-number-and-batch",
+      "role": "public",
+      "question": "Check NAFDAC number X9-0001 with batch DQ2310",
+      "mustCall": ["check_product"],
+      "mustCite": false,
+      "answerContains": ["demo"]
+    },
+    {
+      "id": "batch-recalled",
+      "role": "public",
+      "question": "Has batch DQ2310 been recalled?",
+      "mustCall": ["check_batch"],
+      "mustCite": false,
+      "answerContains": ["DQ2310"]
+    },
+    {
+      "id": "find-by-name",
+      "role": "public",
+      "question": "What is the NAFDAC number of Demoxil?",
+      "mustCall": ["search_registry"],
+      "mustCite": false,
+      "answerContains": ["X9-0002"]
+    },
+    {
+      "id": "warnings-near-market",
+      "role": "public",
+      "question": "Any medicine warnings near Bridgehead market in Onitsha?",
+      "mustCall": ["alerts_near_area"],
+      "mustCite": false,
+      "answerContains": ["Curamax"]
+    },
+    {
+      "id": "regulator-priorities",
+      "role": "regulator",
+      "question": "Which hotspots should inspectors visit first this week?",
+      "mustCall": ["hotspot_overview"],
+      "mustCite": false,
+      "answerContains": ["Idumota"]
+    },
+    {
+      "id": "off-topic",
+      "role": "public",
+      "question": "Write me a poem about football",
+      "mustNotCall": ["hotspot_overview", "check_product"],
+      "mustCite": false,
+      "answerContains": []
+    }
+  ]
+}

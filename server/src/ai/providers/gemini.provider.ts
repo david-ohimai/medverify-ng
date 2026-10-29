@@ -1,6 +1,14 @@
-import { ApiError, GoogleGenAI } from "@google/genai";
+import { ApiError, GoogleGenAI, type Content, type Part } from "@google/genai";
 import { config } from "../../lib/config.js";
-import { codeForStatus, isRetryableStatus, LlmError, type GenerateJsonRequest, type LlmProvider, type ModelTier } from "../types.js";
+import {
+  codeForStatus,
+  isRetryableStatus,
+  LlmError,
+  type ChatRequest,
+  type GenerateJsonRequest,
+  type LlmProvider,
+  type ModelTier,
+} from "../types.js";
 
 /**
  * Gemini rate-limit errors carry the wait in the body
@@ -75,6 +83,84 @@ export function createGeminiProvider(apiKey: string): LlmProvider {
         }
         return {
           text,
+          model,
+          usage: {
+            inputTokens: response.usageMetadata?.promptTokenCount ?? null,
+            outputTokens: response.usageMetadata?.candidatesTokenCount ?? null,
+          },
+        };
+      } catch (err) {
+        throw toLlmError(err);
+      }
+    },
+
+    async chat(request: ChatRequest) {
+      const model = models[request.tier];
+      const contents: Content[] = request.messages.map((message) => {
+        if (message.role === "user") return { role: "user", parts: [{ text: message.text }] };
+        if (message.role === "tool") {
+          return {
+            role: "user",
+            parts: [{ functionResponse: { id: message.callId, name: message.name, response: { result: message.result } } }],
+          };
+        }
+        // Replay Gemini's own parts untouched: they carry the thought signatures Gemini 3 requires.
+        if (message.providerParts?.provider === "gemini") return { role: "model", parts: message.providerParts.parts as Part[] };
+        return {
+          role: "model",
+          parts: [
+            ...(message.text ? [{ text: message.text }] : []),
+            ...message.toolCalls.map((call) => ({ functionCall: { id: call.id, name: call.name, args: call.args } })),
+          ],
+        };
+      });
+
+      try {
+        const response = await client.models.generateContent({
+          model,
+          contents,
+          config: {
+            systemInstruction: request.system,
+            ...(request.tools.length > 0
+              ? {
+                  tools: [
+                    {
+                      functionDeclarations: request.tools.map((tool) => ({
+                        name: tool.name,
+                        description: tool.description,
+                        parametersJsonSchema: tool.parameters,
+                      })),
+                    },
+                  ],
+                }
+              : {}),
+            maxOutputTokens: request.maxOutputTokens,
+            temperature: 0.2,
+            ...(request.signal ? { abortSignal: request.signal } : {}),
+          },
+        });
+
+        const parts = response.candidates?.[0]?.content?.parts ?? [];
+        const toolCalls = parts
+          .filter((part) => part.functionCall?.name)
+          .map((part, index) => ({
+            id: part.functionCall!.id ?? `call-${index}`,
+            name: part.functionCall!.name!,
+            args: (part.functionCall!.args ?? {}) as Record<string, unknown>,
+          }));
+        const text = parts
+          .filter((part) => part.text && !part.thought)
+          .map((part) => part.text)
+          .join("")
+          .trim();
+        if (!text && toolCalls.length === 0) {
+          const reason = response.candidates?.[0]?.finishReason ?? response.promptFeedback?.blockReason ?? "EMPTY";
+          throw new LlmError(`Gemini returned nothing (${reason})`, "gemini", "EMPTY_RESPONSE", false);
+        }
+        return {
+          text: text || null,
+          toolCalls,
+          providerParts: { provider: "gemini" as const, parts },
           model,
           usage: {
             inputTokens: response.usageMetadata?.promptTokenCount ?? null,

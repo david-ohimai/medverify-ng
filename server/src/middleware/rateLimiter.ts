@@ -120,6 +120,23 @@ export const scanDailyLimiter = createLimiter({
   keyBy: "device",
 });
 
+/** Assistant questions: per device. Each can take up to 5 AI calls on the free tier. */
+export const assistantLimiter = createLimiter({
+  name: "assistant",
+  windowMs: 60 * 1000,
+  limit: { public: 10, regulator: 30 },
+  message: "Too many questions in a minute. Please wait a moment.",
+  keyBy: "device",
+});
+
+export const assistantDailyLimiter = createLimiter({
+  name: "assistant-daily",
+  windowMs: 24 * 60 * 60 * 1000,
+  limit: { public: 100, regulator: 300 },
+  message: "Daily question limit reached. Please try again tomorrow.",
+  keyBy: "device",
+});
+
 /** Registry search: per device. Generous for type-ahead, but stops scraping the registry. */
 export const searchLimiter = createLimiter({
   name: "search",

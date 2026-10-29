@@ -10,6 +10,7 @@ import { metricsMiddleware } from "./middleware/metrics.js";
 import { correlationId, requestLogger } from "./middleware/requestLogger.js";
 import { sanitizeInput } from "./middleware/sanitize.js";
 import { aiRoutes } from "./routes/ai.routes.js";
+import { assistantRoutes } from "./routes/assistant.routes.js";
 import { deviceRoutes } from "./routes/device.routes.js";
 import { healthRoutes } from "./routes/health.routes.js";
 import { alertRoutes, hotspotRoutes } from "./routes/hotspot.routes.js";
@@ -91,6 +92,7 @@ export function createApp() {
   app.use(`${API_PREFIX}/ai`, aiRoutes);
   app.use(`${API_PREFIX}/hotspots`, hotspotRoutes);
   app.use(`${API_PREFIX}/alerts`, alertRoutes);
+  app.use(`${API_PREFIX}/assistant`, assistantRoutes);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

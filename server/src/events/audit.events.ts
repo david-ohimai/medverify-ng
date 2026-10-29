@@ -57,6 +57,14 @@ listen("scan:failed", "audit", ({ scanId, deviceId, failureCode }) =>
   audit("scan.failed", deviceId, { failureCode }, scanId, "scan")
 );
 
+listen("assistant:answered", "audit", ({ conversationId, deviceId, rounds, tools, provider }) =>
+  audit("assistant.answered", deviceId, { rounds, tools, provider }, conversationId, "conversation")
+);
+
+listen("assistant:injection-suspected", "audit", ({ deviceId, conversationId }) =>
+  audit("assistant.injection_suspected", deviceId, {}, conversationId, "conversation")
+);
+
 listen("hotspot:alert-created", "audit", ({ alertId, hotspotId, severity, generatedBy }) =>
   audit("hotspot.alert_created", null, { hotspotId, severity, generatedBy }, alertId, "hotspot_alert")
 );

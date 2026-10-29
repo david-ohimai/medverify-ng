@@ -38,4 +38,8 @@ The current fixtures are **drawn**, fictional demo packs (`npm run demo-images`,
    `expect` takes `verdict` (accepted verdicts), `failure` (e.g. `NOT_A_MEDICINE_PACK`), `nafdacNo`, `batchNo`, `signals` (all required) and `anySignal` (at least one).
 5. `npm run seed && npm run eval -- --fresh`.
 
+## Agent eval
+
+`npm run eval:agent` asks the assistant the questions in `agent-cases.json` (public and regulator) and checks that it calls the right tools, cites official sources when it should, quotes exact details (e-mail addresses, batch numbers) and stays in scope. Results: `results/agent-latest.md`.
+
 Free-tier quotas are small: run fresh once per real change (a prompt or rule change), not in a loop.
