@@ -36,6 +36,8 @@ beforeEach(() => {
   scans.create.mockImplementation((async (data: Parameters<typeof scanRepository.create>[0]) => ({
     id: "scan-1",
     kind: data.kind,
+    status: "done",
+    failureCode: null,
     nafdacNo: data.nafdacNo,
     productName: data.productName,
     batchNo: data.batchNo,
@@ -45,6 +47,7 @@ beforeEach(() => {
     confidence: data.confidence,
     signals: data.signals,
     createdAt: new Date("2026-10-28T10:00:00Z"),
+    completedAt: new Date("2026-10-28T10:00:00Z"),
     product: data.productId ? PRODUCT : null,
   })) as never);
 });

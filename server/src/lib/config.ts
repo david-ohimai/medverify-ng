@@ -17,6 +17,15 @@ const bool = (fallback: "true" | "false") =>
     .default(fallback)
     .transform((value) => value === "true");
 
+/** An optional secret: unset and "" both mean "not configured". */
+const optionalSecret = z
+  .string()
+  .min(16)
+  .optional()
+  .or(z.literal("").transform(() => undefined));
+
+const llmProvider = z.enum(["gemini", "openrouter"]);
+
 /**
  * Every setting the server reads, validated once at startup. A missing or weak
  * value stops the process with a clear message instead of failing later.
@@ -39,8 +48,24 @@ const envSchema = z.object({
 
   REGULATOR_DEMO_PIN: z.string().regex(/^\d{6,12}$/, "REGULATOR_DEMO_PIN must be 6-12 digits"),
 
-  METRICS_TOKEN: z.string().min(16).optional().or(z.literal("").transform(() => undefined)),
+  METRICS_TOKEN: optionalSecret,
   SWAGGER_ENABLED: bool("true"),
+
+  // AI providers. A provider without a key is simply left out of the chain.
+  LLM_PRIMARY: llmProvider.default("gemini"),
+  LLM_FALLBACK: llmProvider.or(z.literal("none")).default("openrouter"),
+  LLM_TIMEOUT_MS: z.coerce.number().int().min(5_000).max(120_000).default(45_000),
+  GEMINI_API_KEY: optionalSecret,
+  GEMINI_VISION_MODEL: z.string().min(3).default("gemini-3.5-flash"),
+  GEMINI_LIGHT_MODEL: z.string().min(3).default("gemini-3.5-flash-lite"),
+  /** Calls per UTC day we allow ourselves — kept under the free tier's own cap. */
+  GEMINI_DAILY_LIMIT: z.coerce.number().int().min(0).default(200),
+  OPENROUTER_API_KEY: optionalSecret,
+  OPENROUTER_MODEL: z.string().min(3).default("nvidia/nemotron-3.5-super-vl:free"),
+  OPENROUTER_DAILY_LIMIT: z.coerce.number().int().min(0).default(45),
+
+  /** Run the scan worker inside the API process (development, single instance). */
+  SCAN_WORKER_ENABLED: bool("true"),
 });
 
 const parsed = envSchema.safeParse(process.env);

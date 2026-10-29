@@ -100,6 +100,26 @@ export const verifyLimiter = createLimiter({
   keyBy: "device",
 });
 
+/**
+ * Photo scans: per device, per minute and per day. Each scan is an AI call
+ * on a free tier, so these limits also protect the shared daily quota.
+ */
+export const scanUploadLimiter = createLimiter({
+  name: "scan-upload",
+  windowMs: 60 * 1000,
+  limit: { public: 10, regulator: 30 },
+  message: "Too many photo scans in a minute. Please wait a moment.",
+  keyBy: "device",
+});
+
+export const scanDailyLimiter = createLimiter({
+  name: "scan-daily",
+  windowMs: 24 * 60 * 60 * 1000,
+  limit: { public: 60, regulator: 200 },
+  message: "Daily photo scan limit reached. You can still type the NAFDAC number in.",
+  keyBy: "device",
+});
+
 /** Registry search: per device. Generous for type-ahead, but stops scraping the registry. */
 export const searchLimiter = createLimiter({
   name: "search",

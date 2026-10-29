@@ -1,7 +1,9 @@
 import { Router } from "express";
+import { photoScanController } from "../controllers/photoScan.controller.js";
 import { verificationController } from "../controllers/verification.controller.js";
 import { authenticate } from "../middleware/authenticate.js";
-import { apiLimiter, verifyLimiter } from "../middleware/rateLimiter.js";
+import { apiLimiter, scanDailyLimiter, scanUploadLimiter, verifyLimiter } from "../middleware/rateLimiter.js";
+import { uploadImage } from "../middleware/upload.js";
 import { validate } from "../middleware/validate.js";
 import { listScansSchema, scanParamsSchema } from "../validators/scan.validator.js";
 import { manualVerificationSchema } from "../validators/verification.validator.js";
@@ -66,4 +68,56 @@ verificationRoutes.post("/manual", verifyLimiter, validate(manualVerificationSch
  *       404: { description: Not found (or another device's scan) }
  */
 scanRoutes.get("/", validate(listScansSchema), verificationController.listScans);
+
+/**
+ * @openapi
+ * /api/v1/scans:
+ *   post:
+ *     tags: [Verification]
+ *     summary: Upload a pack photo; the AI reads the label and the registry rules score it
+ *     description: |
+ *       Returns **202** at once with a scanId. The photo is validated by decoding it (JPEG, PNG,
+ *       WebP or HEIC; at least 480 px on the short side; max 8 MB), re-encoded without metadata,
+ *       and queued. Follow `eventsUrl` (SSE) for live progress, or poll `statusUrl`.
+ *       The photo is never stored: it is deleted once the worker has read it.
+ *       Limits: 10 per minute and 60 per day per device.
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required: [image]
+ *             properties:
+ *               image: { type: string, format: binary, description: "Photo of the side showing the NAFDAC number" }
+ *     responses:
+ *       202: { description: "Accepted: { scanId, status: pending, eventsUrl, statusUrl }" }
+ *       413: { description: Photo larger than 8 MB }
+ *       415: { description: Not a supported image }
+ *       422: { description: No photo, or too small to read }
+ *       429: { description: Scan limit reached, or today's free AI quota is used up (AI_QUOTA_EXHAUSTED) }
+ *       503: { description: No AI provider available (AI_UNAVAILABLE) }
+ */
+scanRoutes.post("/", scanUploadLimiter, scanDailyLimiter, uploadImage, photoScanController.submit);
+
+/**
+ * @openapi
+ * /api/v1/scans/{id}/events:
+ *   get:
+ *     tags: [Verification]
+ *     summary: Live progress of a photo scan (Server-Sent Events)
+ *     description: |
+ *       `text/event-stream`. Events: `step` ({ step, status: active|done|skipped, label, detail? }),
+ *       then `verdict` ({ result }) or `error` ({ code, message }), after which the stream closes.
+ *       Each event has an `id`; reconnect with `Last-Event-ID` to receive only missed events.
+ *       A finished scan replays its final state immediately.
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - { in: path, name: id, required: true, schema: { type: string, format: uuid } }
+ *     responses:
+ *       200: { description: Event stream }
+ *       404: { description: Not found (or another device's scan) }
+ */
+scanRoutes.get("/:id/events", validate(scanParamsSchema), photoScanController.streamEvents);
 scanRoutes.get("/:id", validate(scanParamsSchema), verificationController.getScan);

@@ -1,5 +1,6 @@
 /**
- * Loads the NAFDAC registry from CSV into the database.
+ * Loads the NAFDAC registry from CSV into the database, then makes sure every
+ * AI task has a stored prompt version.
  *
  *   npm run seed              all CSVs in prisma/seed/data (real + demo)
  *   npm run seed -- --no-demo skip *.demo.csv (fictional placeholder rows)
@@ -13,7 +14,10 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { clearPromptCache } from "../src/ai/prompts.js";
+import { AI_TASK_NAMES, AI_TASKS } from "../src/ai/tasks.js";
 import { cacheDelPattern, cacheKeys } from "../src/lib/cache.js";
+import { promptRepository } from "../src/repositories/prompt.repository.js";
 import { prisma } from "../src/lib/prisma.js";
 import { redis } from "../src/lib/redis.js";
 import {
@@ -114,6 +118,22 @@ async function main(): Promise<void> {
       `Removed ${removed.products} products and ${removed.batches} batches no longer in the CSVs. ` +
       `Cleared ${cleared} cached entries.`
   );
+
+  await seedPrompts();
+}
+
+/**
+ * The built-in prompt of every AI task becomes a stored version. Existing
+ * versions are never changed, and a task that already has an active version
+ * keeps it — so re-seeding never undoes a prompt change made through the API.
+ */
+async function seedPrompts(): Promise<void> {
+  for (const task of AI_TASK_NAMES) {
+    const { version, system, notes } = AI_TASKS[task].defaultPrompt;
+    await promptRepository.ensure(task, version, system, notes);
+    await clearPromptCache(task);
+  }
+  console.log(`Prompt versions ensured for: ${AI_TASK_NAMES.join(", ")}.`);
 }
 
 main()

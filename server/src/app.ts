@@ -9,6 +9,7 @@ import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 import { metricsMiddleware } from "./middleware/metrics.js";
 import { correlationId, requestLogger } from "./middleware/requestLogger.js";
 import { sanitizeInput } from "./middleware/sanitize.js";
+import { aiRoutes } from "./routes/ai.routes.js";
 import { deviceRoutes } from "./routes/device.routes.js";
 import { healthRoutes } from "./routes/health.routes.js";
 import { registryRoutes } from "./routes/registry.routes.js";
@@ -86,6 +87,7 @@ export function createApp() {
   app.use(`${API_PREFIX}/products`, registryRoutes);
   app.use(`${API_PREFIX}/verify`, verificationRoutes);
   app.use(`${API_PREFIX}/scans`, scanRoutes);
+  app.use(`${API_PREFIX}/ai`, aiRoutes);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

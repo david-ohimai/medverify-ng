@@ -12,7 +12,7 @@ The proposal is being built as a working MVP — plan in [mvp.md](mvp.md).
 
 | Part | Stack | Guide |
 |---|---|---|
-| `server/` | Node 24 · TypeScript 7 · Express 5 · Prisma 7 · PostgreSQL 18 (PostGIS, pgvector) · Redis 8 · BullMQ | [docs/server-setup.md](docs/server-setup.md) · [docs/database-setup.md](docs/database-setup.md) |
+| `server/` | Node 24 · TypeScript 7 · Express 5 · Prisma 7 · PostgreSQL 18 (PostGIS, pgvector) · Redis 8 · BullMQ · Gemini (OpenRouter fallback) | [docs/server-setup.md](docs/server-setup.md) · [docs/database-setup.md](docs/database-setup.md) |
 | `mobile/` | Flutter 3.47 · Riverpod 3 · go_router · Dio · liquid glass UI | [docs/mobile-setup.md](docs/mobile-setup.md) |
 
 ---
