@@ -55,6 +55,7 @@ function service(providers: LlmProvider[], quotaStub = quota()) {
     quota: quotaStub,
     getPrompt: async () => ({ version: 3, system: "Read the label." }),
     retry: { attempts: 2, baseDelayMs: 1, maxDelayMs: 50, sleep: async () => undefined },
+    timeoutMs: 50,
   });
 }
 
@@ -109,6 +110,22 @@ describe("llmService.run", () => {
     const result = await service([gemini.provider, openrouter.provider]).run("read_label", image, ctx);
     expect(gemini.calls).toHaveLength(1);
     expect(result.provider).toBe("openrouter");
+  });
+
+  it("cuts off a provider that hangs (hard per-attempt deadline) and falls back", async () => {
+    const hanging: LlmProvider = {
+      name: "gemini",
+      modelFor: () => "slow-model",
+      generateJson: (request) =>
+        new Promise((_resolve, reject) => {
+          request.signal?.addEventListener("abort", () =>
+            reject(new LlmError("timed out", "gemini", "TIMEOUT", true))
+          );
+        }),
+    };
+    const openrouter = scripted("openrouter", [JSON.stringify(LABEL)]);
+    const result = await service([hanging, openrouter.provider]).run("read_label", image, ctx);
+    expect(result).toMatchObject({ provider: "openrouter", fallbackUsed: true });
   });
 
   it("asks once for a corrected reply when the JSON doesn't match the schema", async () => {

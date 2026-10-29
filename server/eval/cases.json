@@ -1,0 +1,53 @@
+{
+  "$comment": "Golden eval set for the photo pipeline. Each case is a photo in eval/fixtures/ and what the pipeline must conclude. Demo cases use FICTIONAL X9- products from prisma/seed/data/*.demo.csv (run `npm run seed` first). Add real packs as they are photographed: put the photo in eval/fixtures/ and a case here.",
+  "cases": [
+    {
+      "id": "genuine-demoquine",
+      "image": "fixtures/demoquine-genuine.jpg",
+      "description": "Genuine pack, known batch, matches the reference photo",
+      "expect": { "verdict": ["likely_genuine"], "nafdacNo": "X9-0001", "batchNo": "DQ2401", "signals": ["VISUAL_MATCH"] }
+    },
+    {
+      "id": "recalled-batch",
+      "image": "fixtures/demoquine-recalled.jpg",
+      "description": "Genuine-looking pack from a recalled batch",
+      "expect": { "verdict": ["high_risk"], "nafdacNo": "X9-0001", "batchNo": "DQ2310", "signals": ["BATCH_RECALLED"] }
+    },
+    {
+      "id": "expired-batch",
+      "image": "fixtures/demoquine-expired.jpg",
+      "description": "Genuine-looking pack, past its expiry date",
+      "expect": { "verdict": ["high_risk"], "nafdacNo": "X9-0001", "batchNo": "DQ2299", "signals": ["EXPIRED"] }
+    },
+    {
+      "id": "altered-label",
+      "image": "fixtures/demoquine-altered.jpg",
+      "description": "Reprinted fake: misspellings, wrong logo shape, off colour, different font",
+      "expect": { "verdict": ["suspicious", "high_risk"], "nafdacNo": "X9-0001", "anySignal": ["TEXT_ANOMALIES", "VISUAL_MISMATCH"] }
+    },
+    {
+      "id": "cloned-number",
+      "image": "fixtures/cloned-number.jpg",
+      "description": "A registered number printed on a different product",
+      "expect": { "verdict": ["suspicious", "high_risk"], "nafdacNo": "X9-0001", "signals": ["NAME_MISMATCH"] }
+    },
+    {
+      "id": "unregistered-number",
+      "image": "fixtures/unregistered.jpg",
+      "description": "A number that isn't in the register",
+      "expect": { "verdict": ["unregistered"], "nafdacNo": "X9-0999" }
+    },
+    {
+      "id": "no-reference",
+      "image": "fixtures/demoxil-no-reference.jpg",
+      "description": "Registered product with no reference photo: clean, but confidence capped",
+      "expect": { "verdict": ["likely_genuine"], "nafdacNo": "X9-0002", "batchNo": "DX2405", "signals": ["PACK_NOT_COMPARED"] }
+    },
+    {
+      "id": "not-a-pack",
+      "image": "fixtures/not-a-pack.jpg",
+      "description": "Not a medicine pack at all",
+      "expect": { "failure": "NOT_A_MEDICINE_PACK" }
+    }
+  ]
+}

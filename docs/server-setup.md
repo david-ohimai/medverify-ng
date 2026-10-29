@@ -24,8 +24,8 @@ Shell: **Git Bash** unless noted. Working folder: `medverify-ng/server/`.
 | 7 | `npm run db:up` | Starts Postgres (port 5433) and Redis (6379) in Docker — needs Docker Desktop running ([database guide §1](database-setup.md#1-install-docker-desktop-once)) |
 | 8 | `npm run prisma:migrate` | Creates the tables |
 | 9 | `npm run prisma:generate` | Builds the typed Prisma client into `src/generated/prisma` |
-| 9b | `npm run seed` | Loads the registry CSVs and the AI prompt versions |
-| 9c | `npm test` | 166 unit + HTTP tests; no database, Redis or AI key needed |
+| 9b | `npm run seed` | Loads the registry CSVs, the genuine-pack reference photos and the AI prompt versions |
+| 9c | `npm test` | 186 unit + HTTP tests; no database, Redis or AI key needed |
 | 10 | `npm run typecheck` | Strict TypeScript check of `src/` and `tests/` |
 | 11 | `npm run dev` | API on http://localhost:3000, restarts on save |
 | 12 | Open http://localhost:3000/api-docs | Swagger UI — try every endpoint |
@@ -44,7 +44,7 @@ npm run smoke
 
 | Job | What it proves |
 |---|---|
-| Server · typecheck, test, build | `prisma validate`, strict typecheck, 166 tests, production build |
+| Server · typecheck, test, build | `prisma validate`, strict typecheck, 186 tests, production build |
 | Server · migrations + smoke test | Starts the real Docker Postgres + Redis, applies every migration with `migrate deploy`, checks the extensions, seeds the registry, boots the built server and runs `npm run smoke` (device security + registry search + every verdict) |
 | Mobile · format, analyze, test | `dart format` (120 columns), `flutter analyze --fatal-infos`, all tests |
 | Mobile · Android APK | Pull requests into `main` only: obfuscated arm64 release APK, downloadable from the run for 5 days |
@@ -242,7 +242,8 @@ Endpoints:
 | POST | `/api/v1/devices/me/elevate` | access token | Regulator PIN → new tokens with the regulator role |
 | POST | `/api/v1/devices/me/demote` | access token | Back to public |
 | GET | `/api/v1/products/search?q=` | access token | Registry search: NAFDAC number prefix or fuzzy name (pg_trgm) |
-| GET | `/api/v1/products/:nafdacNo` | access token | One product and its known batches |
+| GET | `/api/v1/products/:nafdacNo` | access token | One product, its known batches and its reference photos (metadata) |
+| GET | `/api/v1/products/:nafdacNo/reference-images/:id` | access token | A genuine-pack photo (JPEG, ETag) |
 | POST | `/api/v1/verify/manual` | access token | Typed-in check → verdict, risk score, confidence, signals; saved as a scan |
 | GET | `/api/v1/scans`, `/api/v1/scans/:id` | access token | This device's scan history (paginated) / one scan (with `status`: pending → processing → done / failed) |
 | POST | `/api/v1/scans` | access token | Pack photo (multipart field `image`) → **202** `{ scanId, eventsUrl, statusUrl }`; the AI reads it in the background |
@@ -325,7 +326,7 @@ POST /scans ── multer (memory, 8 MB cap) ── prepareImage (decode = real 
    └─ BullMQ "scan-pipeline" job (jobId = scanId, 3 attempts, exponential backoff) → 202
 worker (in-process, or `npm run worker`):
    claim (pending → processing, once) → read_label (cache by photo hash + prompt version,
-   else Gemini → OpenRouter) → registry → batch_check → compare_pack (next step) → score
+   else Gemini → OpenRouter) → registry → batch_check → compare_pack (Step 10d) → score
    → scans row done → scan:completed → SSE "verdict" → photo deleted
    final failure → scan failed with a reason code → dead-letter queue "scan-pipeline-dlq"
 ```
@@ -364,6 +365,42 @@ curl -s $API/scans/<scanId> -H "Authorization: Bearer $TOKEN"
 Then look at `ai_audit_logs` and `prompt_versions` in Prisma Studio (`npm run prisma:studio`). The control-plane endpoints need regulator mode: `POST $API/devices/me/elevate` with `{"pin":"246810"}`, then use the new access token on `GET $API/ai/status`.
 
 Scanning the same photo again is answered from the cache: no AI call, no quota used (`llmProvider: "cache"`).
+
+### Step 10d — Pack comparison, photo signals and the eval set
+
+```bash
+npm run prisma:migrate -- --name reference_images
+npm run prisma:generate
+npm run demo-images        # draws the fictional demo packs (already committed; only to regenerate)
+npm run seed               # registry + reference photos + prompt versions (now also compare_pack)
+npm run eval               # golden eval set, cached answers
+npm run eval -- --fresh    # golden eval set, real AI calls
+```
+
+| Piece | File | What it does |
+|---|---|---|
+| Reference photos | `prisma/seed/reference/<NAFDAC no>/front-1.jpg`, `prisma/seed/reference-import.ts`, `repositories/referenceImage.repository.ts` | Photos of the **genuine** pack, validated and re-encoded to 1024 px, stored in `reference_images` (bytes in Postgres — no bucket). The seed syncs the table to the folder. See the folder's README |
+| Comparison task | `ai/tasks.ts` `compare_pack` | Up to two references (front first) + the scan in one vision call → `comparable`, `same_product`, logo / colour / typography / layout / print scores, real differences (lighting and angle excluded), overall similarity |
+| Photo rules | `services/risk/photoSignals.ts` | Pure function, weights from the plan (below). `combineSignals` drops `BATCH_KNOWN` when the pack itself looks wrong — fakes copy batch numbers |
+| Pipeline | `services/photoScan.service.ts` `analysePhoto` | read_label → registry → batch → **compare_pack** (skipped for unregistered numbers; no reference / AI down → `PACK_NOT_COMPARED`, the scan still completes) → score. Comparison answers are cached by photo hash + references + prompt version |
+| Genuine photo for the app | `GET /products/:nafdacNo/reference-images/:id` | The JPEG, with an ETag, to show "yours vs genuine" side by side |
+| Eval | `eval/cases.json`, `eval/fixtures/`, `scripts/eval.ts` | Runs `analysePhoto` on every case; reports fakes passed as genuine (must be 0), false alarms, verdict and field accuracy, latency → `eval/results/latest.md`. See `eval/README.md` |
+| Demo packs | `scripts/generate-demo-images.ts` | Draws the fictional X9- packs (reference + 8 scans) so the pipeline can be shown without real photos |
+
+Photo signals (they add to the registry signals in Step 10b):
+
+| Signal | Weight | Effect |
+|---|---|---|
+| `VISUAL_MISMATCH` (similarity < 0.80) | (0.80 − similarity) × 75, 1–30 | Detail lists the major differences |
+| `VISUAL_MISMATCH` (a different product) | +30 | |
+| `TEXT_ANOMALIES` | +10 each, max +20 | Misspellings, odd fonts, smudged reprinting |
+| `VISUAL_MATCH` (similarity ≥ 0.85) | −20 | Only with clean records and no text anomalies |
+| `PACK_NOT_COMPARED` | 0 | No reference / other side / AI unavailable: a clean result is at most **medium** confidence |
+| `POOR_IMAGE` | 0 | **Low** confidence — retake the photo |
+
+Confidence is now: demo record → low; a hard fact behind a warning → high; any uncertainty (unknown batch, poor photo) → low; a warning built only on inferences (looks, spelling) → medium; clean but pack not seen / not compared → medium; otherwise high.
+
+Every AI attempt also has a hard deadline (`LLM_TIMEOUT_MS`, 30 s): a hung free model is cut off and the fallback answers.
 
 ### Step 11 — Observability
 
@@ -406,6 +443,8 @@ npm pkg set scripts.test="vitest run" scripts.test:watch="vitest"
 | `tests/unit/llm.service.test.ts` | Primary answers; retry then fallback (`fallbackUsed`); long Retry-After → fallback at once; repair round for invalid JSON; spent budget skipped / `AI_QUOTA_EXHAUSTED`; `AI_UNAVAILABLE`; circuit opens and stops calling a failing provider; audit events |
 | `tests/unit/resilience.test.ts` | Retry-After honoured, too-long waits not, non-retryable errors never retried; Gemini retry-delay parsing |
 | `tests/unit/photoScan.test.ts` | AI reading → registry facts (normalised, unsure fields dropped); image validation: not an image → 415, too small → 422, resized and **EXIF stripped** |
+| `tests/unit/photoSignals.test.ts` | Visual match / mismatch weights and bands, different product, text anomalies, not compared, poor photo, `BATCH_KNOWN` dropped when the pack looks wrong, the new confidence rules |
+| `tests/unit/reference-import.test.ts` | Reference folder loading: resize + hash, file/folder naming errors, non-images, skipped demo folders |
 | `tests/http/scans.test.ts` | Upload auth, 202 + Location, missing / wrong-field file, 413 over 8 MB, SSE 404 for another device, control plane regulator-only |
 
 ```bash
@@ -425,7 +464,9 @@ npm run typecheck
 | `db:psql` / `redis:cli` | Shells inside the containers |
 | `prisma:migrate` / `prisma:deploy` / `prisma:status` | `migrate dev` / `migrate deploy` / `migrate status` |
 | `prisma:generate` / `prisma:studio` / `prisma:reset` | Client / data browser (port 5555) / wipe tables and re-migrate |
-| `seed` | Load the registry CSVs (`-- --no-demo` to skip the fictional rows) and ensure every AI task has a stored prompt version |
+| `seed` | Load the registry CSVs (`-- --no-demo` to skip the fictional rows), sync the reference photos, and ensure every AI task has a stored prompt version |
+| `eval` | Golden eval set (`-- --fresh` for real AI calls) |
+| `demo-images` | Redraw the fictional demo packs |
 | `smoke` | End-to-end checks against a running server |
 
 ---
@@ -472,4 +513,7 @@ correlationId → requestLogger → helmet → cors → express.json → sanitiz
 | How do you stop the model hallucinating a NAFDAC number? | Prompt says "null rather than guess"; JSON validated by Zod; fields under 60 % confidence are ignored; the number must match the NAFDAC format; and the **registry**, not the model, decides the verdict |
 | How do you change a prompt safely? | New row in `prompt_versions`, activate it; roll back by activating the old one. Every AI call records its prompt version |
 | What about privacy? | Photos are re-encoded (GPS/EXIF gone), kept in Redis ≤ 30 min, never stored; audit rows hold a hash, not the image |
+| How do you know it works? | `npm run eval`: a golden set of packs with known answers; the headline metric is fakes passed as genuine (must be 0) — `eval/results/latest.md` |
+| Can the AI's opinion of the pack override the registry? | No. A recall, expiry or unregistered number decides on its own; looks only add or remove weight, and a warning built only on looks is never high confidence |
+| What if there's no photo of the genuine pack? | The scan still completes on the registry facts, with `PACK_NOT_COMPARED` capping a clean result at medium confidence |
 | How do you protect the free quota? | Per-device scan limits, a daily budget per provider in Redis, and a cache keyed by photo hash + prompt version |

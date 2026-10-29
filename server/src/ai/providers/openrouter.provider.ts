@@ -1,4 +1,4 @@
-import OpenAI, { APIConnectionTimeoutError, APIError } from "openai";
+import OpenAI, { APIConnectionTimeoutError, APIError, APIUserAbortError } from "openai";
 import { config } from "../../lib/config.js";
 import { codeForStatus, isRetryableStatus, LlmError, type GenerateJsonRequest, type LlmProvider } from "../types.js";
 
@@ -13,7 +13,7 @@ function retryAfterMs(headers: Headers | undefined): number | undefined {
 
 function toLlmError(err: unknown): LlmError {
   if (err instanceof LlmError) return err;
-  if (err instanceof APIConnectionTimeoutError) {
+  if (err instanceof APIConnectionTimeoutError || err instanceof APIUserAbortError) {
     return new LlmError("OpenRouter request timed out", "openrouter", "TIMEOUT", true);
   }
   if (err instanceof APIError) {

@@ -38,6 +38,8 @@ interface Dependencies {
   quota: Pick<typeof aiQuota, "reserve" | "used" | "remaining" | "limit">;
   getPrompt: (task: AiTaskName) => Promise<Pick<ActivePrompt, "version" | "system">>;
   retry: RetryOptions;
+  /** Per-attempt deadline. */
+  timeoutMs: number;
 }
 
 /** Zod → JSON Schema, once per task. Providers get plain JSON Schema without the $schema marker. */
@@ -91,6 +93,8 @@ export function createLlmService(deps: Dependencies) {
     const usage: LlmUsage = { inputTokens: 0, outputTokens: 0 };
     const started = Date.now();
     let outputSummary: string | null = null;
+    // One task's schema; typed as unknown here, the caller gets the task's output type.
+    const schema = definition.schema as z.ZodType<unknown>;
     let model = provider.modelFor(definition.tier);
 
     const generate = (requestParts: LlmPart[]) =>
@@ -103,6 +107,9 @@ export function createLlmService(deps: Dependencies) {
               jsonSchema: jsonSchemaFor(task),
               tier: definition.tier,
               maxOutputTokens: definition.maxOutputTokens,
+              // A hard deadline per attempt: SDK timeouts only cover parts of a request,
+              // and a free model can otherwise stream for minutes.
+              signal: AbortSignal.timeout(deps.timeoutMs),
             }),
           deps.retry
         )
@@ -134,7 +141,7 @@ export function createLlmService(deps: Dependencies) {
     try {
       let response = await generate(parts);
       addUsage(response);
-      let parsed = parseReply(definition.schema, response.text);
+      let parsed = parseReply(schema, response.text);
 
       if (!parsed.success) {
         // One repair round: show the model exactly what was wrong.
@@ -150,7 +157,7 @@ export function createLlmService(deps: Dependencies) {
           },
         ]);
         addUsage(response);
-        parsed = parseReply(definition.schema, response.text);
+        parsed = parseReply(schema, response.text);
         if (!parsed.success) {
           outputSummary = summarise(response.text, 1000);
           throw new LlmError(`Invalid output after repair: ${parsed.issues}`, provider.name, "INVALID_OUTPUT", false);
@@ -263,4 +270,5 @@ export const llmService = createLlmService({
   quota: aiQuota,
   getPrompt: getActivePrompt,
   retry: { attempts: 2, baseDelayMs: 1_000, maxDelayMs: 8_000 },
+  timeoutMs: config.LLM_TIMEOUT_MS,
 });

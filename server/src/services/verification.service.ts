@@ -89,6 +89,8 @@ export interface RegistryCheckFacts {
 
 export interface RegistryCheck {
   productId: string | null;
+  /** Brand name of the registered product, when found. */
+  productName: string | null;
   productFound: boolean;
   batchFound: boolean;
   signals: Signal[];
@@ -120,6 +122,7 @@ export async function checkAgainstRegistry(facts: RegistryCheckFacts): Promise<R
 
   return {
     productId: product?.id ?? null,
+    productName: product?.brandName ?? null,
     productFound: product !== null,
     batchFound: batch !== null,
     signals,

@@ -19,7 +19,13 @@ export type SignalCode =
   // Limits of a typed-in check
   | "PACK_NOT_SEEN"
   // The matched record is fictional test data
-  | "DEMO_RECORD";
+  | "DEMO_RECORD"
+  // What the AI saw on the pack photo
+  | "TEXT_ANOMALIES"
+  | "VISUAL_MISMATCH"
+  | "VISUAL_MATCH"
+  | "PACK_NOT_COMPARED"
+  | "POOR_IMAGE";
 
 export type SignalSeverity = "good" | "info" | "warning" | "danger";
 
@@ -47,7 +53,14 @@ const HARD_EVIDENCE: ReadonlySet<SignalCode> = new Set([
 ]);
 
 /** Signals that leave us unsure what we're looking at. */
-const UNCERTAINTY: ReadonlySet<SignalCode> = new Set(["BATCH_UNKNOWN", "BATCH_NOT_GIVEN"]);
+const UNCERTAINTY: ReadonlySet<SignalCode> = new Set(["BATCH_UNKNOWN", "BATCH_NOT_GIVEN", "POOR_IMAGE"]);
+
+/**
+ * Clean records, but the pack itself wasn't (fully) examined: typed in, or
+ * no genuine reference to compare it with. Counterfeiters copy real numbers,
+ * so we can't be more than moderately sure.
+ */
+const PACK_UNVERIFIED: ReadonlySet<SignalCode> = new Set(["PACK_NOT_SEEN", "PACK_NOT_COMPARED"]);
 
 export const RISK_BANDS = { suspicious: 30, highRisk: 65 } as const;
 
@@ -83,9 +96,10 @@ export function assessRisk(signals: readonly Signal[]): RiskAssessment {
     confidence = "high";
   } else if (signals.some((signal) => UNCERTAINTY.has(signal.code))) {
     confidence = "low";
-  } else if (has("PACK_NOT_SEEN")) {
-    // Clean records, but counterfeiters copy real numbers: without seeing the
-    // pack we can't be more than moderately sure.
+  } else if (verdict !== "likely_genuine") {
+    // A warning built only on inferences (visual differences, odd spelling).
+    confidence = "medium";
+  } else if (signals.some((signal) => PACK_UNVERIFIED.has(signal.code))) {
     confidence = "medium";
   } else {
     confidence = "high";

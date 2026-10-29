@@ -66,8 +66,8 @@ export const CACHE_TTL = {
   registryMiss: 60,
   /** Activating a prompt through the API clears it at once; edits made elsewhere apply within 5 minutes. */
   activePrompt: 5 * 60,
-  /** Same photo + same prompt version = same reading, so rescans cost no quota. */
-  labelRead: 7 * 24 * 60 * 60,
+  /** Same photo (+ same references) + same prompt version = same AI answer, so rescans cost no quota. */
+  aiResult: 7 * 24 * 60 * 60,
 } as const;
 
 export const cacheKeys = {
@@ -76,4 +76,6 @@ export const cacheKeys = {
   registryAll: "registry:*",
   activePrompt: (task: string) => `ai:prompt:${task}`,
   labelRead: (imageHash: string, promptVersion: number) => `ai:label:${imageHash}:v${promptVersion}`,
+  packCompare: (imageHash: string, referencesKey: string, promptVersion: number) =>
+    `ai:compare:${imageHash}:${referencesKey}:v${promptVersion}`,
 } as const;

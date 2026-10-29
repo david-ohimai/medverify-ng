@@ -166,8 +166,9 @@ model Product {
   createdAt    DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt    DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  batches Batch[]
-  scans   Scan[]
+  batches         Batch[]
+  scans           Scan[]
+  referenceImages ReferenceImage[]
 
   // Fuzzy name search ("C0artem" still finds Coartem) with pg_trgm.
   @@index([brandName(ops: raw("gin_trgm_ops"))], type: Gin, map: "products_brand_name_trgm_idx")
@@ -194,6 +195,37 @@ model Batch {
 
   @@unique([productId, batchNo])
   @@map("batches")
+}
+
+enum PackSide {
+  front
+  back
+  other
+}
+
+/// A photo of the GENUINE pack, used by the AI to compare a scanned pack
+/// against. Stored in the database (re-encoded JPEG, ~100–200 kB) so the
+/// registry, its batches and its reference photos travel together — no
+/// bucket or CDN account needed. Loaded from prisma/seed/reference/.
+model ReferenceImage {
+  id        String         @id @default(uuid()) @db.Uuid
+  productId String         @map("product_id") @db.Uuid
+  side      PackSide
+  /// Re-encoded JPEG, metadata stripped.
+  data      Bytes
+  width     Int
+  height    Int
+  /// SHA-256 of the source file: the seed uses it to add, keep or remove photos.
+  sha256    String         @unique @db.Char(64)
+  /// Where it came from, e.g. "prisma/seed/reference/A4-1234/front-1.jpg".
+  fileName  String         @map("file_name") @db.VarChar(200)
+  source    RegistrySource
+  createdAt DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, side])
+  @@map("reference_images")
 }
 
 /// Every verification — typed in or photographed — with its verdict and the

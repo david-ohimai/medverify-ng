@@ -1,0 +1,174 @@
+{
+  "summary": {
+    "ranAt": "2026-10-29T08:58:25.898Z",
+    "fresh": true,
+    "cases": 8,
+    "passed": 8,
+    "verdictAccuracy": "100%",
+    "fakesPassedAsGenuine": "0 of 5",
+    "falseAlarms": "0 of 2",
+    "fieldAccuracy": "100%",
+    "medianLatencyMs": 18643,
+    "liveAiCases": 7
+  },
+  "results": [
+    {
+      "id": "genuine-demoquine",
+      "description": "Genuine pack, known batch, matches the reference photo",
+      "passed": true,
+      "problems": [],
+      "verdict": "likely_genuine",
+      "riskScore": 0,
+      "confidence": "low",
+      "failure": null,
+      "signals": [
+        "DEMO_RECORD",
+        "NAME_MATCHES_REGISTRY",
+        "BATCH_KNOWN",
+        "VISUAL_MATCH"
+      ],
+      "nafdacNo": "X9-0001",
+      "batchNo": "DQ2401",
+      "provider": "gemini",
+      "ms": 85410,
+      "expectedGenuine": true
+    },
+    {
+      "id": "recalled-batch",
+      "description": "Genuine-looking pack from a recalled batch",
+      "passed": true,
+      "problems": [],
+      "verdict": "high_risk",
+      "riskScore": 50,
+      "confidence": "low",
+      "failure": null,
+      "signals": [
+        "DEMO_RECORD",
+        "NAME_MATCHES_REGISTRY",
+        "BATCH_RECALLED"
+      ],
+      "nafdacNo": "X9-0001",
+      "batchNo": "DQ2310",
+      "provider": "gemini",
+      "ms": 14427,
+      "expectedGenuine": false
+    },
+    {
+      "id": "expired-batch",
+      "description": "Genuine-looking pack, past its expiry date",
+      "passed": true,
+      "problems": [],
+      "verdict": "high_risk",
+      "riskScore": 35,
+      "confidence": "low",
+      "failure": null,
+      "signals": [
+        "DEMO_RECORD",
+        "NAME_MATCHES_REGISTRY",
+        "EXPIRED"
+      ],
+      "nafdacNo": "X9-0001",
+      "batchNo": "DQ2299",
+      "provider": "openrouter",
+      "ms": 18643,
+      "expectedGenuine": false
+    },
+    {
+      "id": "altered-label",
+      "description": "Reprinted fake: misspellings, wrong logo shape, off colour, different font",
+      "passed": true,
+      "problems": [],
+      "verdict": "suspicious",
+      "riskScore": 33,
+      "confidence": "low",
+      "failure": null,
+      "signals": [
+        "DEMO_RECORD",
+        "NAME_MATCHES_REGISTRY",
+        "TEXT_ANOMALIES",
+        "VISUAL_MISMATCH"
+      ],
+      "nafdacNo": "X9-0001",
+      "batchNo": "DQ2401",
+      "provider": "openrouter",
+      "ms": 38854,
+      "expectedGenuine": false
+    },
+    {
+      "id": "cloned-number",
+      "description": "A registered number printed on a different product",
+      "passed": true,
+      "problems": [],
+      "verdict": "high_risk",
+      "riskScore": 70,
+      "confidence": "low",
+      "failure": null,
+      "signals": [
+        "DEMO_RECORD",
+        "NAME_MISMATCH",
+        "BATCH_UNKNOWN",
+        "VISUAL_MISMATCH"
+      ],
+      "nafdacNo": "X9-0001",
+      "batchNo": "PM2402",
+      "provider": "openrouter",
+      "ms": 239480,
+      "expectedGenuine": false
+    },
+    {
+      "id": "unregistered-number",
+      "description": "A number that isn't in the register",
+      "passed": true,
+      "problems": [],
+      "verdict": "unregistered",
+      "riskScore": 45,
+      "confidence": "high",
+      "failure": null,
+      "signals": [
+        "NOT_IN_REGISTRY"
+      ],
+      "nafdacNo": "X9-0999",
+      "batchNo": "CX0001",
+      "provider": "openrouter",
+      "ms": 14999,
+      "expectedGenuine": false
+    },
+    {
+      "id": "no-reference",
+      "description": "Registered product with no reference photo: clean, but confidence capped",
+      "passed": true,
+      "problems": [],
+      "verdict": "likely_genuine",
+      "riskScore": 0,
+      "confidence": "low",
+      "failure": null,
+      "signals": [
+        "DEMO_RECORD",
+        "NAME_MATCHES_REGISTRY",
+        "BATCH_KNOWN",
+        "PACK_NOT_COMPARED"
+      ],
+      "nafdacNo": "X9-0002",
+      "batchNo": "DX2405",
+      "provider": "openrouter",
+      "ms": 11362,
+      "expectedGenuine": true
+    },
+    {
+      "id": "not-a-pack",
+      "description": "Not a medicine pack at all",
+      "passed": true,
+      "problems": [],
+      "verdict": null,
+      "riskScore": null,
+      "confidence": null,
+      "failure": "NOT_A_MEDICINE_PACK",
+      "signals": [],
+      "nafdacNo": null,
+      "batchNo": null,
+      "provider": null,
+      "ms": 11338,
+      "expectedGenuine": null
+    }
+  ]
+}

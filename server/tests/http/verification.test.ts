@@ -11,7 +11,7 @@ vi.mock("../../src/services/device.service.js", () => ({ deviceService: { getAut
 vi.mock("../../src/services/verification.service.js", () => ({ verificationService: { verifyManual: vi.fn() } }));
 vi.mock("../../src/services/scan.service.js", () => ({ scanService: { listForDevice: vi.fn(), getForDevice: vi.fn() } }));
 vi.mock("../../src/services/registry.service.js", () => ({
-  registryService: { search: vi.fn(), getProductWithBatches: vi.fn() },
+  registryService: { search: vi.fn(), getProductWithBatches: vi.fn(), getReferenceImage: vi.fn() },
 }));
 
 const app = createApp();
@@ -86,6 +86,31 @@ describe("GET /api/v1/products/:nafdacNo", () => {
     const res = await request(app).get("/api/v1/products/a4%20-%201234").set("Authorization", auth);
     expect(res.status).toBe(200);
     expect(registryService.getProductWithBatches).toHaveBeenCalledWith("A4-1234");
+  });
+});
+
+describe("GET /api/v1/products/:nafdacNo/reference-images/:imageId", () => {
+  const IMAGE_ID = "0b6f7a52-0d0e-4f4e-9b1a-2f3c4d5e6f70";
+
+  it("serves the JPEG with an ETag, and 304 when the app already has it", async () => {
+    vi.mocked(registryService.getReferenceImage).mockResolvedValue({ data: Buffer.from("jpeg"), etag: '"abc"' });
+    const res = await request(app).get(`/api/v1/products/x9-0001/reference-images/${IMAGE_ID}`).set("Authorization", auth);
+    expect(res.status).toBe(200);
+    expect(res.headers["content-type"]).toBe("image/jpeg");
+    expect(res.headers.etag).toBe('"abc"');
+    expect(registryService.getReferenceImage).toHaveBeenCalledWith("X9-0001", IMAGE_ID);
+
+    const again = await request(app)
+      .get(`/api/v1/products/X9-0001/reference-images/${IMAGE_ID}`)
+      .set("Authorization", auth)
+      .set("If-None-Match", '"abc"');
+    expect(again.status).toBe(304);
+  });
+
+  it("422 for a malformed image id", async () => {
+    const res = await request(app).get("/api/v1/products/X9-0001/reference-images/nope").set("Authorization", auth);
+    expect(res.status).toBe(422);
+    expect(registryService.getReferenceImage).not.toHaveBeenCalled();
   });
 });
 

@@ -53,6 +53,11 @@ export const productRepository = {
           select: { batchNo: true, expiryDate: true, recalled: true, recallNote: true },
           orderBy: { expiryDate: "desc" },
         },
+        // Metadata only; the photo itself is served by its own endpoint.
+        referenceImages: {
+          select: { id: true, side: true, width: true, height: true },
+          orderBy: [{ side: "asc" }, { createdAt: "asc" }],
+        },
       },
     });
   },
