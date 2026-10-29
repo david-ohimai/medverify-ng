@@ -39,7 +39,8 @@ describe("POST /api/v1/scans", () => {
     expect(res.status).toBe(202);
     expect(res.headers.location).toBe(`/api/v1/scans/${SCAN_ID}`);
     expect(res.body.data).toMatchObject({ scanId: SCAN_ID, status: "pending" });
-    expect(photoScanService.submit).toHaveBeenCalledWith("device-1", Buffer.from("jpeg-bytes"));
+    // No location sent → null (the app asks permission; it's optional).
+    expect(photoScanService.submit).toHaveBeenCalledWith("device-1", Buffer.from("jpeg-bytes"), null);
   });
 
   it("422 without a photo; 400 for a file in the wrong field", async () => {

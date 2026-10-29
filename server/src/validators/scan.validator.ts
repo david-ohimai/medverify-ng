@@ -1,4 +1,11 @@
 import { z } from "zod";
+import { bothOrNeither, bothOrNeitherMessage, locationFields } from "./fields.js";
+
+/** Form fields sent with the photo (multipart). The photo itself is checked by the upload middleware. */
+export const scanUploadSchema = z.object({
+  body: z.strictObject(locationFields).refine(bothOrNeither, bothOrNeitherMessage),
+});
+export type ScanUploadInput = z.infer<typeof scanUploadSchema>["body"];
 
 export const listScansSchema = z.object({
   query: z.object({

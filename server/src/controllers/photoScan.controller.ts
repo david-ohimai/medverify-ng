@@ -1,10 +1,11 @@
 import type { Request, Response } from "express";
+import { toScanLocation } from "../lib/areas.js";
 import { UnauthorizedError, ValidationError } from "../lib/errors.js";
 import { sendSuccess } from "../lib/response.js";
 import { scanProgress, type SequencedEvent } from "../lib/scanProgress.js";
 import { photoScanService } from "../services/photoScan.service.js";
 import { scanService } from "../services/scan.service.js";
-import type { ScanParams } from "../validators/scan.validator.js";
+import type { ScanParams, ScanUploadInput } from "../validators/scan.validator.js";
 
 /** Comment line that keeps proxies (Render) from closing an idle stream. */
 const HEARTBEAT_MS = 15_000;
@@ -19,7 +20,11 @@ function deviceId(req: Request): string {
 export const photoScanController = {
   async submit(req: Request, res: Response): Promise<void> {
     if (!req.file) throw new ValidationError([{ field: "image", message: "Photo is required" }]);
-    const accepted = await photoScanService.submit(deviceId(req), req.file.buffer);
+    const accepted = await photoScanService.submit(
+      deviceId(req),
+      req.file.buffer,
+      toScanLocation(req.validated.body as ScanUploadInput)
+    );
     res.setHeader("Location", accepted.statusUrl);
     sendSuccess(res, 202, "Scan accepted — follow eventsUrl for progress", accepted);
   },

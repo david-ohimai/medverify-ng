@@ -57,5 +57,9 @@ listen("scan:failed", "audit", ({ scanId, deviceId, failureCode }) =>
   audit("scan.failed", deviceId, { failureCode }, scanId, "scan")
 );
 
+listen("hotspot:alert-created", "audit", ({ alertId, hotspotId, severity, generatedBy }) =>
+  audit("hotspot.alert_created", null, { hotspotId, severity, generatedBy }, alertId, "hotspot_alert")
+);
+
 // The model control plane's record: one row per AI call (ai_audit_logs).
 listen("ai:called", "ai-audit", (call) => aiAuditLogRepository.create({ ...call, correlationId: getCorrelationId() ?? null }));

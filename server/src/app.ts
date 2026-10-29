@@ -12,6 +12,7 @@ import { sanitizeInput } from "./middleware/sanitize.js";
 import { aiRoutes } from "./routes/ai.routes.js";
 import { deviceRoutes } from "./routes/device.routes.js";
 import { healthRoutes } from "./routes/health.routes.js";
+import { alertRoutes, hotspotRoutes } from "./routes/hotspot.routes.js";
 import { registryRoutes } from "./routes/registry.routes.js";
 import { scanRoutes, verificationRoutes } from "./routes/verification.routes.js";
 import "./events/index.js";
@@ -88,6 +89,8 @@ export function createApp() {
   app.use(`${API_PREFIX}/verify`, verificationRoutes);
   app.use(`${API_PREFIX}/scans`, scanRoutes);
   app.use(`${API_PREFIX}/ai`, aiRoutes);
+  app.use(`${API_PREFIX}/hotspots`, hotspotRoutes);
+  app.use(`${API_PREFIX}/alerts`, alertRoutes);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

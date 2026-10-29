@@ -7,11 +7,13 @@ import { logger } from "./lib/logger.js";
 import { prisma } from "./lib/prisma.js";
 import { redis } from "./lib/redis.js";
 import { scanProgress } from "./lib/scanProgress.js";
+import { closeHotspotQueue } from "./queues/hotspot.queue.js";
 import { closeQueues } from "./queues/scan.queue.js";
+import { registerHotspotTrigger, startHotspotWorker } from "./workers/hotspot.worker.js";
 import { startScanWorker } from "./workers/scan.worker.js";
 
 let server: Server | undefined;
-let worker: Worker | undefined;
+let workers: Worker[] = [];
 
 async function start(): Promise<void> {
   // Fail fast: don't accept traffic until both dependencies really answer.
@@ -29,7 +31,9 @@ async function start(): Promise<void> {
     logger.info({ event: "ai:providers", chain: providers.map((p) => `${p.name}:${p.models.vision}`) }, "AI provider chain ready");
   }
 
-  if (config.SCAN_WORKER_ENABLED) worker = startScanWorker();
+  // Flagged manual checks happen here, so this process always asks for hotspot refreshes.
+  registerHotspotTrigger();
+  if (config.SCAN_WORKER_ENABLED) workers = [startScanWorker(), await startHotspotWorker()];
 
   server = createApp().listen(config.PORT, () => {
     logger.info(
@@ -51,9 +55,9 @@ async function shutdown(signal: string): Promise<void> {
     // Open SSE streams never end on their own; cut them after a short grace period.
     setTimeout(() => server?.closeAllConnections(), 3_000).unref();
   });
-  await worker?.close();
+  await Promise.allSettled(workers.map((worker) => worker.close()));
   llmService.shutdown();
-  await Promise.allSettled([closeQueues(), scanProgress.close(), prisma.$disconnect(), redis.quit()]);
+  await Promise.allSettled([closeQueues(), closeHotspotQueue(), scanProgress.close(), prisma.$disconnect(), redis.quit()]);
   logger.info({ event: "server:stopped" }, "Shutdown complete");
   process.exit(0);
 }

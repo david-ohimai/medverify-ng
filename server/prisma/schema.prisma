@@ -169,6 +169,7 @@ model Product {
   batches         Batch[]
   scans           Scan[]
   referenceImages ReferenceImage[]
+  hotspots        Hotspot[]
 
   // Fuzzy name search ("C0artem" still finds Coartem) with pg_trgm.
   @@index([brandName(ops: raw("gin_trgm_ops"))], type: Gin, map: "products_brand_name_trgm_idx")
@@ -257,6 +258,14 @@ model Scan {
   failureCode String?     @map("failure_code") @db.VarChar(40)
   /// Which AI provider read the pack (gemini / openrouter / cache).
   llmProvider String?     @map("llm_provider") @db.VarChar(20)
+  /// Where the scan happened, rounded to 2 decimals (~1 km) before it is
+  /// stored — never the exact spot. Optional: the app asks permission.
+  latitude    Float?      @db.DoublePrecision
+  longitude   Float?      @db.DoublePrecision
+  /// Nearest known market or area, when within a few km (lib/areas.ts).
+  areaName    String?     @map("area_name") @db.VarChar(80)
+  /// Generated pilot data (npm run simulate). Always flagged in the API.
+  simulated   Boolean     @default(false)
   createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
   completedAt DateTime?   @map("completed_at") @db.Timestamptz(3)
 
@@ -266,7 +275,72 @@ model Scan {
 
   @@index([deviceId, createdAt(sort: Desc)])
   @@index([nafdacNo, batchNo])
+  /// Hotspot clustering and stats read recent scans by time.
+  @@index([createdAt(sort: Desc), riskScore])
   @@map("scans")
+}
+
+enum HotspotSeverity {
+  low
+  medium
+  high
+}
+
+/// A cluster of suspicious scans close together in place and time, found by
+/// PostGIS ST_ClusterDBSCAN over the last 7 days (refreshed by a BullMQ job).
+/// A cluster that disappears is kept, inactive, for the record.
+model Hotspot {
+  id             String          @id @default(uuid()) @db.Uuid
+  latitude       Float           @db.DoublePrecision
+  longitude      Float           @db.DoublePrecision
+  /// Distance from the centre to the farthest scan in the cluster.
+  radiusM        Int             @map("radius_m")
+  scanCount      Int             @map("scan_count")
+  highRiskCount  Int             @map("high_risk_count")
+  maxRiskScore   Int             @map("max_risk_score")
+  recallInvolved Boolean         @map("recall_involved")
+  severity       HotspotSeverity
+  /// The product and batch most of the cluster's scans were about.
+  productId      String?         @map("product_id") @db.Uuid
+  nafdacNo       String?         @map("nafdac_no") @db.VarChar(20)
+  batchNo        String?         @map("batch_no") @db.VarChar(40)
+  areaName       String?         @map("area_name") @db.VarChar(80)
+  /// Share of the cluster's scans that are simulated pilot data (0–1).
+  simulatedShare Float           @map("simulated_share")
+  firstSeen      DateTime        @map("first_seen") @db.Timestamptz(3)
+  lastSeen       DateTime        @map("last_seen") @db.Timestamptz(3)
+  active         Boolean         @default(true)
+  createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  product Product?       @relation(fields: [productId], references: [id], onDelete: SetNull)
+  alerts  HotspotAlert[]
+
+  @@index([active, severity])
+  @@map("hotspots")
+}
+
+/// The alert card regulators read: written by the AI from the cluster's
+/// facts only (or from a template if the AI is unavailable). A new alert is
+/// written only when a hotspot appears or grows, so it costs little quota.
+model HotspotAlert {
+  id                String          @id @default(uuid()) @db.Uuid
+  hotspotId         String          @map("hotspot_id") @db.Uuid
+  title             String          @db.VarChar(120)
+  body              String          @db.VarChar(600)
+  recommendedAction String          @map("recommended_action") @db.VarChar(300)
+  severity          HotspotSeverity
+  /// gemini / openrouter / template
+  generatedBy       String          @map("generated_by") @db.VarChar(20)
+  promptVersion     Int?            @map("prompt_version")
+  /// The exact facts the alert was written from — nothing else was given to the AI.
+  facts             Json
+  createdAt         DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  hotspot Hotspot @relation(fields: [hotspotId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt(sort: Desc)])
+  @@map("hotspot_alerts")
 }
 
 /// Model control plane: every prompt the AI uses is a numbered version.

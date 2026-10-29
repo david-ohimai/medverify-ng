@@ -2,6 +2,7 @@ import { llmService } from "../ai/llm.service.js";
 import { getActivePrompt } from "../ai/prompts.js";
 import type { LabelRead, PackCompare } from "../ai/tasks.js";
 import { API_PREFIX } from "../config/constants.js";
+import type { ScanLocation } from "../lib/areas.js";
 import { cacheGetJson, cacheKeys, cacheSetJson, CACHE_TTL } from "../lib/cache.js";
 import { parseExpiry } from "../lib/dates.js";
 import { AiQuotaExhaustedError, AiUnavailableError, AppError } from "../lib/errors.js";
@@ -249,12 +250,12 @@ export const photoScanService = {
    * Accepts a pack photo: validates and normalises it, records a pending
    * scan and queues the work. Returns at once (202); progress streams over SSE.
    */
-  async submit(deviceId: string, upload: Buffer): Promise<SubmittedScan> {
+  async submit(deviceId: string, upload: Buffer, location: ScanLocation | null = null): Promise<SubmittedScan> {
     if (!llmService.configured) throw new AiUnavailableError("Photo checks aren't set up on this server yet. Type the NAFDAC number in instead.");
     if (!(await llmService.hasCapacity())) throw new AiQuotaExhaustedError();
 
     const image = await prepareImage(upload);
-    const scan = await scanRepository.createPending({ deviceId, imageHash: image.hash });
+    const scan = await scanRepository.createPending({ deviceId, imageHash: image.hash, location });
 
     try {
       await scanImageStore.put(scan.id, image.data);

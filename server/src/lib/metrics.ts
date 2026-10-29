@@ -66,6 +66,13 @@ export const scanJobsTotal = new Counter({
   registers: [metricsRegistry],
 });
 
+export const hotspotAlertsTotal = new Counter({
+  name: "hotspot_alerts_total",
+  help: "Hotspot alerts written, by severity and author (gemini / openrouter / template)",
+  labelNames: ["severity", "generated_by"] as const,
+  registers: [metricsRegistry],
+});
+
 export const securityEventsTotal = new Counter({
   name: "security_events_total",
   help: "Security-relevant events (failed PINs, refresh token reuse)",
