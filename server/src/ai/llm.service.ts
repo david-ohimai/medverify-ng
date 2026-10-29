@@ -9,7 +9,17 @@ import { createOpenRouterProvider } from "./providers/openrouter.provider.js";
 import { aiQuota } from "./quota.js";
 import { createBreaker, withRetry, type Breaker, type RetryOptions } from "./resilience.js";
 import { AI_TASKS, type AiTaskName, type AiTaskOutput } from "./tasks.js";
-import { LlmError, type GenerateJsonResponse, type LlmPart, type LlmProvider, type LlmUsage, type ProviderName } from "./types.js";
+import {
+  LlmError,
+  type ChatMessage,
+  type ChatRequest,
+  type ChatResponse,
+  type GenerateJsonResponse,
+  type LlmPart,
+  type LlmProvider,
+  type LlmUsage,
+  type ProviderName,
+} from "./types.js";
 
 export interface AiCallContext {
   /** Short, non-personal description of the input for the audit log. Never the image itself. */
@@ -174,6 +184,41 @@ export function createLlmService(deps: Dependencies) {
     }
   }
 
+  /**
+   * The provider chain shared by every kind of call: skip a provider whose
+   * circuit is open or whose budget is spent, try the next one on failure,
+   * and end with AiQuotaExhausted (all budgets spent) or AiUnavailable.
+   */
+  async function throughChain<T>(task: string, attempt: (provider: LlmProvider, fallbackUsed: boolean) => Promise<T>): Promise<T> {
+    if (deps.providers.length === 0) {
+      throw new AiUnavailableError("No AI provider is configured (set GEMINI_API_KEY in server/.env).");
+    }
+    const skipped: string[] = [];
+    for (const [index, provider] of deps.providers.entries()) {
+      if (breakers.get(provider.name)!.isOpen) {
+        skipped.push(`${provider.name}:CIRCUIT_OPEN`);
+        continue;
+      }
+      if (!(await deps.quota.reserve(provider.name))) {
+        skipped.push(`${provider.name}:QUOTA_EXHAUSTED`);
+        continue;
+      }
+      try {
+        return await attempt(provider, index > 0);
+      } catch (err) {
+        const code = err instanceof LlmError ? err.code : "CIRCUIT_OPEN";
+        skipped.push(`${provider.name}:${code}`);
+        logger.warn(
+          { event: "llm:provider-failed", provider: provider.name, task, code, message: (err as Error).message },
+          index < deps.providers.length - 1 ? "Provider failed; falling back" : "Last provider failed"
+        );
+      }
+    }
+    logger.error({ event: "llm:all-providers-failed", task, attempts: skipped }, "No AI provider could answer");
+    if (skipped.every((reason) => reason.endsWith(":QUOTA_EXHAUSTED"))) throw new AiQuotaExhaustedError();
+    throw new AiUnavailableError();
+  }
+
   return {
     /** Runs an AI task and returns validated, typed output — or throws AiUnavailable / AiQuotaExhausted. */
     async run<K extends AiTaskName>(task: K, parts: LlmPart[], context: AiCallContext): Promise<AiResult<AiTaskOutput<K>>> {
@@ -181,33 +226,68 @@ export function createLlmService(deps: Dependencies) {
         throw new AiUnavailableError("No AI provider is configured (set GEMINI_API_KEY in server/.env).");
       }
       const prompt = await deps.getPrompt(task);
-      const skipped: string[] = [];
+      return throughChain(task, (provider, fallbackUsed) =>
+        callProvider(provider, task, prompt, parts, context, fallbackUsed)
+      ) as Promise<AiResult<AiTaskOutput<K>>>;
+    },
 
-      for (const [index, provider] of deps.providers.entries()) {
-        if (breakers.get(provider.name)!.isOpen) {
-          skipped.push(`${provider.name}:CIRCUIT_OPEN`);
-          continue;
-        }
-        if (!(await deps.quota.reserve(provider.name))) {
-          skipped.push(`${provider.name}:QUOTA_EXHAUSTED`);
-          continue;
-        }
+    /**
+     * One round of a tool-calling conversation, through the same chain,
+     * retries, circuit breakers, budget and audit as every other call.
+     * The caller (the assistant) runs the tools and loops.
+     */
+    async chat(
+      request: Omit<ChatRequest, "signal" | "tier" | "maxOutputTokens">,
+      context: AiCallContext & { promptVersion: number }
+    ): Promise<ChatResponse & { provider: ProviderName; fallbackUsed: boolean }> {
+      return throughChain("assistant", async (provider, fallbackUsed) => {
+        const breaker = breakers.get(provider.name)!;
+        const started = Date.now();
+        const audit = (success: boolean, errorCode: string | null, response?: ChatResponse) =>
+          appEvents.emit("ai:called", {
+            task: "assistant",
+            provider: provider.name,
+            model: response?.model ?? provider.modelFor("light"),
+            promptVersion: context.promptVersion,
+            success,
+            errorCode,
+            fallbackUsed,
+            inputSummary: summarise(context.inputSummary, 500),
+            outputSummary: response
+              ? summarise(response.toolCalls.length > 0 ? `tools: ${response.toolCalls.map((c) => c.name).join(", ")}` : (response.text ?? ""), 1000)
+              : null,
+            inputTokens: response?.usage.inputTokens ?? null,
+            outputTokens: response?.usage.outputTokens ?? null,
+            latencyMs: Date.now() - started,
+            scanId: null,
+          });
         try {
-          const result = await callProvider(provider, task, prompt, parts, context, index > 0);
-          return result as AiResult<AiTaskOutput<K>>;
-        } catch (err) {
-          const code = err instanceof LlmError ? err.code : "CIRCUIT_OPEN";
-          skipped.push(`${provider.name}:${code}`);
-          logger.warn(
-            { event: "llm:provider-failed", provider: provider.name, task, code, message: (err as Error).message },
-            index < deps.providers.length - 1 ? "Provider failed; falling back" : "Last provider failed"
+          const response = await breaker.fire(() =>
+            withRetry(
+              () =>
+                provider.chat({
+                  ...request,
+                  // Gemini's raw parts only make sense to Gemini; other providers get the plain form.
+                  messages: request.messages.map((message) =>
+                    message.role === "assistant" && message.providerParts?.provider !== provider.name
+                      ? { ...message, providerParts: undefined }
+                      : message
+                  ) as ChatMessage[],
+                  // Text and tools only: the light model has a higher free per-minute limit.
+                  tier: "light",
+                  maxOutputTokens: 2048,
+                  signal: AbortSignal.timeout(deps.timeoutMs),
+                }),
+              deps.retry
+            )
           );
+          audit(true, null, response);
+          return { ...response, provider: provider.name, fallbackUsed };
+        } catch (err) {
+          audit(false, err instanceof LlmError ? err.code : breaker.isOpen ? "CIRCUIT_OPEN" : "UNKNOWN");
+          throw err;
         }
-      }
-
-      logger.error({ event: "llm:all-providers-failed", task, attempts: skipped }, "No AI provider could answer");
-      if (skipped.every((reason) => reason.endsWith(":QUOTA_EXHAUSTED"))) throw new AiQuotaExhaustedError();
-      throw new AiUnavailableError();
+      });
     },
 
     /** Can any provider take a call right now? Checked before a scan is queued. */

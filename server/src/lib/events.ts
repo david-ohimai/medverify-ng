@@ -18,6 +18,9 @@ export interface AppEvents {
   "scan:completed": [{ scanId: string; deviceId: string; kind: ScanKind; verdict: Verdict; riskScore: number }];
   "scan:queued": [{ scanId: string; deviceId: string }];
   "scan:failed": [{ scanId: string; deviceId: string | null; failureCode: string }];
+  "assistant:answered": [{ conversationId: string; deviceId: string; rounds: number; tools: string[]; provider: string }];
+  "assistant:tool-called": [{ tool: string; ok: boolean }];
+  "assistant:injection-suspected": [{ deviceId: string; conversationId: string }];
   "hotspot:alert-created": [{ alertId: string; hotspotId: string; severity: string; generatedBy: string }];
   /** One AI provider call (successful or not) — feeds ai_audit_logs and metrics. */
   "ai:called": [AiCallRecord];

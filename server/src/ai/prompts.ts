@@ -1,7 +1,7 @@
 import { cacheDel, cacheGetJson, cacheKeys, cacheSetJson, CACHE_TTL } from "../lib/cache.js";
 import { logger } from "../lib/logger.js";
 import { promptRepository } from "../repositories/prompt.repository.js";
-import { AI_TASKS, type AiTaskName } from "./tasks.js";
+import { defaultPromptFor, type PromptTask } from "./tasks.js";
 
 export interface ActivePrompt {
   version: number;
@@ -15,7 +15,7 @@ export interface ActivePrompt {
  * default. A prompt change takes effect within the cache TTL, or at once
  * when it is activated through the API (which clears the key).
  */
-export async function getActivePrompt(task: AiTaskName): Promise<ActivePrompt> {
+export async function getActivePrompt(task: PromptTask): Promise<ActivePrompt> {
   const key = cacheKeys.activePrompt(task);
   const cached = await cacheGetJson<ActivePrompt>(key);
   if (cached) return cached;
@@ -35,9 +35,9 @@ export async function getActivePrompt(task: AiTaskName): Promise<ActivePrompt> {
   return prompt;
 }
 
-export function builtinPrompt(task: AiTaskName): { version: number; system: string } {
-  const { version, system } = AI_TASKS[task].defaultPrompt;
+export function builtinPrompt(task: PromptTask): { version: number; system: string } {
+  const { version, system } = defaultPromptFor(task);
   return { version, system };
 }
 
-export const clearPromptCache = (task: AiTaskName) => cacheDel(cacheKeys.activePrompt(task));
+export const clearPromptCache = (task: PromptTask) => cacheDel(cacheKeys.activePrompt(task));

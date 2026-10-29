@@ -73,6 +73,20 @@ export const hotspotAlertsTotal = new Counter({
   registers: [metricsRegistry],
 });
 
+export const assistantAnswersTotal = new Counter({
+  name: "assistant_answers_total",
+  help: "Assistant answers, by the number of model rounds they took",
+  labelNames: ["rounds", "provider"] as const,
+  registers: [metricsRegistry],
+});
+
+export const assistantToolCallsTotal = new Counter({
+  name: "assistant_tool_calls_total",
+  help: "Assistant tool calls, by tool and whether they succeeded",
+  labelNames: ["tool", "ok"] as const,
+  registers: [metricsRegistry],
+});
+
 export const securityEventsTotal = new Counter({
   name: "security_events_total",
   help: "Security-relevant events (failed PINs, refresh token reuse)",

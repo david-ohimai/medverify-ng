@@ -108,6 +108,7 @@ model Device {
   refreshTokens RefreshToken[]
   auditLogs     AuditLog[]
   scans         Scan[]
+  conversations AssistantConversation[]
 
   @@map("devices")
 }
@@ -341,6 +342,86 @@ model HotspotAlert {
 
   @@index([createdAt(sort: Desc)])
   @@map("hotspot_alerts")
+}
+
+/// An official page the assistant may quote (WHO or NAFDAC only — see
+/// src/lib/verifiedSources.ts). Loaded from kb/documents/ by npm run kb:ingest.
+model KbDocument {
+  id        String   @id @db.VarChar(80)
+  title     String   @db.VarChar(300)
+  publisher String   @db.VarChar(80)
+  url       String   @db.VarChar(500)
+  /// When the page was downloaded from its official site.
+  retrieved DateTime @db.Date
+  /// Hash of the document text: unchanged documents aren't re-embedded.
+  sha256    String   @db.Char(64)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  chunks KbChunk[]
+
+  @@map("kb_documents")
+}
+
+/// One passage of a document with its embedding (pgvector). The knowledge
+/// base is a few hundred chunks, so search is an exact scan — an HNSW index
+/// only pays off at tens of thousands of rows.
+model KbChunk {
+  id         String                     @id @default(uuid()) @db.Uuid
+  documentId String                     @map("document_id") @db.VarChar(80)
+  position   Int
+  /// Nearest heading above the passage.
+  section    String?                    @db.VarChar(300)
+  content    String                     @db.Text
+  /// gemini-embedding-001, 768 dimensions, normalised.
+  embedding  Unsupported("vector(768)")?
+
+  document KbDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, position])
+  @@map("kb_chunks")
+}
+
+/// One chat with the assistant. Its role is fixed when it starts, so a
+/// conversation can't gain regulator tools later.
+model AssistantConversation {
+  id        String   @id @default(uuid()) @db.Uuid
+  deviceId  String?  @map("device_id") @db.Uuid
+  role      DeviceRole
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  device   Device?            @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  messages AssistantMessage[]
+
+  @@index([deviceId, updatedAt(sort: Desc)])
+  @@map("assistant_conversations")
+}
+
+enum AssistantMessageRole {
+  user
+  assistant
+  tool
+}
+
+/// The conversation and its execution trace: every tool call, its
+/// validated arguments and a summary of what it returned.
+model AssistantMessage {
+  id                String               @id @default(uuid()) @db.Uuid
+  conversationId    String               @map("conversation_id") @db.Uuid
+  role              AssistantMessageRole
+  content           String               @db.Text
+  toolName          String?              @map("tool_name") @db.VarChar(60)
+  toolArgs          Json?                @map("tool_args")
+  toolResultSummary String?              @map("tool_result_summary") @db.VarChar(1000)
+  /// For assistant answers: the sources cited [{ title, url, publisher }].
+  citations         Json?
+  createdAt         DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  conversation AssistantConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+  @@map("assistant_messages")
 }
 
 /// Model control plane: every prompt the AI uses is a numbered version.

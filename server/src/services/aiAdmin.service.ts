@@ -1,6 +1,6 @@
 import { llmService } from "../ai/llm.service.js";
 import { clearPromptCache, getActivePrompt } from "../ai/prompts.js";
-import { AI_TASK_NAMES, type AiTaskName } from "../ai/tasks.js";
+import { PROMPT_TASKS, type PromptTask } from "../ai/tasks.js";
 import { NotFoundError } from "../lib/errors.js";
 import { aiAuditLogRepository } from "../repositories/aiAuditLog.repository.js";
 import { promptRepository } from "../repositories/prompt.repository.js";
@@ -16,7 +16,7 @@ export const aiAdminService = {
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const [providers, prompts, usage] = await Promise.all([
       llmService.status(),
-      Promise.all(AI_TASK_NAMES.map(async (task) => ({ task, ...(await getActivePrompt(task)) }))),
+      Promise.all(PROMPT_TASKS.map(async (task) => ({ task, ...(await getActivePrompt(task)) }))),
       aiAuditLogRepository.usageSince(since),
     ]);
     return {
@@ -51,7 +51,7 @@ export const aiAdminService = {
     const prompt = await promptRepository.findById(id);
     if (!prompt) throw new NotFoundError("Prompt version not found");
     const activated = await promptRepository.activate(id, prompt.task);
-    await clearPromptCache(prompt.task as AiTaskName);
+    await clearPromptCache(prompt.task as PromptTask);
     return activated;
   },
 

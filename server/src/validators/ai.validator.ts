@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { AI_TASK_NAMES } from "../ai/tasks.js";
+import { PROMPT_TASKS } from "../ai/tasks.js";
 
-const taskField = z.enum(AI_TASK_NAMES as [string, ...string[]]);
+const taskField = z.enum(PROMPT_TASKS as [string, ...string[]]);
 
 export const listPromptsSchema = z.object({
   query: z.object({ task: taskField.optional() }),

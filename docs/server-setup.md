@@ -25,8 +25,9 @@ Shell: **Git Bash** unless noted. Working folder: `medverify-ng/server/`.
 | 8 | `npm run prisma:migrate` | Creates the tables |
 | 9 | `npm run prisma:generate` | Builds the typed Prisma client into `src/generated/prisma` |
 | 9b | `npm run seed` | Loads the registry CSVs, the genuine-pack reference photos and the AI prompt versions |
+| 9b++ | `npm run kb:ingest` | Embeds the official WHO / NAFDAC documents in `kb/documents/` for the assistant (needs the Gemini key; ~1 minute) |
 | 9b+ | `npm run simulate` | Optional: ~1,400 simulated pilot scans with planted clusters, then clusters them — fills the hotspot map |
-| 9c | `npm test` | 207 unit + HTTP tests; no database, Redis or AI key needed |
+| 9c | `npm test` | 247 unit + HTTP tests; no database, Redis or AI key needed |
 | 10 | `npm run typecheck` | Strict TypeScript check of `src/` and `tests/` |
 | 11 | `npm run dev` | API on http://localhost:3000, restarts on save |
 | 12 | Open http://localhost:3000/api-docs | Swagger UI — try every endpoint |
@@ -45,7 +46,7 @@ npm run smoke
 
 | Job | What it proves |
 |---|---|
-| Server · typecheck, test, build | `prisma validate`, strict typecheck, 207 tests, production build |
+| Server · typecheck, test, build | `prisma validate`, strict typecheck, 247 tests, production build |
 | Server · migrations + smoke test | Starts the real Docker Postgres + Redis, applies every migration with `migrate deploy`, checks the extensions, seeds the registry, boots the built server and runs `npm run smoke` (device security + registry search + every verdict) |
 | Mobile · format, analyze, test | `dart format` (120 columns), `flutter analyze --fatal-infos`, all tests |
 | Mobile · Android APK | Pull requests into `main` only: obfuscated arm64 release APK, downloadable from the run for 5 days |
@@ -254,6 +255,9 @@ Endpoints:
 | GET | `/api/v1/hotspots/stats?window=24h\|7d\|30d` | regulator | Map stat cards and top flagged products |
 | POST | `/api/v1/hotspots/refresh` | regulator | Re-cluster now (202) |
 | GET | `/api/v1/alerts/nearby?lat=&lng=&radiusKm=` | access token | Medium/high hotspots near the user |
+| POST | `/api/v1/assistant/messages` | access token | Ask the assistant — **SSE**: `conversation`, `tool_start`/`tool_end`, `answer`, `citations`, `done` |
+| GET | `/api/v1/assistant/tools` | access token | Tools available to this role |
+| GET | `/api/v1/assistant/conversations/:id` | access token | Transcript with the full tool trace |
 | GET | `/api/v1/ai/status` | regulator | Provider chain, circuit state, today's free quota, active prompt versions, 24 h usage |
 | GET / POST | `/api/v1/ai/prompts` | regulator | List prompt versions / add a new one (optionally activate) |
 | POST | `/api/v1/ai/prompts/:id/activate` | regulator | Switch (or roll back) a task's prompt — takes effect immediately |
@@ -430,6 +434,37 @@ npm run simulate -- --clear  # remove the simulated scans again
 
 Try it (server running): register, elevate with the PIN, then `GET $API/hotspots`, `GET $API/hotspots/stats?window=30d`, `GET $API/hotspots/alerts`. As a public device: `GET "$API/alerts/nearby?lat=6.46&lng=3.39"`. Three flagged checks with a location close together (e.g. an unknown number with `"lat":9.07,"lng":7.47` three times) make a new hotspot within ~10 s.
 
+### Step 10f — RAG over official documents, and the assistant (agent with tools)
+
+```bash
+npm install -D @mozilla/readability@latest linkedom@latest turndown@latest @types/turndown@latest
+npm run prisma:migrate -- --name knowledge_base_and_assistant
+npm run prisma:generate
+npm run kb:fetch           # download the official pages into kb/documents/ (already committed)
+npm run kb:ingest          # chunk + embed into pgvector
+npm run seed               # adds the assistant prompt version
+npm run eval:agent         # 10 questions: right tools, citations, exact details
+```
+
+**Verified sources only.** The knowledge base is 14 official pages: three WHO pages on substandard and falsified medical products, three NAFDAC pages (curbing SF medicines, the Mobile Authentication Service, the Greenbook), and eight NAFDAC public alerts from 2024–2026. `src/lib/verifiedSources.ts` allows only `who.int` and `nafdac.gov.ng` over HTTPS (look-alike hosts such as `who.int.evil.com` are rejected), and it is checked when fetching, when ingesting, when returning results, and by a test over every committed document. Each document keeps its URL, publisher, retrieval date and hash, so every answer can cite its source and every change is a diff. See `kb/README.md`.
+
+| Piece | File | What it does |
+|---|---|---|
+| Fetch | `scripts/kb-fetch.ts` | Mozilla Readability extracts the main content, Turndown converts it to Markdown (tables kept), with retries and a polite delay |
+| Chunk | `services/knowledge/chunker.ts` | Split at headings, then up to ~900 characters with one paragraph of overlap; tables are never split; each passage is embedded with its title and section |
+| Embed | `ai/embeddings.ts` | `gemini-embedding-001`, 768 dimensions, normalised, with document and query task types. Same retry, circuit breaker, budget and audit as other AI calls |
+| Store | `kb_documents`, `kb_chunks` (`vector(768)`) | Exact cosine search: 139 passages need no HNSW index |
+| Search | `services/knowledge/knowledge.service.ts` | **Hybrid**: vector search (cosine ≥ 0.60, a threshold measured on this knowledge base) + Postgres full-text, merged by **Reciprocal Rank Fusion**. Batch and registration numbers are found by keyword search. If embeddings fail, it falls back to keywords only |
+| Agent | `services/assistant/assistant.service.ts` | The model answers or asks for tools; tools run; results go back. At most **5 rounds, 4 calls per round, 60 s** in total, then one last answer with no tools. History is the last 10 turns. Suspected prompt injection is logged and counted |
+| Tools | `services/assistant/tools.ts` | `search_guidance`, `search_registry`, `check_product`, `check_batch`, `my_recent_scans`, `alerts_near_area`; plus `hotspot_overview` and `hotspot_alerts` for regulators. Each one has **Zod-validated arguments, a role check and read-only services** — the model never writes SQL. Invalid arguments or a forbidden tool come back as an error the model can read |
+| Providers | `ai/providers/*` `chat()` | Gemini function calling (thought signatures replayed) or OpenAI-style tools on OpenRouter, through the same fallback chain; the assistant uses the light model |
+| Trace | `assistant_conversations`, `assistant_messages` | Every question, tool call (arguments and result summary) and answer (with the sources it cited) |
+| Prompt | `ai/tasks.ts` `ASSISTANT_PROMPT` | Versioned like the other prompts. It requires facts to come from tools, `search_guidance` to be cited as [n], contact details and numbers to be copied **exactly**, and the assistant never to say a medicine is safe |
+
+During testing the model wrote a NAFDAC phone number in the wrong format. The prompt rule on copying numbers exactly fixed it; the answer now quotes both numbers NAFDAC publishes, each with its source.
+
+Try it: `POST $API/assistant/messages` with `{"message":"Is Postinor 2 batch T36184B fake?"}` (and `curl -N` to watch the stream). It calls `check_batch`, which finds nothing, then `search_guidance`, which finds NAFDAC Public Alert 027/2025, and it answers with the citation.
+
 ### Step 11 — Observability
 
 ```bash
@@ -475,6 +510,9 @@ npm pkg set scripts.test="vitest run" scripts.test:watch="vitest"
 | `tests/unit/reference-import.test.ts` | Reference folder loading: resize + hash, file/folder naming errors, non-images, skipped demo folders |
 | `tests/unit/hotspotRules.test.ts` | Severity bands, cluster continuity (distance, number, claim order), when to re-alert, alert facts, template wording, location rounding and area naming, haversine |
 | `tests/http/hotspots.test.ts` | Regulator-only hotspot endpoints, stats windows, refresh 202, nearby validation, lat/lng both-or-neither, photo upload location rounded |
+| `tests/unit/knowledge.test.ts` | Verified-source allowlist (look-alike hosts, HTTP, ports, credentials), **every committed document is verified**, front matter, chunking, keyword query, rank fusion |
+| `tests/unit/assistant.test.ts` | Role-gated tools, invalid arguments never run, device taken from the token, citation numbering, the agent loop (tool round → answer, max rounds, 404, AI outage, injection logging), citation parsing |
+| `tests/http/assistant.test.ts` | SSE event stream, 404 before streaming, question validation, auth, tools per role, transcripts scoped to the device |
 | `tests/http/scans.test.ts` | Upload auth, 202 + Location, missing / wrong-field file, 413 over 8 MB, SSE 404 for another device, control plane regulator-only |
 
 ```bash
@@ -497,6 +535,8 @@ npm run typecheck
 | `seed` | Load the registry CSVs (`-- --no-demo` to skip the fictional rows), sync the reference photos, and ensure every AI task has a stored prompt version |
 | `eval` | Golden eval set (`-- --fresh` for real AI calls) |
 | `simulate` | Replace the simulated pilot scans and re-cluster (`-- --clear` to remove them) |
+| `kb:fetch` / `kb:ingest` | Download the official documents / chunk and embed them (`-- --force` to re-embed) |
+| `eval:agent` | Agent eval: tool choice, citations, exact details → `eval/results/agent-latest.md` |
 | `demo-images` | Redraw the fictional demo packs |
 | `smoke` | End-to-end checks against a running server |
 
@@ -552,4 +592,8 @@ correlationId → requestLogger → helmet → cors → express.json → sanitiz
 | Doesn't location tracking hurt privacy? | Optional, rounded to ~1 km before storing, never returned to devices; regulators see cluster centres, not scans |
 | Is the map real data? | Simulated pilot data is flagged on every row and every hotspot (`includesSimulatedData`); it's there to demonstrate the pipeline |
 | Can the AI make up an alert? | It only sees the cluster's facts (stored with the alert), is told to say "suspected", and a template takes over if it's unavailable |
+| Where does the assistant's knowledge come from? | Only official WHO and NAFDAC pages, allowlisted in code and checked at fetch, ingest and search (`lib/verifiedSources.ts`, `kb/`) |
+| How do you stop it making things up? | Facts only from tools; guidance answers cite [n] from retrieved passages; off-topic passages are filtered by a measured similarity threshold; "no official guidance" when nothing matches; numbers copied exactly; `npm run eval:agent` checks it |
+| Can the model run arbitrary queries? | No — it picks from fixed tools whose arguments are Zod-validated and which call read-only services. The role in the token decides which tools exist |
+| Why hybrid search? | Embeddings catch meaning ("scratch code" → MAS); keywords catch exact codes (batch T36184B); RRF merges them without calibrating scores |
 | How do you protect the free quota? | Per-device scan limits, a daily budget per provider in Redis, and a cache keyed by photo hash + prompt version |
