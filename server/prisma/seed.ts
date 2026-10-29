@@ -1,6 +1,7 @@
 /**
- * Loads the NAFDAC registry from CSV into the database, then makes sure every
- * AI task has a stored prompt version.
+ * Loads the NAFDAC registry from CSV into the database, the genuine-pack
+ * reference photos from prisma/seed/reference/, and makes sure every AI task
+ * has a stored prompt version.
  *
  *   npm run seed              all CSVs in prisma/seed/data (real + demo)
  *   npm run seed -- --no-demo skip *.demo.csv (fictional placeholder rows)
@@ -18,6 +19,8 @@ import { clearPromptCache } from "../src/ai/prompts.js";
 import { AI_TASK_NAMES, AI_TASKS } from "../src/ai/tasks.js";
 import { cacheDelPattern, cacheKeys } from "../src/lib/cache.js";
 import { promptRepository } from "../src/repositories/prompt.repository.js";
+import { referenceImageRepository } from "../src/repositories/referenceImage.repository.js";
+import { loadReferenceImages } from "./seed/reference-import.js";
 import { prisma } from "../src/lib/prisma.js";
 import { redis } from "../src/lib/redis.js";
 import {
@@ -35,6 +38,7 @@ import {
 } from "./seed/registry-import.js";
 
 const DATA_DIR = fileURLToPath(new URL("./seed/data/", import.meta.url));
+const REFERENCE_DIR = fileURLToPath(new URL("./seed/reference/", import.meta.url));
 const includeDemo = !process.argv.includes("--no-demo");
 
 function csvFiles(kind: "products" | "batches"): string[] {
@@ -80,7 +84,16 @@ const toBatch = (b: BatchRow): BatchImportRow => ({
 async function main(): Promise<void> {
   const products = load<ProductRow>("products", productRow);
   const batches = load<BatchRow>("batches", batchRow);
-  const errors = [...products.errors, ...batches.errors, ...checkConsistency(products.rows, batches.rows)];
+  const references = await loadReferenceImages(
+    REFERENCE_DIR,
+    new Map(products.rows.map((p) => [p.nafdac_no, p.source]))
+  );
+  const errors = [
+    ...products.errors,
+    ...batches.errors,
+    ...checkConsistency(products.rows, batches.rows),
+    ...references.errors.map((error) => `reference/${error}`),
+  ];
 
   if (errors.length > 0) {
     console.error(`\nSeed aborted — ${errors.length} problem(s), nothing was written:\n`);
@@ -117,6 +130,18 @@ async function main(): Promise<void> {
     `Registry seeded: ${productRows.length} products (${demo} demo), ${batchRows.length} batches. ` +
       `Removed ${removed.products} products and ${removed.batches} batches no longer in the CSVs. ` +
       `Cleared ${cleared} cached entries.`
+  );
+
+  // Product ids exist now: attach each photo to its product and sync the table to the folder.
+  const ids = new Map(
+    (await prisma.product.findMany({ select: { id: true, nafdacNo: true } })).map((p) => [p.nafdacNo, p.id])
+  );
+  const synced = await referenceImageRepository.sync(
+    references.rows.map(({ nafdacNo, ...row }) => ({ ...row, productId: ids.get(nafdacNo)! }))
+  );
+  console.log(
+    `Reference photos: ${references.rows.length} in the folder (${synced.added} added, ${synced.removed} removed).` +
+      (references.skipped.length > 0 ? ` Skipped folders with no product loaded: ${references.skipped.join(", ")}.` : "")
   );
 
   await seedPrompts();

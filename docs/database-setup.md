@@ -141,7 +141,7 @@ exit
 
 ## 5. Create the tables with Prisma
 
-Four migrations are already in the repo:
+Five migrations are already in the repo:
 
 | Migration | What it does |
 |---|---|
@@ -149,6 +149,7 @@ Four migrations are already in the repo:
 | `20261023180000_token_version_and_revoke_reason` | Adds `devices.token_version` (instant token revocation) and `refresh_tokens.revoked_reason` |
 | `20261028081747_registry_and_scans` | Creates `products` (with GIN trigram indexes), `batches`, `scans` |
 | `20261029040705_ai_layer_and_photo_scans` | Photo scans: `scans.status` (pending → processing → done / failed), `image_hash`, `extracted`, `failure_code`, `llm_provider`, `completed_at`; verdict/score/confidence nullable until done. Creates `prompt_versions` and `ai_audit_logs` (the model control plane) |
+| `20261029065908_reference_images` | Creates `reference_images` (genuine-pack photos the AI compares scans with, stored as bytes) |
 
 ```bash
 npm run prisma:migrate      # = prisma migrate dev   → applies every pending migration
@@ -168,7 +169,7 @@ npm run db:psql
 SELECT extname, extversion FROM pg_extension ORDER BY extname;
 -- pg_trgm, plpgsql, postgis, vector
 SELECT '[1,2,3]'::vector <-> '[1,2,4]'::vector AS distance;   -- 1
-\dt                                                         -- devices, refresh_tokens, audit_logs, products, batches, scans, prompt_versions, ai_audit_logs, _prisma_migrations
+\dt                                                         -- devices, refresh_tokens, audit_logs, products, batches, scans, prompt_versions, ai_audit_logs, reference_images, _prisma_migrations
 \q
 ```
 

@@ -29,7 +29,9 @@
     "prisma:studio": "prisma studio --port 5555",
     "prisma:reset": "prisma migrate reset --force",
     "seed": "tsx prisma/seed.ts",
-    "smoke": "bash scripts/smoke-test.sh"
+    "smoke": "bash scripts/smoke-test.sh",
+    "eval": "tsx scripts/eval.ts",
+    "demo-images": "tsx scripts/generate-demo-images.ts"
   },
   "dependencies": {
     "@google/genai": "^2.31.0",

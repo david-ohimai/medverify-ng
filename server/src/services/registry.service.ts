@@ -2,6 +2,7 @@ import { CACHE_TTL, cacheGetJson, cacheKeys, cacheSetJson } from "../lib/cache.j
 import { NotFoundError } from "../lib/errors.js";
 import { normalizeNafdacNo } from "../lib/nafdac.js";
 import { productRepository } from "../repositories/product.repository.js";
+import { referenceImageRepository } from "../repositories/referenceImage.repository.js";
 
 export type RegistryProduct = NonNullable<Awaited<ReturnType<typeof productRepository.findByNafdacNo>>>;
 
@@ -36,6 +37,13 @@ export const registryService = {
     const product = await productRepository.findWithBatches(nafdacNo);
     if (!product) throw new NotFoundError("No product is registered under that NAFDAC number");
     return product;
+  },
+
+  /** A genuine-pack photo of a product (JPEG bytes), e.g. to show beside the user's scan. */
+  async getReferenceImage(nafdacNo: string, imageId: string) {
+    const image = await referenceImageRepository.findImage(imageId, nafdacNo);
+    if (!image) throw new NotFoundError("Reference image not found");
+    return { data: Buffer.from(image.data), etag: `"${image.sha256.slice(0, 32)}"` };
   },
 
   /** Search by name, and by number prefix when the query looks like one. */

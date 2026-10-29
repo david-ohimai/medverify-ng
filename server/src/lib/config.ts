@@ -54,7 +54,8 @@ const envSchema = z.object({
   // AI providers. A provider without a key is simply left out of the chain.
   LLM_PRIMARY: llmProvider.default("gemini"),
   LLM_FALLBACK: llmProvider.or(z.literal("none")).default("openrouter"),
-  LLM_TIMEOUT_MS: z.coerce.number().int().min(5_000).max(120_000).default(45_000),
+  /** Hard deadline per AI attempt. Vision calls normally take 5–15 s. */
+  LLM_TIMEOUT_MS: z.coerce.number().int().min(5_000).max(120_000).default(30_000),
   GEMINI_API_KEY: optionalSecret,
   GEMINI_VISION_MODEL: z.string().min(3).default("gemini-3.5-flash"),
   GEMINI_LIGHT_MODEL: z.string().min(3).default("gemini-3.5-flash-lite"),

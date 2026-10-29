@@ -7,3 +7,5 @@ src/generated/
 .env.*
 !.env.example
 *.log
+# Eval runs answered from cache; only fresh runs (latest.*) are kept
+eval/results/cached.*

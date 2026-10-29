@@ -16,3 +16,11 @@ export const productParamsSchema = z.object({
   }),
 });
 export type ProductParams = z.infer<typeof productParamsSchema>["params"];
+
+export const referenceImageParamsSchema = z.object({
+  params: z.object({
+    nafdacNo: nafdacNoField,
+    imageId: z.uuid("Image id must be a UUID"),
+  }),
+});
+export type ReferenceImageParams = z.infer<typeof referenceImageParamsSchema>["params"];

@@ -30,7 +30,7 @@ export interface PreparedImage {
  * script posing as an image is rejected. The output is a fresh JPEG, which
  * also strips location data the phone may have embedded.
  */
-export async function prepareImage(input: Buffer): Promise<PreparedImage> {
+export async function prepareImage(input: Buffer, longSide = TARGET_LONG_SIDE): Promise<PreparedImage> {
   const metadata = await sharp(input, { limitInputPixels: MAX_PIXELS })
     .metadata()
     .catch(() => {
@@ -51,7 +51,7 @@ export async function prepareImage(input: Buffer): Promise<PreparedImage> {
 
   const { data, info } = await sharp(input, { limitInputPixels: MAX_PIXELS })
     .rotate()
-    .resize({ width: TARGET_LONG_SIDE, height: TARGET_LONG_SIDE, fit: "inside", withoutEnlargement: true })
+    .resize({ width: longSide, height: longSide, fit: "inside", withoutEnlargement: true })
     .jpeg({ quality: 85, mozjpeg: true })
     .toBuffer({ resolveWithObject: true });
 
