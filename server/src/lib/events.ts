@@ -16,6 +16,26 @@ export interface AppEvents {
   "token:refreshed": [{ deviceId: string }];
   "token:reuse-detected": [{ deviceId: string; familyId: string }];
   "scan:completed": [{ scanId: string; deviceId: string; kind: ScanKind; verdict: Verdict; riskScore: number }];
+  "scan:queued": [{ scanId: string; deviceId: string }];
+  "scan:failed": [{ scanId: string; deviceId: string | null; failureCode: string }];
+  /** One AI provider call (successful or not) — feeds ai_audit_logs and metrics. */
+  "ai:called": [AiCallRecord];
+}
+
+export interface AiCallRecord {
+  task: string;
+  provider: string;
+  model: string;
+  promptVersion: number | null;
+  success: boolean;
+  errorCode: string | null;
+  fallbackUsed: boolean;
+  inputSummary: string;
+  outputSummary: string | null;
+  inputTokens: number | null;
+  outputTokens: number | null;
+  latencyMs: number;
+  scanId: string | null;
 }
 
 export type AppEventName = keyof AppEvents;

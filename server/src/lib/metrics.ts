@@ -37,6 +37,35 @@ export const scansTotal = new Counter({
   registers: [metricsRegistry],
 });
 
+export const aiCallsTotal = new Counter({
+  name: "ai_calls_total",
+  help: "AI provider calls, by provider, task and outcome (ok or an error code)",
+  labelNames: ["provider", "task", "outcome", "fallback"] as const,
+  registers: [metricsRegistry],
+});
+
+export const aiCallDurationSeconds = new Histogram({
+  name: "ai_call_duration_seconds",
+  help: "AI provider call duration in seconds, including retries",
+  labelNames: ["provider", "task"] as const,
+  buckets: [0.5, 1, 2, 4, 8, 15, 30, 60],
+  registers: [metricsRegistry],
+});
+
+export const aiTokensTotal = new Counter({
+  name: "ai_tokens_total",
+  help: "Tokens used, by provider and direction (input/output)",
+  labelNames: ["provider", "direction"] as const,
+  registers: [metricsRegistry],
+});
+
+export const scanJobsTotal = new Counter({
+  name: "scan_jobs_total",
+  help: "Photo scan jobs by outcome (done, failed, dead_lettered)",
+  labelNames: ["outcome"] as const,
+  registers: [metricsRegistry],
+});
+
 export const securityEventsTotal = new Counter({
   name: "security_events_total",
   help: "Security-relevant events (failed PINs, refresh token reuse)",

@@ -64,10 +64,16 @@ export const CACHE_TTL = {
   registryProduct: 10 * 60,
   /** Unknown numbers are cached briefly so repeated probing doesn't hit the database. */
   registryMiss: 60,
+  /** Activating a prompt through the API clears it at once; edits made elsewhere apply within 5 minutes. */
+  activePrompt: 5 * 60,
+  /** Same photo + same prompt version = same reading, so rescans cost no quota. */
+  labelRead: 7 * 24 * 60 * 60,
 } as const;
 
 export const cacheKeys = {
   deviceAuthState: (deviceId: string) => `device-auth:${deviceId}`,
   registryProduct: (nafdacNo: string) => `registry:product:${nafdacNo}`,
   registryAll: "registry:*",
+  activePrompt: (task: string) => `ai:prompt:${task}`,
+  labelRead: (imageHash: string, promptVersion: number) => `ai:label:${imageHash}:v${promptVersion}`,
 } as const;

@@ -64,3 +64,25 @@ export class RateLimitError extends AppError {
     super(message, 429, "RATE_LIMITED");
   }
 }
+
+export class UnsupportedMediaError extends AppError {
+  constructor(message: string) {
+    super(message, 415, "UNSUPPORTED_MEDIA_TYPE");
+  }
+}
+
+/** Every AI provider is down, misconfigured or returned unusable answers. */
+export class AiUnavailableError extends AppError {
+  constructor(message = "The AI service is unavailable right now. Please try again shortly, or type the details in.") {
+    super(message, 503, "AI_UNAVAILABLE");
+  }
+}
+
+/** Today's free AI budget is used up on every provider. */
+export class AiQuotaExhaustedError extends AppError {
+  constructor(
+    message = "Photo checks are paused for today (free AI limit reached). You can still type the NAFDAC number in."
+  ) {
+    super(message, 429, "AI_QUOTA_EXHAUSTED");
+  }
+}

@@ -6,6 +6,7 @@ import { productSelect } from "./product.repository.js";
 const scanSelect = {
   id: true,
   kind: true,
+  status: true,
   nafdacNo: true,
   productName: true,
   batchNo: true,
@@ -14,27 +15,70 @@ const scanSelect = {
   riskScore: true,
   confidence: true,
   signals: true,
+  failureCode: true,
   createdAt: true,
+  completedAt: true,
   product: { select: productSelect },
 } as const;
 
 export type ScanRecord = NonNullable<Awaited<ReturnType<typeof scanRepository.findForDevice>>>;
 
+export interface ScanOutcome {
+  nafdacNo: string | null;
+  productName: string | null;
+  batchNo: string | null;
+  expiryDate: Date | null;
+  productId: string | null;
+  verdict: Verdict;
+  riskScore: number;
+  confidence: Confidence;
+  signals: Prisma.InputJsonValue;
+}
+
 export const scanRepository = {
-  create(data: {
-    deviceId: string;
-    kind: ScanKind;
-    nafdacNo: string | null;
-    productName: string | null;
-    batchNo: string | null;
-    expiryDate: Date | null;
-    productId: string | null;
-    verdict: Verdict;
-    riskScore: number;
-    confidence: Confidence;
-    signals: Prisma.InputJsonValue;
-  }) {
-    return prisma.scan.create({ data, select: scanSelect });
+  /** A manual check: verdict known at once. */
+  create(data: ScanOutcome & { deviceId: string; kind: ScanKind }) {
+    return prisma.scan.create({ data: { ...data, completedAt: new Date() }, select: scanSelect });
+  },
+
+  /** A photo scan, accepted and waiting for the worker. */
+  createPending(data: { deviceId: string; imageHash: string }) {
+    return prisma.scan.create({ data: { ...data, kind: "photo", status: "pending" }, select: scanSelect });
+  },
+
+  /** What the worker needs; any device. */
+  findForWorker(id: string) {
+    return prisma.scan.findUnique({ where: { id }, select: { id: true, deviceId: true, status: true, imageHash: true } });
+  },
+
+  /**
+   * pending → processing, only once: a retried or duplicate job that finds
+   * the scan already finished does nothing. A scan stuck in "processing"
+   * (worker crashed mid-job) may be picked up again.
+   */
+  async claim(id: string): Promise<boolean> {
+    const { count } = await prisma.scan.updateMany({
+      where: { id, status: { in: ["pending", "processing"] } },
+      data: { status: "processing" },
+    });
+    return count === 1;
+  },
+
+  complete(id: string, outcome: ScanOutcome & { extracted: Prisma.InputJsonValue; llmProvider: string }) {
+    return prisma.scan.update({
+      where: { id },
+      data: { ...outcome, status: "done", failureCode: null, completedAt: new Date() },
+      select: scanSelect,
+    });
+  },
+
+  /** Only an unfinished scan can fail — a late failure never overwrites a verdict. */
+  async fail(id: string, failureCode: string, extracted?: Prisma.InputJsonValue): Promise<boolean> {
+    const { count } = await prisma.scan.updateMany({
+      where: { id, status: { in: ["pending", "processing"] } },
+      data: { status: "failed", failureCode, completedAt: new Date(), ...(extracted ? { extracted } : {}) },
+    });
+    return count === 1;
   },
 
   /** A device only ever sees its own scans. */

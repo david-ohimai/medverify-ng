@@ -1,11 +1,17 @@
 import type { Server } from "node:http";
+import type { Worker } from "bullmq";
+import { llmService } from "./ai/llm.service.js";
 import { createApp } from "./app.js";
 import { config } from "./lib/config.js";
 import { logger } from "./lib/logger.js";
 import { prisma } from "./lib/prisma.js";
 import { redis } from "./lib/redis.js";
+import { scanProgress } from "./lib/scanProgress.js";
+import { closeQueues } from "./queues/scan.queue.js";
+import { startScanWorker } from "./workers/scan.worker.js";
 
 let server: Server | undefined;
+let worker: Worker | undefined;
 
 async function start(): Promise<void> {
   // Fail fast: don't accept traffic until both dependencies really answer.
@@ -16,6 +22,15 @@ async function start(): Promise<void> {
   // connection; PING waits for it (and fails if Redis is down).
   await redis.ping();
 
+  const providers = await llmService.status();
+  if (providers.length === 0) {
+    logger.warn({ event: "ai:not-configured" }, "No AI provider key set — photo scans are disabled (manual checks still work)");
+  } else {
+    logger.info({ event: "ai:providers", chain: providers.map((p) => `${p.name}:${p.models.vision}`) }, "AI provider chain ready");
+  }
+
+  if (config.SCAN_WORKER_ENABLED) worker = startScanWorker();
+
   server = createApp().listen(config.PORT, () => {
     logger.info(
       { event: "server:started", port: config.PORT, environment: config.NODE_ENV },
@@ -24,14 +39,21 @@ async function start(): Promise<void> {
   });
 }
 
-/** Stop taking requests, let in-flight ones finish, then close connections. */
+/** Stop taking requests, let in-flight ones and running scan jobs finish, then close connections. */
 async function shutdown(signal: string): Promise<void> {
   logger.info({ event: "server:stopping", signal }, "Shutting down");
   const forceExit = setTimeout(() => process.exit(1), 10_000);
   forceExit.unref();
 
-  await new Promise<void>((resolve) => (server ? server.close(() => resolve()) : resolve()));
-  await Promise.allSettled([prisma.$disconnect(), redis.quit()]);
+  await new Promise<void>((resolve) => {
+    if (!server) return resolve();
+    server.close(() => resolve());
+    // Open SSE streams never end on their own; cut them after a short grace period.
+    setTimeout(() => server?.closeAllConnections(), 3_000).unref();
+  });
+  await worker?.close();
+  llmService.shutdown();
+  await Promise.allSettled([closeQueues(), scanProgress.close(), prisma.$disconnect(), redis.quit()]);
   logger.info({ event: "server:stopped" }, "Shutdown complete");
   process.exit(0);
 }

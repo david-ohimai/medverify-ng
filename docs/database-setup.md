@@ -141,13 +141,14 @@ exit
 
 ## 5. Create the tables with Prisma
 
-Three migrations are already in the repo:
+Four migrations are already in the repo:
 
 | Migration | What it does |
 |---|---|
 | `20261023120000_init` | Enables the `postgis`, `vector` and `pg_trgm` extensions; creates `devices`, `refresh_tokens`, `audit_logs` |
 | `20261023180000_token_version_and_revoke_reason` | Adds `devices.token_version` (instant token revocation) and `refresh_tokens.revoked_reason` |
 | `20261028081747_registry_and_scans` | Creates `products` (with GIN trigram indexes), `batches`, `scans` |
+| `20261029040705_ai_layer_and_photo_scans` | Photo scans: `scans.status` (pending → processing → done / failed), `image_hash`, `extracted`, `failure_code`, `llm_provider`, `completed_at`; verdict/score/confidence nullable until done. Creates `prompt_versions` and `ai_audit_logs` (the model control plane) |
 
 ```bash
 npm run prisma:migrate      # = prisma migrate dev   → applies every pending migration
@@ -167,7 +168,7 @@ npm run db:psql
 SELECT extname, extversion FROM pg_extension ORDER BY extname;
 -- pg_trgm, plpgsql, postgis, vector
 SELECT '[1,2,3]'::vector <-> '[1,2,4]'::vector AS distance;   -- 1
-\dt                                                         -- devices, refresh_tokens, audit_logs, products, batches, scans, _prisma_migrations
+\dt                                                         -- devices, refresh_tokens, audit_logs, products, batches, scans, prompt_versions, ai_audit_logs, _prisma_migrations
 \q
 ```
 
@@ -291,6 +292,10 @@ npm run db:psql
 SELECT id, platform, role, created_at FROM devices ORDER BY created_at DESC LIMIT 5;
 SELECT device_id, family_id, revoked_at IS NOT NULL AS revoked, expires_at FROM refresh_tokens ORDER BY created_at DESC LIMIT 10;
 SELECT action, device_id, correlation_id, created_at FROM audit_logs ORDER BY created_at DESC LIMIT 10;
+SELECT kind, status, verdict, failure_code, llm_provider, created_at FROM scans ORDER BY created_at DESC LIMIT 10;
+SELECT task, provider, model, prompt_version, success, error_code, fallback_used, input_tokens, output_tokens, latency_ms
+  FROM ai_audit_logs ORDER BY created_at DESC LIMIT 10;
+SELECT task, version, is_active, created_at FROM prompt_versions ORDER BY task, version;
 ```
 
 ### Redis (rate-limit counters)

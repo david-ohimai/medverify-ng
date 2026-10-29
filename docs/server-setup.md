@@ -5,7 +5,7 @@
 
 Shell: **Git Bash** unless noted. Working folder: `medverify-ng/server/`.
 
-**Stack (latest stable versions, Oct 2026):** Node 24 · TypeScript 7 · Express 5 · Prisma 7 (PostgreSQL 18 + PostGIS + pgvector) · Redis 8 (ioredis 6) · Zod 4 · Pino 10 · Vitest 5 · Supertest · Helmet · express-rate-limit 8 + rate-limit-redis · prom-client · Swagger. BullMQ 6 is installed for the scan queue (day 3).
+**Stack (latest stable versions, Oct 2026):** Node 24 · TypeScript 7 · Express 5 · Prisma 7 (PostgreSQL 18 + PostGIS + pgvector) · Redis 8 (ioredis 6) · BullMQ 6 · Zod 4 · Pino 10 · Vitest 5 · Supertest · Helmet · express-rate-limit 8 + rate-limit-redis · prom-client · Swagger · `@google/genai` 2 (Gemini) · `openai` 7 (OpenRouter) · opossum 10 · multer 2 · sharp 0.35.
 
 > Prisma's npm `latest` tag currently points at a release candidate (8.0.0-rc). The server pins **7.10.1**, the newest stable, for the CLI, client and adapter together. Don't run the `npm i prisma@latest` the CLI suggests.
 
@@ -20,10 +20,12 @@ Shell: **Git Bash** unless noted. Working folder: `medverify-ng/server/`.
 | 3 | `npm install` | Installs every dependency from `package-lock.json` |
 | 4 | `cp .env.example .env` | Local settings (PowerShell: `Copy-Item .env.example .env`) |
 | 5 | `node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"` | Paste the output into `.env` as `JWT_ACCESS_SECRET` |
-| 6 | `npm run db:up` | Starts Postgres (port 5433) and Redis (6379) in Docker — needs Docker Desktop running ([database guide §1](database-setup.md#1-install-docker-desktop-once)) |
-| 7 | `npm run prisma:migrate` | Creates the tables |
-| 8 | `npm run prisma:generate` | Builds the typed Prisma client into `src/generated/prisma` |
-| 9 | `npm test` | 137 unit + HTTP tests; no database needed |
+| 6 | Open https://aistudio.google.com → **Get API key** → **Create API key** | Free, no card. Paste it into `.env` as `GEMINI_API_KEY=…` — never into a chat, an issue or a commit. Optional: an OpenRouter key as `OPENROUTER_API_KEY` for the fallback. Without a key, everything except photo scans still works |
+| 7 | `npm run db:up` | Starts Postgres (port 5433) and Redis (6379) in Docker — needs Docker Desktop running ([database guide §1](database-setup.md#1-install-docker-desktop-once)) |
+| 8 | `npm run prisma:migrate` | Creates the tables |
+| 9 | `npm run prisma:generate` | Builds the typed Prisma client into `src/generated/prisma` |
+| 9b | `npm run seed` | Loads the registry CSVs and the AI prompt versions |
+| 9c | `npm test` | 166 unit + HTTP tests; no database, Redis or AI key needed |
 | 10 | `npm run typecheck` | Strict TypeScript check of `src/` and `tests/` |
 | 11 | `npm run dev` | API on http://localhost:3000, restarts on save |
 | 12 | Open http://localhost:3000/api-docs | Swagger UI — try every endpoint |
@@ -42,7 +44,7 @@ npm run smoke
 
 | Job | What it proves |
 |---|---|
-| Server · typecheck, test, build | `prisma validate`, strict typecheck, 137 tests, production build |
+| Server · typecheck, test, build | `prisma validate`, strict typecheck, 166 tests, production build |
 | Server · migrations + smoke test | Starts the real Docker Postgres + Redis, applies every migration with `migrate deploy`, checks the extensions, seeds the registry, boots the built server and runs `npm run smoke` (device security + registry search + every verdict) |
 | Mobile · format, analyze, test | `dart format` (120 columns), `flutter analyze --fatal-infos`, all tests |
 | Mobile · Android APK | Pull requests into `main` only: obfuscated arm64 release APK, downloadable from the run for 5 days |
@@ -106,7 +108,9 @@ src/
 ├── lib/               # config, logger, prisma, redis, tokens, hash, errors, response, events, metrics
 ├── events/            # event listeners (audit log, security signals)
 ├── config/            # constants, Swagger spec
-├── queues/            # BullMQ queues and workers (day 3)
+├── ai/                # model control plane: providers, tasks, prompts, retry/circuit breaker, quota
+├── queues/            # BullMQ queues, photo store, dead-letter queue
+├── workers/           # BullMQ workers (scan pipeline)
 ├── types/             # Express request augmentation
 └── generated/prisma/  # generated client (git-ignored)
 ```
@@ -202,7 +206,11 @@ Rate limits (they stack — a request passes every limiter on its route):
 | `pin-device` | device | 5 **wrong** PINs / 15 min |
 | `pin-ip` | IP | 10 wrong PINs / hour — new device ids don't buy more guesses |
 | `pin-global` | everyone | 30 wrong PINs / 15 min — many IPs don't either (≈2,900 guesses/day max; use 8+ digits beyond the demo) |
-| `scan`, `chat` | device | added with those features |
+| `verify` | device | 20 typed-in checks / min (public), 60 (regulator) |
+| `search` | device | 60 searches / min (public), 120 (regulator) |
+| `scan-upload` | device | 10 photo scans / min (public), 30 (regulator) |
+| `scan-daily` | device | 60 photo scans / day (public), 200 (regulator) — also protects the shared free AI quota |
+| `chat` | device | added with the agent |
 
 ### Step 9 — Events and the audit trail
 
@@ -236,7 +244,13 @@ Endpoints:
 | GET | `/api/v1/products/search?q=` | access token | Registry search: NAFDAC number prefix or fuzzy name (pg_trgm) |
 | GET | `/api/v1/products/:nafdacNo` | access token | One product and its known batches |
 | POST | `/api/v1/verify/manual` | access token | Typed-in check → verdict, risk score, confidence, signals; saved as a scan |
-| GET | `/api/v1/scans`, `/api/v1/scans/:id` | access token | This device's scan history (paginated) / one scan |
+| GET | `/api/v1/scans`, `/api/v1/scans/:id` | access token | This device's scan history (paginated) / one scan (with `status`: pending → processing → done / failed) |
+| POST | `/api/v1/scans` | access token | Pack photo (multipart field `image`) → **202** `{ scanId, eventsUrl, statusUrl }`; the AI reads it in the background |
+| GET | `/api/v1/scans/:id/events` | access token | **SSE**: `step` events as the pipeline runs, then `verdict` or `error` |
+| GET | `/api/v1/ai/status` | regulator | Provider chain, circuit state, today's free quota, active prompt versions, 24 h usage |
+| GET / POST | `/api/v1/ai/prompts` | regulator | List prompt versions / add a new one (optionally activate) |
+| POST | `/api/v1/ai/prompts/:id/activate` | regulator | Switch (or roll back) a task's prompt — takes effect immediately |
+| GET | `/api/v1/ai/calls` | regulator | Recent rows of `ai_audit_logs` |
 | GET | `/health`, `/health/live` | — | Process is up |
 | GET | `/health/ready` | — | Postgres and Redis answer (503 if not) |
 | GET | `/metrics` | `METRICS_TOKEN` if set | Prometheus |
@@ -276,6 +290,81 @@ The rules (weights add up, clamped 0–100; ≥30 suspicious, ≥65 high risk):
 | `PACK_NOT_SEEN` | 0 | Typed-in checks are at most **medium** confidence — fakes copy real numbers |
 | `DEMO_RECORD` | 0 | The match is fictional test data: says so, and confidence is always **low** |
 
+### Step 10c — The AI layer and photo scans
+
+```bash
+npm install @google/genai@latest openai@latest opossum@latest multer@latest sharp@latest
+npm install -D @types/opossum@latest @types/multer@latest
+npm run prisma:migrate -- --name ai_layer_and_photo_scans
+npm run prisma:generate
+npm run seed                      # also stores prompt version 1 of every AI task
+```
+
+Then put `GEMINI_API_KEY` in `.env` (Part A, step 6) and restart `npm run dev`. The startup log shows `AI provider chain ready` with the models in use.
+
+**The model control plane** (`src/ai/`) — nothing outside it imports a vendor SDK:
+
+| Piece | File | What it does |
+|---|---|---|
+| Interface | `ai/types.ts` | `LlmProvider.generateJson()`; `LlmError` says whether a failure is retryable and carries the provider's Retry-After |
+| Providers | `ai/providers/gemini.provider.ts`, `openrouter.provider.ts` | Gemini via `@google/genai` (`responseJsonSchema`); OpenRouter via the `openai` SDK with a different `baseURL`. SDK retries off — ours are smarter |
+| Tasks | `ai/tasks.ts` | Each task fixes its **Zod output schema**, model tier and token cap. Zod 4's `z.toJSONSchema()` turns the schema into the provider's JSON Schema, and the same schema validates the reply |
+| Prompts | `ai/prompts.ts`, `repositories/prompt.repository.ts` | Prompt text is **versioned in `prompt_versions`**: one active version per task, cached 5 min; the built-in prompt is the fallback |
+| Resilience | `ai/resilience.ts` | `withRetry` (exponential backoff, **Retry-After wins**, gives up at once if the wait is too long so the fallback answers) inside an **opossum circuit breaker** per provider |
+| Budget | `ai/quota.ts` | A Redis counter per provider per UTC day, kept under the free tier's cap; spent → next provider; all spent → `429 AI_QUOTA_EXHAUSTED` |
+| Orchestrator | `ai/llm.service.ts` | Prompt → provider chain (skip open circuit / spent budget) → retry → validate → **one repair round** with the validation errors → next provider. Emits `ai:called` per attempt |
+| Audit | `events/audit.events.ts` → `ai_audit_logs` | Task, provider, model, prompt version, success / error code, fallback used, tokens, latency, scan id, correlation id. Inputs are summarised — **never the image** |
+| Metrics | `events/metrics.events.ts` | `ai_calls_total`, `ai_call_duration_seconds`, `ai_tokens_total`, `scan_jobs_total` |
+
+**The photo pipeline:**
+
+```
+POST /scans ── multer (memory, 8 MB cap) ── prepareImage (decode = real type check, ≥480 px,
+   │             rotate, resize to 1600 px, re-encode JPEG → EXIF/GPS stripped, SHA-256)
+   ├─ scans row: status pending      ├─ photo → Redis (30 min TTL, never disk or a bucket)
+   └─ BullMQ "scan-pipeline" job (jobId = scanId, 3 attempts, exponential backoff) → 202
+worker (in-process, or `npm run worker`):
+   claim (pending → processing, once) → read_label (cache by photo hash + prompt version,
+   else Gemini → OpenRouter) → registry → batch_check → compare_pack (next step) → score
+   → scans row done → scan:completed → SSE "verdict" → photo deleted
+   final failure → scan failed with a reason code → dead-letter queue "scan-pipeline-dlq"
+```
+
+| Piece | File |
+|---|---|
+| Upload + validation | `middleware/upload.ts`, `lib/image.ts` |
+| Queue, photo store, DLQ | `queues/scan.queue.ts` (connections opened on first use, so tests need no Redis) |
+| Worker | `workers/scan.worker.ts`, `worker.ts` (standalone) |
+| Pipeline | `services/photoScan.service.ts` — `submit` and `process`; `factsFromLabel` ignores any field the model was under 60 % sure of |
+| Shared rules | `services/verification.service.ts` `checkAgainstRegistry` — the **same** registry rules and scorer as a typed-in check, with `packNotSeen: false` |
+| Progress | `lib/scanProgress.ts` — each step goes into a Redis list (replay for late or reconnecting clients) **and** a pub/sub channel (live). Works across processes |
+| SSE | `controllers/photoScan.controller.ts` — subscribes before replaying, `id:` on every event (`Last-Event-ID` resumes), 15 s heartbeat, closes after `verdict`/`error` or 3 min |
+| Control plane API | `routes/ai.routes.ts`, `services/aiAdmin.service.ts` — regulator only |
+
+A photo that can't be read ends as `failed` with a reason the user can act on — `NOT_A_MEDICINE_PACK`, `NAFDAC_NO_UNREADABLE`, `IMAGE_EXPIRED`, `AI_UNAVAILABLE`, `AI_QUOTA_EXHAUSTED` — not as a guess.
+
+**Try it** (server running, key set; Git Bash):
+
+```bash
+API=http://localhost:3000/api/v1
+TOKEN=$(curl -s -X POST $API/devices/register -H 'Content-Type: application/json' \
+  -d "{\"installId\":\"$(node -e 'console.log(crypto.randomUUID())')\",\"platform\":\"android\",\"appVersion\":\"1.0.0+1\"}" \
+  | node -pe 'JSON.parse(require("fs").readFileSync(0)).data.tokens.accessToken')
+
+# 1. Upload a pack photo → 202 with a scanId
+curl -s -X POST $API/scans -H "Authorization: Bearer $TOKEN" -F "image=@/c/path/to/pack.jpg"
+
+# 2. Watch it think (paste the scanId)
+curl -N $API/scans/<scanId>/events -H "Authorization: Bearer $TOKEN"
+
+# 3. The stored result
+curl -s $API/scans/<scanId> -H "Authorization: Bearer $TOKEN"
+```
+
+Then look at `ai_audit_logs` and `prompt_versions` in Prisma Studio (`npm run prisma:studio`). The control-plane endpoints need regulator mode: `POST $API/devices/me/elevate` with `{"pin":"246810"}`, then use the new access token on `GET $API/ai/status`.
+
+Scanning the same photo again is answered from the cache: no AI call, no quota used (`llmProvider: "cache"`).
+
 ### Step 11 — Observability
 
 ```bash
@@ -289,7 +378,7 @@ npm install -D @types/swagger-jsdoc@latest @types/swagger-ui-express@latest
 
 ### Step 12 — Startup and shutdown (`src/server.ts`)
 
-Starts only after a real `SELECT 1` and a Redis `PING` succeed (with the Prisma 7 adapter, `$connect()` alone proves nothing). On `SIGINT`/`SIGTERM` it stops accepting requests, lets in-flight ones finish, closes Postgres and Redis, and force-exits after 10 seconds.
+Starts only after a real `SELECT 1` and a Redis `PING` succeed (with the Prisma 7 adapter, `$connect()` alone proves nothing), logs the AI provider chain, and starts the scan worker if `SCAN_WORKER_ENABLED=true`. On `SIGINT`/`SIGTERM` it stops accepting requests, lets in-flight ones finish (open SSE streams are cut after 3 seconds), lets running scan jobs finish, closes the queues, Postgres and Redis, and force-exits after 10 seconds.
 
 ### Step 13 — Tests
 
@@ -314,6 +403,10 @@ npm pkg set scripts.test="vitest run" scripts.test:watch="vitest"
 | `tests/unit/verification.service.test.ts` | Lookups only when needed, scan saved, event emitted |
 | `tests/unit/registry.service.test.ts` | When a search query counts as a NAFDAC number prefix ("nafdac" never matches everything) |
 | `tests/http/verification.test.ts` | Auth, input normalisation, 422s, search limits, history paging, UUID params |
+| `tests/unit/llm.service.test.ts` | Primary answers; retry then fallback (`fallbackUsed`); long Retry-After → fallback at once; repair round for invalid JSON; spent budget skipped / `AI_QUOTA_EXHAUSTED`; `AI_UNAVAILABLE`; circuit opens and stops calling a failing provider; audit events |
+| `tests/unit/resilience.test.ts` | Retry-After honoured, too-long waits not, non-retryable errors never retried; Gemini retry-delay parsing |
+| `tests/unit/photoScan.test.ts` | AI reading → registry facts (normalised, unsure fields dropped); image validation: not an image → 415, too small → 422, resized and **EXIF stripped** |
+| `tests/http/scans.test.ts` | Upload auth, 202 + Location, missing / wrong-field file, 413 over 8 MB, SSE 404 for another device, control plane regulator-only |
 
 ```bash
 npm test
@@ -326,12 +419,13 @@ npm run typecheck
 |---|---|
 | `dev` | `tsx watch src/server.ts` |
 | `build` / `start` | `prisma generate && tsc -p tsconfig.build.json` / `node dist/server.js` |
+| `worker` / `worker:dev` | Scan worker on its own (`node dist/worker.js` / `tsx watch src/worker.ts`) — set `SCAN_WORKER_ENABLED=false` on the API then |
 | `typecheck` / `test` / `test:watch` | `tsc --noEmit` / `vitest run` / `vitest` |
 | `db:up` / `db:stop` / `db:wipe` | Docker compose up / stop / down **-v** |
 | `db:psql` / `redis:cli` | Shells inside the containers |
 | `prisma:migrate` / `prisma:deploy` / `prisma:status` | `migrate dev` / `migrate deploy` / `migrate status` |
 | `prisma:generate` / `prisma:studio` / `prisma:reset` | Client / data browser (port 5555) / wipe tables and re-migrate |
-| `seed` | Load the registry CSVs (`-- --no-demo` to skip the fictional rows) |
+| `seed` | Load the registry CSVs (`-- --no-demo` to skip the fictional rows) and ensure every AI task has a stored prompt version |
 | `smoke` | End-to-end checks against a running server |
 
 ---
@@ -371,3 +465,11 @@ correlationId → requestLogger → helmet → cors → express.json → sanitiz
 | Why can a typed-in check never be "high confidence genuine"? | Counterfeiters copy real numbers; only the pack itself can show that (`PACK_NOT_SEEN`) |
 | Why trigram search, not embeddings, for names? | Typos and OCR misreads are character-level; pg_trgm is exact, indexed and free |
 | Why cache misses too? | Repeated probing of unknown numbers would otherwise hit the database every time |
+| Why 202 + a queue instead of answering the upload directly? | An AI call takes seconds and can fail; the request returns at once, the job retries with backoff, a dead job lands in the DLQ (`queues/scan.queue.ts`) |
+| Why SSE, not WebSockets? | One-way server → app progress over plain HTTP; auth header, proxies and reconnection (`Last-Event-ID`) just work |
+| How do you switch AI provider or model? | Configuration (`LLM_PRIMARY`, `GEMINI_VISION_MODEL`…), not code: everything goes through `LlmProvider` (`ai/types.ts`) |
+| What happens when Gemini is down or rate-limited? | Retry (Retry-After) → circuit breaker → OpenRouter fallback → clear 503/429; every attempt is in `ai_audit_logs` |
+| How do you stop the model hallucinating a NAFDAC number? | Prompt says "null rather than guess"; JSON validated by Zod; fields under 60 % confidence are ignored; the number must match the NAFDAC format; and the **registry**, not the model, decides the verdict |
+| How do you change a prompt safely? | New row in `prompt_versions`, activate it; roll back by activating the old one. Every AI call records its prompt version |
+| What about privacy? | Photos are re-encoded (GPS/EXIF gone), kept in Redis ≤ 30 min, never stored; audit rows hold a hash, not the image |
+| How do you protect the free quota? | Per-device scan limits, a daily budget per provider in Redis, and a cache keyed by photo hash + prompt version |

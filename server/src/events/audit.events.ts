@@ -1,4 +1,5 @@
 import { getCorrelationId } from "../lib/requestContext.js";
+import { aiAuditLogRepository } from "../repositories/aiAuditLog.repository.js";
 import { auditLogRepository } from "../repositories/auditLog.repository.js";
 import { listen } from "./listen.js";
 
@@ -49,3 +50,12 @@ listen("token:reuse-detected", "audit", ({ deviceId, familyId }) =>
 listen("scan:completed", "audit", ({ scanId, deviceId, kind, verdict, riskScore }) =>
   audit("scan.completed", deviceId, { kind, verdict, riskScore }, scanId, "scan")
 );
+
+listen("scan:queued", "audit", ({ scanId, deviceId }) => audit("scan.queued", deviceId, {}, scanId, "scan"));
+
+listen("scan:failed", "audit", ({ scanId, deviceId, failureCode }) =>
+  audit("scan.failed", deviceId, { failureCode }, scanId, "scan")
+);
+
+// The model control plane's record: one row per AI call (ai_audit_logs).
+listen("ai:called", "ai-audit", (call) => aiAuditLogRepository.create({ ...call, correlationId: getCorrelationId() ?? null }));

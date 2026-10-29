@@ -68,6 +68,15 @@ enum ScanKind {
   photo
 }
 
+/// A photo scan is accepted at once (pending) and processed by the queue
+/// worker. Manual checks are created already `done`.
+enum ScanStatus {
+  pending
+  processing
+  done
+  failed
+}
+
 enum Verdict {
   likely_genuine
   suspicious
@@ -191,27 +200,87 @@ model Batch {
 /// signals that explain it. Deleting a device keeps its scans for the
 /// hotspot map but removes the link to the device.
 model Scan {
-  id          String     @id @default(uuid()) @db.Uuid
-  deviceId    String?    @map("device_id") @db.Uuid
+  id          String      @id @default(uuid()) @db.Uuid
+  deviceId    String?     @map("device_id") @db.Uuid
   kind        ScanKind
-  /// What the user (or, later, the AI) entered/read, normalised.
-  nafdacNo    String?    @map("nafdac_no") @db.VarChar(20)
-  productName String?    @map("product_name") @db.VarChar(200)
-  batchNo     String?    @map("batch_no") @db.VarChar(40)
-  expiryDate  DateTime?  @map("expiry_date") @db.Date
-  productId   String?    @map("product_id") @db.Uuid
-  verdict     Verdict
+  status      ScanStatus  @default(done)
+  /// What the user entered or the AI read from the pack, normalised.
+  nafdacNo    String?     @map("nafdac_no") @db.VarChar(20)
+  productName String?     @map("product_name") @db.VarChar(200)
+  batchNo     String?     @map("batch_no") @db.VarChar(40)
+  expiryDate  DateTime?   @map("expiry_date") @db.Date
+  productId   String?     @map("product_id") @db.Uuid
+  /// Verdict, score and confidence are null until a photo scan is done.
+  verdict     Verdict?
   /// 0 (no concerns) to 100 (highest risk).
-  riskScore   Int        @map("risk_score") @db.SmallInt
-  confidence  Confidence
+  riskScore   Int?        @map("risk_score") @db.SmallInt
+  confidence  Confidence?
   /// The explainable reasons: [{ code, label, weight, detail }].
-  signals     Json       @default("[]")
-  createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  signals     Json        @default("[]")
+  /// SHA-256 of the uploaded photo. The photo itself is never stored.
+  imageHash   String?     @map("image_hash") @db.Char(64)
+  /// Everything the AI read from the label, with per-field confidence.
+  extracted   Json?
+  /// Why a photo scan couldn't produce a verdict (e.g. NAFDAC_NO_UNREADABLE).
+  failureCode String?     @map("failure_code") @db.VarChar(40)
+  /// Which AI provider read the pack (gemini / openrouter / cache).
+  llmProvider String?     @map("llm_provider") @db.VarChar(20)
+  createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+  completedAt DateTime?   @map("completed_at") @db.Timestamptz(3)
 
-  device  Device?  @relation(fields: [deviceId], references: [id], onDelete: SetNull)
-  product Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  device      Device?      @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+  product     Product?     @relation(fields: [productId], references: [id], onDelete: SetNull)
+  aiAuditLogs AiAuditLog[]
 
   @@index([deviceId, createdAt(sort: Desc)])
   @@index([nafdacNo, batchNo])
   @@map("scans")
+}
+
+/// Model control plane: every prompt the AI uses is a numbered version.
+/// Exactly one version per task is active; changing a prompt is a new row
+/// plus an activation, never a redeploy, and old versions stay for audits.
+model PromptVersion {
+  id        String   @id @default(uuid()) @db.Uuid
+  /// e.g. "read_label", "compare_pack"
+  task      String   @db.VarChar(40)
+  version   Int
+  system    String   @db.Text
+  notes     String?  @db.Text
+  isActive  Boolean  @default(false) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@unique([task, version])
+  @@map("prompt_versions")
+}
+
+/// One row per AI call: who answered, with which model and prompt version,
+/// how long it took and how many tokens it used. Inputs are summarised and
+/// never contain images or personal data.
+model AiAuditLog {
+  id            String   @id @default(uuid()) @db.Uuid
+  task          String   @db.VarChar(40)
+  provider      String   @db.VarChar(20)
+  model         String   @db.VarChar(80)
+  promptVersion Int?     @map("prompt_version")
+  success       Boolean
+  /// Why it failed (RATE_LIMITED, TIMEOUT, INVALID_OUTPUT, …).
+  errorCode     String?  @map("error_code") @db.VarChar(40)
+  /// True when the primary provider failed and this one answered instead.
+  fallbackUsed  Boolean  @default(false) @map("fallback_used")
+  inputSummary  String   @map("input_summary") @db.VarChar(500)
+  outputSummary String?  @map("output_summary") @db.VarChar(1000)
+  inputTokens   Int?     @map("input_tokens")
+  outputTokens  Int?     @map("output_tokens")
+  latencyMs     Int      @map("latency_ms")
+  scanId        String?  @map("scan_id") @db.Uuid
+  correlationId String?  @map("correlation_id") @db.VarChar(64)
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  scan Scan? @relation(fields: [scanId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt(sort: Desc)])
+  @@index([task, createdAt(sort: Desc)])
+  @@index([scanId])
+  @@map("ai_audit_logs")
 }

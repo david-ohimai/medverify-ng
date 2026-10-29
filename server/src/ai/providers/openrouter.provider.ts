@@ -1,0 +1,108 @@
+import OpenAI, { APIConnectionTimeoutError, APIError } from "openai";
+import { config } from "../../lib/config.js";
+import { codeForStatus, isRetryableStatus, LlmError, type GenerateJsonRequest, type LlmProvider } from "../types.js";
+
+function retryAfterMs(headers: Headers | undefined): number | undefined {
+  const value = headers?.get("retry-after");
+  if (!value) return undefined;
+  const seconds = Number(value);
+  if (Number.isFinite(seconds)) return Math.ceil(seconds * 1000);
+  const at = Date.parse(value);
+  return Number.isNaN(at) ? undefined : Math.max(0, at - Date.now());
+}
+
+function toLlmError(err: unknown): LlmError {
+  if (err instanceof LlmError) return err;
+  if (err instanceof APIConnectionTimeoutError) {
+    return new LlmError("OpenRouter request timed out", "openrouter", "TIMEOUT", true);
+  }
+  if (err instanceof APIError) {
+    return new LlmError(
+      `OpenRouter ${err.status ?? "?"}: ${err.message.slice(0, 300)}`,
+      "openrouter",
+      codeForStatus(err.status),
+      isRetryableStatus(err.status),
+      err.status,
+      retryAfterMs(err.headers)
+    );
+  }
+  return new LlmError(
+    `OpenRouter request failed: ${err instanceof Error ? err.message : String(err)}`,
+    "openrouter",
+    "NETWORK_ERROR",
+    true
+  );
+}
+
+/**
+ * OpenRouter speaks the OpenAI API, so the official `openai` SDK works with a
+ * different base URL. Only free models (ids ending in ":free") are used, and
+ * only as the fallback: their daily caps are low.
+ */
+export function createOpenRouterProvider(apiKey: string): LlmProvider {
+  const client = new OpenAI({
+    apiKey,
+    baseURL: "https://openrouter.ai/api/v1",
+    timeout: config.LLM_TIMEOUT_MS,
+    maxRetries: 0,
+    defaultHeaders: { "X-Title": "MedVerify NG" },
+  });
+  const model = config.OPENROUTER_MODEL;
+
+  return {
+    name: "openrouter",
+    // One free vision model serves both tiers.
+    modelFor: () => model,
+
+    async generateJson(request: GenerateJsonRequest) {
+      try {
+        const completion = await client.chat.completions.create(
+          {
+            model,
+            temperature: 0,
+            max_tokens: request.maxOutputTokens,
+            response_format: {
+              type: "json_schema",
+              json_schema: { name: "result", schema: request.jsonSchema, strict: false },
+            },
+            messages: [
+              { role: "system", content: request.system },
+              {
+                role: "user",
+                content: request.parts.map((part) =>
+                  part.type === "text"
+                    ? { type: "text" as const, text: part.text }
+                    : {
+                        type: "image_url" as const,
+                        image_url: { url: `data:${part.mimeType};base64,${part.data.toString("base64")}` },
+                      }
+                ),
+              },
+            ],
+          },
+          request.signal ? { signal: request.signal } : undefined
+        );
+
+        const text = completion.choices[0]?.message.content;
+        if (!text) {
+          throw new LlmError(
+            `OpenRouter returned no text (${completion.choices[0]?.finish_reason ?? "EMPTY"})`,
+            "openrouter",
+            "EMPTY_RESPONSE",
+            false
+          );
+        }
+        return {
+          text,
+          model: completion.model || model,
+          usage: {
+            inputTokens: completion.usage?.prompt_tokens ?? null,
+            outputTokens: completion.usage?.completion_tokens ?? null,
+          },
+        };
+      } catch (err) {
+        throw toLlmError(err);
+      }
+    },
+  };
+}
