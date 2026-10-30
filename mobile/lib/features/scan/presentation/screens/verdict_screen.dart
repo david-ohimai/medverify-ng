@@ -74,7 +74,7 @@ class _VerdictBody extends ConsumerWidget {
         ),
         const SizedBox(height: AppSpacing.sm),
         FilledButton.icon(
-          onPressed: () => context.go(AppRoutes.scan),
+          onPressed: () => context.pushReplacement(AppRoutes.camera),
           icon: const Icon(Iconsax.scan_barcode),
           label: const Text('Check another pack'),
         ),

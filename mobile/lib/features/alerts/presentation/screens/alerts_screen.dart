@@ -4,6 +4,7 @@ import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 import '../../../../core/extensions/context_x.dart';
+import '../../../../core/location/location_service.dart';
 import '../../../../core/theme/app_dimens.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/error_view.dart';
@@ -37,17 +38,43 @@ class AlertsScreen extends ConsumerWidget {
 class _PlacePicker extends ConsumerWidget {
   const _PlacePicker();
 
+  /// Says why there's no location and offers the settings page that fixes it.
+  Future<void> _useMyLocation(BuildContext context, WidgetRef ref) async {
+    final problem = await ref.read(nearbyAlertsProvider.notifier).useMyLocation();
+    if (problem == null || !context.mounted) return;
+    final location = ref.read(locationServiceProvider);
+    final messenger = ScaffoldMessenger.of(context)..removeCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(problem.message),
+        duration: const Duration(seconds: 6),
+        action: problem.fixableInLocationSettings
+            ? SnackBarAction(label: 'Turn on', onPressed: location.openLocationSettings)
+            : problem.fixableInAppSettings
+            ? SnackBarAction(label: 'Settings', onPressed: location.openAppSettings)
+            : null,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final current = ref.watch(nearbyAlertsProvider.select((s) => s.value));
+    final locating = ref.watch(nearbyAlertsProvider.select((s) => s.isLoading));
     final controller = ref.read(nearbyAlertsProvider.notifier);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         OutlinedButton.icon(
-          onPressed: controller.useMyLocation,
+          onPressed: locating ? null : () => _useMyLocation(context, ref),
           icon: Icon(current?.usingLocation ?? false ? Iconsax.location_tick : Iconsax.location),
-          label: Text(current?.usingLocation ?? false ? 'Using your area (about 1 km)' : 'Use my location'),
+          label: Text(
+            locating
+                ? 'Finding your area…'
+                : current?.usingLocation ?? false
+                ? 'Using your area (about 1 km)'
+                : 'Use my location',
+          ),
         ),
         const SizedBox(height: AppSpacing.sm),
         PillTabs(

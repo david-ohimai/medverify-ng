@@ -10,6 +10,7 @@ abstract final class AppRoutes {
   static const String scanProgressPattern = '/progress/:id';
   static const String scanResultPattern = '/result/:id';
   static const String manualCheck = '/check';
+  static const String camera = '/camera';
   static const String assistant = '/assistant';
 
   static String scanProgress(String scanId) => '/progress/$scanId';

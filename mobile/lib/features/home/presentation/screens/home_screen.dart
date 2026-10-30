@@ -68,7 +68,7 @@ class _QuickActions extends StatelessWidget {
             icon: Iconsax.scan_barcode,
             label: 'Scan a pack',
             tint: palette.action,
-            onTap: () => context.go(AppRoutes.scan),
+            onTap: () => context.push(AppRoutes.camera),
           ),
           const SizedBox(width: AppSpacing.sm),
           QuickActionTile(

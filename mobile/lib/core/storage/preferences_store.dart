@@ -26,4 +26,9 @@ class PreferencesStore {
   bool get onboardingDone => _prefs.getBool(StorageKeys.onboardingDone) ?? false;
 
   Future<void> setOnboardingDone() => _prefs.setBool(StorageKeys.onboardingDone, true);
+
+  /// Alerts already looked at, so the tab badge only counts new ones.
+  Set<String> get seenAlerts => (_prefs.getStringList(StorageKeys.seenAlerts) ?? const []).toSet();
+
+  Future<void> setSeenAlerts(Set<String> keys) => _prefs.setStringList(StorageKeys.seenAlerts, keys.toList());
 }

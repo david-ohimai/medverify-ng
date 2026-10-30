@@ -12,8 +12,9 @@ import '../../../../shared/widgets/page_layout.dart';
 import '../../../../shared/widgets/shimmer/app_shimmer.dart';
 import '../providers/scan_providers.dart';
 
-/// Choose how to check a pack: photograph it (camera or gallery), or type
-/// the NAFDAC number. The work happens in [CaptureController].
+/// The Scan tab's options: the live scanner (opened automatically when the
+/// tab is tapped), a photo from the gallery, or typing the NAFDAC number.
+/// The work happens in [CaptureController].
 class ScanScreen extends StatelessWidget {
   const ScanScreen({super.key});
 
@@ -32,8 +33,8 @@ class ScanScreen extends StatelessWidget {
 class _CaptureCard extends ConsumerWidget {
   const _CaptureCard();
 
-  Future<void> _capture(BuildContext context, WidgetRef ref, ImageSource source) async {
-    final scanId = await ref.read(captureControllerProvider.notifier).capture(source);
+  Future<void> _fromGallery(BuildContext context, WidgetRef ref) async {
+    final scanId = await ref.read(captureControllerProvider.notifier).pick(ImageSource.gallery);
     if (scanId != null && context.mounted) context.push(AppRoutes.scanProgress(scanId));
   }
 
@@ -61,7 +62,7 @@ class _CaptureCard extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.md),
-          Text('Photograph the side with the NAFDAC number', style: context.text.titleMedium),
+          Text('Scan the side with the NAFDAC number', style: context.text.titleMedium),
           const SizedBox(height: AppSpacing.xxs),
           Text(
             'MedVerify reads the label, checks the NAFDAC register and compares the pack with a genuine one.',
@@ -72,13 +73,13 @@ class _CaptureCard extends ConsumerWidget {
             _BusyRow(message: message)
           else ...[
             FilledButton.icon(
-              onPressed: () => _capture(context, ref, ImageSource.camera),
-              icon: const Icon(Iconsax.camera),
-              label: const Text('Take a photo'),
+              onPressed: () => context.push(AppRoutes.camera),
+              icon: const Icon(Iconsax.scan),
+              label: const Text('Open the scanner'),
             ),
             const SizedBox(height: AppSpacing.sm),
             OutlinedButton.icon(
-              onPressed: () => _capture(context, ref, ImageSource.gallery),
+              onPressed: () => _fromGallery(context, ref),
               icon: const Icon(Iconsax.gallery),
               label: const Text('Choose from gallery'),
             ),

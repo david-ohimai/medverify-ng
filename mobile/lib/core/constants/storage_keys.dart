@@ -9,6 +9,7 @@ abstract final class StorageKeys {
   static const String themeMode = 'theme_mode';
   static const String language = 'language';
   static const String onboardingDone = 'onboarding_done';
+  static const String seenAlerts = 'seen_alerts';
 
-  static const Set<String> preferenceKeys = {themeMode, language, onboardingDone};
+  static const Set<String> preferenceKeys = {themeMode, language, onboardingDone, seenAlerts};
 }

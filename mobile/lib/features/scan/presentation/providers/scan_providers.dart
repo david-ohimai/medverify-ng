@@ -48,13 +48,15 @@ final class CaptureFailed extends CaptureState {
 
 final captureControllerProvider = NotifierProvider.autoDispose<CaptureController, CaptureState>(CaptureController.new);
 
-/// Takes or picks the photo, adds the (optional, approximate) location and
-/// uploads it. Returns the new scan id for the screen to navigate to.
+/// Uploads a pack photo — from the live scanner, or picked from the gallery —
+/// with the (optional, approximate) location. Returns the new scan id for
+/// the screen to navigate to.
 class CaptureController extends Notifier<CaptureState> {
   @override
   CaptureState build() => const CaptureIdle();
 
-  Future<String?> capture(ImageSource source) async {
+  /// A photo from the gallery (or the system camera as a fallback).
+  Future<String?> pick(ImageSource source) async {
     if (state is CaptureBusy) return null;
     final XFile? photo;
     try {
@@ -63,24 +65,28 @@ class CaptureController extends Notifier<CaptureState> {
           .read(imagePickerProvider)
           .pickImage(source: source, maxWidth: 2000, maxHeight: 2000, imageQuality: 85);
     } catch (_) {
-      state = const CaptureFailed('Could not open the camera. Check the camera permission in Settings.');
+      state = const CaptureFailed('Could not open your photos. Check the permission in Settings.');
       return null;
     }
-    if (photo == null) return null; // cancelled
-    if (!ref.mounted) return null;
+    if (photo == null || !ref.mounted) return null; // cancelled
+    return submit(photo.path);
+  }
 
+  /// Sends a photo that is already on the phone (e.g. just taken by the scanner).
+  Future<String?> submit(String path) async {
+    if (state is CaptureBusy) return null;
     state = const CaptureBusy('Sending your photo…');
     // Location never delays a scan by more than a few seconds, and is optional.
     final location = await ref
         .read(locationServiceProvider)
         .current()
         .timeout(const Duration(seconds: 5), onTimeout: () => null);
-    final result = await ref.read(scanRepositoryProvider).submitPhoto(path: photo.path, location: location);
+    final result = await ref.read(scanRepositoryProvider).submitPhoto(path: path, location: location);
     if (!ref.mounted) return null;
 
     switch (result) {
       case Success(:final value):
-        ref.read(capturedPhotosProvider.notifier).remember(value, photo.path);
+        ref.read(capturedPhotosProvider.notifier).remember(value, path);
         state = const CaptureIdle();
         return value;
       case Err(:final failure):

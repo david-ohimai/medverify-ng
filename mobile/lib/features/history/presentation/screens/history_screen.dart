@@ -45,7 +45,7 @@ class _HistoryList extends ConsumerWidget {
             icon: Iconsax.receipt_item,
             title: 'No checks yet',
             message: 'Scan a pack or type a NAFDAC number — every result is saved here.',
-            action: FilledButton(onPressed: () => context.go(AppRoutes.scan), child: const Text('Scan a pack')),
+            action: FilledButton(onPressed: () => context.push(AppRoutes.camera), child: const Text('Scan a pack')),
           )
         : Column(
             children: [

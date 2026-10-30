@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 
 import '../errors/failure.dart';
 import '../errors/failure_mapper.dart';
+import '../logging/app_log.dart';
 import '../result/result.dart';
 import 'api_envelope.dart';
 import 'sse.dart';
@@ -82,7 +83,10 @@ class ApiClient {
       throw mapStatus(status, stream == null ? null : ApiEnvelope.tryParse(await _readJson(stream)));
     }
     try {
-      yield* parseSse(stream.stream);
+      yield* parseSse(stream.stream).map((event) {
+        AppLog.stream('$path ← ${event.event} ${AppLog.body(event.data)}');
+        return event;
+      });
     } on DioException catch (error) {
       throw mapDioException(error);
     }
