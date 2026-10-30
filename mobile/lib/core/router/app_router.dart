@@ -3,11 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/alerts/presentation/screens/alerts_screen.dart';
+import '../../features/assistant/presentation/screens/assistant_screen.dart';
 import '../../features/history/presentation/screens/history_screen.dart';
 import '../../features/home/presentation/screens/home_screen.dart';
 import '../../features/onboarding/presentation/providers/onboarding_providers.dart';
 import '../../features/onboarding/presentation/screens/onboarding_screen.dart';
+import '../../features/scan/presentation/screens/manual_check_screen.dart';
+import '../../features/scan/presentation/screens/scan_progress_screen.dart';
 import '../../features/scan/presentation/screens/scan_screen.dart';
+import '../../features/scan/presentation/screens/scanner_screen.dart';
+import '../../features/scan/presentation/screens/verdict_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
 import '../../features/shell/presentation/screens/app_shell.dart';
 import 'app_routes.dart';
@@ -32,6 +37,21 @@ final routerProvider = Provider<GoRouter>((ref) {
     },
     routes: [
       GoRoute(path: AppRoutes.onboarding, builder: (_, _) => const OnboardingScreen()),
+      // Full-screen pages over the tabs (the tab bar hides while they are open).
+      GoRoute(
+        path: AppRoutes.scanProgressPattern,
+        builder: (_, state) => ScanProgressScreen(scanId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: AppRoutes.scanResultPattern,
+        builder: (_, state) => VerdictScreen(scanId: state.pathParameters['id']!),
+      ),
+      GoRoute(path: AppRoutes.manualCheck, builder: (_, _) => const ManualCheckScreen()),
+      GoRoute(path: AppRoutes.camera, builder: (_, _) => const ScannerScreen()),
+      GoRoute(
+        path: AppRoutes.assistant,
+        builder: (_, state) => AssistantScreen(initialQuestion: state.uri.queryParameters['q']),
+      ),
       // One navigator per tab: each tab keeps its own stack and scroll position.
       StatefulShellRoute.indexedStack(
         builder: (_, _, navigationShell) => AppShell(navigationShell: navigationShell),

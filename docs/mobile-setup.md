@@ -78,7 +78,7 @@ cp env/dev.example.json env/dev.json
 | Android **emulator** | `http://10.0.2.2:3000/api/v1` (the example's default) | — (10.0.2.2 is the emulator's name for your laptop; it does **not** exist on a real phone) |
 | Android **phone over USB** (what this laptop uses: Xiaomi 2209116AG) | `http://localhost:3000/api/v1` | `adb reverse tcp:3000 tcp:3000` — forwards the phone's port 3000 to the laptop |
 | Phone on the **same Wi-Fi** | `http://<laptop LAN IP>:3000/api/v1` | Find the IP with `ipconfig` (PowerShell); allow Node through Windows Firewall |
-| Deployed server | `https://<your-app>.onrender.com/api/v1` | Use `env/prod.json` for release builds |
+| A hosted server (not used — the MVP runs locally) | `https://<host>/api/v1` | Use `env/prod.json` for release builds |
 
 Not sure whether you're on an emulator or a phone? `adb devices -l` — a real phone shows its model (`model:2209116AG`), an emulator shows `emulator-5554`.
 
@@ -162,6 +162,7 @@ Then create `../.vscode/settings.json` with `"dart.flutterSdkPath": "C:\\Users\\
 fvm flutter pub add flutter_riverpod go_router dio equatable flutter_secure_storage shared_preferences \
   shimmer liquid_glass_widgets iconsax_flutter uuid package_info_plus
 fvm flutter pub add dev:mocktail
+fvm flutter pub add image_picker geolocator url_launcher
 ```
 
 | Package | Used for |
@@ -177,6 +178,9 @@ fvm flutter pub add dev:mocktail
 | `iconsax_flutter` | Icons matching the reference design |
 | `uuid` | The random install id (v4) |
 | `package_info_plus` | App version for registration and Settings → About |
+| `image_picker` | Take or choose the pack photo (resized to 2000 px / JPEG 85 before upload) |
+| `geolocator` | Optional, **coarse** location for scans and nearby alerts (the server rounds it to ~1 km) |
+| `url_launcher` | Open the official WHO / NAFDAC source an answer cites |
 | `mocktail` | Mocks in tests |
 
 ### B3. Folder structure (Laba's clean architecture, per feature)
@@ -218,9 +222,10 @@ lib/
 2. `core/result/result.dart` and `core/errors/failure.dart` — sealed types, so `switch` must handle every case.
 3. `core/network/api_envelope.dart` — parses the server's `{ success, message, statusCode, code, data, errors, meta }`.
 4. `core/errors/failure_mapper.dart` — timeouts → `TimeoutFailure`, no connection → `NetworkFailure`, every Dio error type (incl. `transformTimeout`) maps to a failure, 401 keeps the server `code` (`TOKEN_EXPIRED`, `TOKEN_REVOKED`…), 422 keeps field errors, 429 reads `Retry-After`, 5xx never shows server text.
-5. `core/network/api_client.dart` — `get/post/patch/delete<T>(path, parse:)` → `Result<T>`. Nothing above it sees Dio or JSON.
-6. `core/network/auth_token_source.dart` + `interceptors/auth_interceptor.dart` — adds the token; on a 401 with a token code, asks the session to recover once and replays the request with a Dio that has no auth interceptor (no loops).
-7. `core/network/interceptors/safe_log_interceptor.dart` — debug-only, masks tokens/PIN/install id.
+5. `core/network/api_client.dart` — `get/post/patch/delete<T>(path, parse:)` → `Result<T>`; plus `upload` (multipart), `bytes` (images) and `stream` (**Server-Sent Events**, parsed by the small `core/network/sse.dart`; error responses are read so the server's message still reaches the user). Nothing above it sees Dio or JSON.
+6. `core/network/auth_token_source.dart` + `interceptors/auth_interceptor.dart` — adds the token; on a 401 with a token code (or any 401 on a stream, whose body can't be read yet), asks the session to recover once and replays the request with a Dio that has no auth interceptor (no loops). A multipart body is cloned before the replay.
+6b. `core/location/location_service.dart` — a coarse position or null; never throws, never delays a scan by more than 5 s.
+7. `core/network/interceptors/safe_log_interceptor.dart` + `core/logging/app_log.dart` — debug-only console log of every request and response (method, path, status, time, masked and shortened body) and of every streamed SSE event, via `debugPrint`, so it shows in the VS Code **Debug Console**, the `flutter run` terminal and `adb logcat -s flutter`. Tokens, PIN and install id are masked at any depth; nothing is printed in release builds. Lines start with `[MedVerify] 🌐` (API), `📡` (stream) or `ℹ️` (location, camera).
 8. `core/storage/*` — `SecureStore` (Keychain item `first_unlock_this_device`: not synced to iCloud), `PreferencesStore` (synchronous after startup).
 9. `core/theme/*` — `AppPalette` holds what `ColorScheme` can't (action orange, verdict colours, AI gradient, shimmer, backdrop tints); `AppTheme.light()/dark()` from one recipe; `ThemeModeController` persists the choice.
 10. `core/router/app_router.dart` — created once; redirects to onboarding until it's done; `refreshListenable` bumps when the flag changes.
@@ -232,9 +237,12 @@ lib/
 | `session` | Silent registration and tokens. `SessionRepositoryImpl` registers on first launch (install id + platform + version + language), stores tokens, and implements `AuthTokenSource`. Every session operation (launch registration, recovery after a 401) runs **one at a time** through a small queue, so a 401 during first-launch registration waits for it instead of registering a second device; **one refresh in flight** is shared by every request that got a 401, and a late 401 for an already-replaced token just reuses the new one; a rejected refresh token clears the session and re-registers; offline keeps tokens. The install id is created once and shared by concurrent callers. `SessionController` (AsyncNotifier) runs it at launch without blocking the UI. |
 | `onboarding` | 3 slides, language picker, "never 100% safe" promise. `OnboardingController` owns page + language; the screen only owns its `PageController`. |
 | `shell` | `AppShell` = `GlassScaffold` + `AppBackdrop` + `AppTabBar` (`GlassTabBar.bottom` with a sliding glass pill and a `GlassBadge` for alerts). |
-| `home` | Greeting (from `greetingProvider` + injectable clock), AI Insight glass card, quick actions, recent scans, offline banner with retry. |
+| `home` | Greeting (from `greetingProvider` + injectable clock), AI Insight glass card, quick actions (scan, type a number, ask, alerts), the 3 most recent checks, offline banner with retry, pull to refresh. |
+| `scan` | **Live scanner** (`ScannerScreen`, opened by the Scan tab and every "Scan a pack" button): full-screen camera preview with a QR-style scan box (dimmed surround, corner brackets, sweeping line), torch toggle, shutter, gallery and "type it" shortcuts. `ScannerController` owns the `camera` plugin's controller — opened with the screen, released when the app is hidden or the screen closes, reopened when the app returns. The Scan tab page itself lists the same options for when the scanner is closed. **Then**: `CaptureController` uploads the photo with the optional location → **progress screen** follows `GET /scans/:id/events` (SSE) in `ScanProgressController`: each pipeline step ticks and the active one shimmers; if the stream drops it polls `GET /scans/:id` every 1.5 s → **verdict screen**: coloured verdict, risk ring, confidence, pharmacist review banner, demo notice, **yours vs genuine** (your photo beside the reference photo), what was read, every signal with its weight, "Ask MedVerify about this". **Manual check** form: fields report to `ManualCheckController`; server field errors appear on the right field. |
+| `history` | Every check, newest first, infinite scroll (`HistoryController.loadMore`), pull to refresh, tap → verdict. |
+| `alerts` | Warnings within 50 km from `/alerts/nearby`: your coarse location if already allowed (no prompt at launch), "Use my location", or a city. "Use my location" shows progress and, when it can't, says why (Location off → **Turn on** opens location settings; blocked → **Settings**; no fix → pick a city). Cards show severity / recalled batch, product, batch, distance, and demo / simulated-data labels. The tab badge counts **unseen** alerts only: opening the Alerts tab marks them seen (saved across launches), and a hotspot that grows (new alert title) counts again. |
+| `assistant` | **Ask MedVerify** (full screen): suggested questions, a composer, and the SSE stream from `/assistant/messages` rendered live — a shimmering chip per tool call ("Searching WHO & NAFDAC guidance"…) that ticks when it finishes, the answer (bold and bullets only), and tappable official sources. `ChatController` keeps the conversation id for follow-ups. |
 | `settings` | Theme (System/Light/Dark), language, About (version loads with a shimmer). |
-| `history`, `scan`, `alerts` | Placeholders with empty states until those features land. |
 
 ### B6. Wiring (bootstrap.dart)
 
@@ -260,7 +268,8 @@ runApp(LiquidGlassWidgets.wrap(
 | Where | Change | Why |
 |---|---|---|
 | `android/app/build.gradle.kts` | `applicationId`/`namespace` `ng.medverify.app`; `minSdk ≥ 24` (compileSdk stays Flutter's default) | flutter_secure_storage 11 needs Android 7.0+ |
-| `android/app/src/main/AndroidManifest.xml` | `INTERNET`; `allowBackup=false`, `dataExtractionRules`; `networkSecurityConfig` | Tokens never leave the phone in backups; HTTPS only |
+| `android/app/src/main/AndroidManifest.xml` | `INTERNET`, `ACCESS_COARSE_LOCATION` (coarse only), an `https` VIEW query for source links; `allowBackup=false`, `dataExtractionRules`; `networkSecurityConfig` | Tokens never leave the phone in backups; HTTPS only; location no finer than it is used |
+| `ios/Runner/Info.plist` (permissions) | Camera, photo library and when-in-use location descriptions | iOS requires them before asking |
 | `android/app/src/main/res/xml/network_security_config.xml` | No cleartext, system CAs only | Blocks plain HTTP and user-installed CAs (harder to intercept) |
 | `android/app/src/debug/res/xml/network_security_config.xml` | Cleartext allowed | Debug builds can reach `http://10.0.2.2:3000` |
 | `ios/Runner/Info.plist` | `NSAllowsLocalNetworking`; display name MedVerify | Local dev over http only; everything else HTTPS |
@@ -280,6 +289,10 @@ runApp(LiquidGlassWidgets.wrap(
 | `test/features/onboarding/onboarding_controller_test.dart` | Page bounds; finish saves language + flag |
 | `test/features/home/greeting_test.dart` | Greeting by hour with an injected clock |
 | `test/widgets/onboarding_screen_test.dart` | Full onboarding flow on a phone-sized screen |
+| `test/core/sse_test.dart` | SSE parsing: ids, JSON data, heartbeats skipped, events split across chunks, a last event without a blank line |
+| `test/features/scan/scan_flow_test.dart` | Verdict parsing (signals, review, demo flag), reference photos front first, steps ticking live → verdict, error events, expiry normalising, server field errors on the right field |
+| `test/features/alerts/alerts_test.dart` | Badge counts unseen alerts, clears when seen and stays cleared; new / grown alerts count again; "Use my location" reports the problem and keeps the city, or switches to the user's area |
+| `test/features/assistant/chat_controller_test.dart` | A full turn (tool chips start/finish, answer, citations), follow-ups keep the conversation id, failed streams show the server message, empty / busy sends ignored |
 
 ```bash
 fvm flutter analyze

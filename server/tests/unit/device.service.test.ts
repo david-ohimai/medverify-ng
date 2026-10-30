@@ -1,3 +1,4 @@
+import { reviewRepository } from "../../src/repositories/review.repository.js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Prisma } from "../../src/generated/prisma/client.js";
 import { cacheDel, cacheGetJson, cacheSetJson } from "../../src/lib/cache.js";
@@ -18,6 +19,10 @@ vi.mock("../../src/repositories/device.repository.js", () => ({
     updatePreferences: vi.fn(),
     delete: vi.fn(),
   },
+}));
+
+vi.mock("../../src/repositories/review.repository.js", () => ({
+  reviewRepository: { deletePhotosForDevice: vi.fn().mockResolvedValue({ count: 0 }) },
 }));
 
 vi.mock("../../src/services/token.service.js", () => ({
@@ -173,9 +178,10 @@ describe("deviceService.elevate / demote / remove", () => {
     expect(cacheDelete).toHaveBeenCalledWith("device-auth:device-1");
   });
 
-  it("delete my data drops the cached auth state so the token dies on the next request", async () => {
+  it("delete my data removes review photos, then drops the cached auth state so the token dies on the next request", async () => {
     devices.delete.mockResolvedValue({ id: "device-1" });
     await deviceService.remove("device-1");
+    expect(reviewRepository.deletePhotosForDevice).toHaveBeenCalledWith("device-1");
     expect(cacheDelete).toHaveBeenCalledWith("device-auth:device-1");
   });
 

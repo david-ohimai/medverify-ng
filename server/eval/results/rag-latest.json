@@ -1,0 +1,200 @@
+{
+  "summary": {
+    "ranAt": "2026-10-29T22:06:06.571Z",
+    "questions": 16,
+    "hitAt1": "15 / 16",
+    "recallAt3": "16 / 16",
+    "mrr": 0.96,
+    "offTopicRejected": "2 / 2",
+    "mode": "hybrid"
+  },
+  "results": [
+    {
+      "question": "How do I report a suspected fake medicine to NAFDAC?",
+      "offTopic": false,
+      "documents": [
+        "nafdac-alert-07-2024",
+        "nafdac-alert-042-2026",
+        "nafdac-curbing-sf"
+      ],
+      "rank": 1,
+      "mode": "hybrid",
+      "passed": true
+    },
+    {
+      "question": "Is Postinor 2 batch T36184B counterfeit?",
+      "offTopic": false,
+      "documents": [
+        "nafdac-alert-027-2025"
+      ],
+      "rank": 1,
+      "mode": "hybrid",
+      "passed": true
+    },
+    {
+      "question": "Fake NAFDAC number 02-3457 on artemether lumefantrine 80/480",
+      "offTopic": false,
+      "documents": [
+        "nafdac-alert-042-2026",
+        "nafdac-alert-09-2026"
+      ],
+      "rank": 1,
+      "mode": "hybrid",
+      "passed": true
+    },
+    {
+      "question": "Counterfeit Aflotin tablets batch",
+      "offTopic": false,
+      "documents": [
+        "nafdac-alert-08-2025"
+      ],
+      "rank": 1,
+      "mode": "hybrid",
+      "passed": true
+    },
+    {
+      "question": "Is multi-dose artemether lumefantrine dry powder suspension still registered?",
+      "offTopic": false,
+      "documents": [
+        "nafdac-alert-09-2026"
+      ],
+      "rank": 1,
+      "mode": "hybrid",
+      "passed": true
+    },
+    {
+      "question": "Falsified oxytocin injection alert",
+      "offTopic": false,
+      "documents": [
+        "nafdac-alert-028-2025"
+      ],
+      "rank": 1,
+      "mode": "hybrid",
+      "passed": true
+    },
+    {
+      "question": "Betaclox substandard and falsified",
+      "offTopic": false,
+      "documents": [
+        "nafdac-alert-37-2025"
+      ],
+      "rank": 1,
+      "mode": "hybrid",
+      "passed": true
+    },
+    {
+      "question": "Suspected falsified chloroquine tablets",
+      "offTopic": false,
+      "documents": [
+        "nafdac-alert-07-2024"
+      ],
+      "rank": 1,
+      "mode": "hybrid",
+      "passed": true
+    },
+    {
+      "question": "How does the scratch-and-text PIN verification work?",
+      "offTopic": false,
+      "documents": [
+        "nafdac-mas"
+      ],
+      "rank": 1,
+      "mode": "hybrid",
+      "passed": true
+    },
+    {
+      "question": "Which short codes do MAS providers like Sproxil use?",
+      "offTopic": false,
+      "documents": [
+        "nafdac-mas"
+      ],
+      "rank": 1,
+      "mode": "hybrid",
+      "passed": true
+    },
+    {
+      "question": "What technologies does NAFDAC use to detect fake drugs, like Truscan or Minilab?",
+      "offTopic": false,
+      "documents": [
+        "nafdac-curbing-sf",
+        "nafdac-mas"
+      ],
+      "rank": 1,
+      "mode": "hybrid",
+      "passed": true
+    },
+    {
+      "question": "Where can I find the official list of NAFDAC-approved medicines?",
+      "offTopic": false,
+      "documents": [
+        "nafdac-mas",
+        "nafdac-curbing-sf",
+        "nafdac-greenbook"
+      ],
+      "rank": 3,
+      "mode": "hybrid",
+      "passed": true
+    },
+    {
+      "question": "What is the difference between substandard and falsified medical products?",
+      "offTopic": false,
+      "documents": [
+        "who-sf-scope-scale-harm",
+        "who-sf-fact-sheet"
+      ],
+      "rank": 1,
+      "mode": "hybrid",
+      "passed": true
+    },
+    {
+      "question": "What proportion of medicines in low- and middle-income countries are substandard or falsified?",
+      "offTopic": false,
+      "documents": [
+        "who-sf-fact-sheet",
+        "who-sf-scope-scale-harm"
+      ],
+      "rank": 1,
+      "mode": "hybrid",
+      "passed": true
+    },
+    {
+      "question": "What is the WHO Global Surveillance and Monitoring System?",
+      "offTopic": false,
+      "documents": [
+        "who-sf-fact-sheet",
+        "who-sf-activities"
+      ],
+      "rank": 1,
+      "mode": "hybrid",
+      "passed": true
+    },
+    {
+      "question": "Is it risky to buy medicines online?",
+      "offTopic": false,
+      "documents": [
+        "who-sf-fact-sheet",
+        "nafdac-curbing-sf",
+        "who-sf-scope-scale-harm"
+      ],
+      "rank": 1,
+      "mode": "hybrid",
+      "passed": true
+    },
+    {
+      "question": "Best jollof rice recipe",
+      "offTopic": true,
+      "documents": [],
+      "rank": 0,
+      "mode": "hybrid",
+      "passed": true
+    },
+    {
+      "question": "Who won the football match yesterday?",
+      "offTopic": true,
+      "documents": [],
+      "rank": 0,
+      "mode": "hybrid",
+      "passed": true
+    }
+  ]
+}

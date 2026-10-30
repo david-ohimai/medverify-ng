@@ -32,6 +32,8 @@
     "smoke": "bash scripts/smoke-test.sh",
     "eval": "tsx scripts/eval.ts",
     "eval:agent": "tsx scripts/eval-agent.ts",
+    "eval:rag": "tsx scripts/eval-rag.ts",
+    "eval:report": "tsx scripts/eval-report.ts",
     "simulate": "tsx scripts/simulate-scans.ts",
     "kb:fetch": "tsx scripts/kb-fetch.ts",
     "kb:ingest": "tsx scripts/kb-ingest.ts",

@@ -141,7 +141,7 @@ exit
 
 ## 5. Create the tables with Prisma
 
-Seven migrations are already in the repo:
+Eight migrations are already in the repo:
 
 | Migration | What it does |
 |---|---|
@@ -152,6 +152,7 @@ Seven migrations are already in the repo:
 | `20261029065908_reference_images` | Creates `reference_images` (genuine-pack photos the AI compares scans with, stored as bytes) |
 | `20261029111153_hotspots` | Scan location (`latitude`, `longitude` rounded to ~1 km, `area_name`), `simulated` flag, index on `(created_at, risk_score)`; creates `hotspots` and `hotspot_alerts` |
 | `20261029151624_knowledge_base_and_assistant` | `kb_documents` and `kb_chunks` (pgvector `vector(768)`) for the official WHO/NAFDAC documents; `assistant_conversations` and `assistant_messages` (the agent's transcript and tool trace) |
+| `20261029213347_scan_reviews` | `scan_reviews`: the human review queue (priority, reasons, SLA deadline, escalation level, claim, decision, reviewer's verdict and note, and the pack photo only while open) |
 
 ```bash
 npm run prisma:migrate      # = prisma migrate dev   → applies every pending migration
@@ -171,7 +172,7 @@ npm run db:psql
 SELECT extname, extversion FROM pg_extension ORDER BY extname;
 -- pg_trgm, plpgsql, postgis, vector
 SELECT '[1,2,3]'::vector <-> '[1,2,4]'::vector AS distance;   -- 1
-\dt                                                         -- devices, refresh_tokens, audit_logs, products, batches, scans, prompt_versions, ai_audit_logs, reference_images, hotspots, hotspot_alerts, kb_documents, kb_chunks, assistant_conversations, assistant_messages, _prisma_migrations
+\dt                                                         -- devices, refresh_tokens, audit_logs, products, batches, scans, prompt_versions, ai_audit_logs, reference_images, hotspots, hotspot_alerts, kb_documents, kb_chunks, assistant_conversations, assistant_messages, scan_reviews, _prisma_migrations
 \q
 ```
 
@@ -303,6 +304,7 @@ SELECT area_name, severity, scan_count, nafdac_no, batch_no, simulated_share, ac
 SELECT severity, generated_by, title FROM hotspot_alerts ORDER BY created_at DESC LIMIT 10;
 SELECT id, publisher, retrieved, (SELECT count(*) FROM kb_chunks c WHERE c.document_id = d.id) AS passages FROM kb_documents d ORDER BY id;
 SELECT role, tool_name, left(coalesce(tool_result_summary, content), 80) FROM assistant_messages ORDER BY created_at DESC LIMIT 10;
+SELECT priority, status, reasons, sla_deadline, escalation_level, decision, reviewed_verdict, image_data IS NOT NULL AS has_photo FROM scan_reviews ORDER BY created_at DESC;
 ```
 
 ### Redis (rate-limit counters)

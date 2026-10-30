@@ -15,6 +15,7 @@ import { deviceRoutes } from "./routes/device.routes.js";
 import { healthRoutes } from "./routes/health.routes.js";
 import { alertRoutes, hotspotRoutes } from "./routes/hotspot.routes.js";
 import { registryRoutes } from "./routes/registry.routes.js";
+import { reviewRoutes } from "./routes/review.routes.js";
 import { scanRoutes, verificationRoutes } from "./routes/verification.routes.js";
 import "./events/index.js";
 
@@ -93,6 +94,7 @@ export function createApp() {
   app.use(`${API_PREFIX}/hotspots`, hotspotRoutes);
   app.use(`${API_PREFIX}/alerts`, alertRoutes);
   app.use(`${API_PREFIX}/assistant`, assistantRoutes);
+  app.use(`${API_PREFIX}/reviews`, reviewRoutes);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

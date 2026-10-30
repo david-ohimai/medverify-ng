@@ -21,6 +21,12 @@ export interface AppEvents {
   "assistant:answered": [{ conversationId: string; deviceId: string; rounds: number; tools: string[]; provider: string }];
   "assistant:tool-called": [{ tool: string; ok: boolean }];
   "assistant:injection-suspected": [{ deviceId: string; conversationId: string }];
+  "review:queued": [{ reviewId: string; scanId: string; priority: number; reasons: string[] }];
+  "review:claimed": [{ reviewId: string; reviewerId: string }];
+  "review:decided": [
+    { reviewId: string; scanId: string; reviewerId: string; decision: string; aiVerdict: Verdict | null; reviewedVerdict: Verdict | null },
+  ];
+  "review:escalated": [{ reviewId: string; scanId: string; priority: number; level: number }];
   "hotspot:alert-created": [{ alertId: string; hotspotId: string; severity: string; generatedBy: string }];
   /** One AI provider call (successful or not) — feeds ai_audit_logs and metrics. */
   "ai:called": [AiCallRecord];

@@ -2,6 +2,12 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>NSCameraUsageDescription</key>
+	<string>MedVerify photographs the medicine pack to read its label and compare it with the genuine pack.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Choose a photo of a medicine pack to check it.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Your approximate area (about 1 km) is used to warn you about fake medicines reported nearby. It is optional.</string>
 	<!-- HTTPS everywhere, except the local network so a debug build can reach
 	     the laptop's server. Allowed by App Store review. -->
 	<key>NSAppTransportSecurity</key>
