@@ -57,7 +57,7 @@ verificationRoutes.post("/manual", verifyLimiter, validate(manualVerificationSch
  *       - { in: query, name: page, schema: { type: integer, default: 1 } }
  *       - { in: query, name: limit, schema: { type: integer, default: 20, maximum: 50 } }
  *     responses:
- *       200: { description: Page of results, with pagination meta }
+ *       200: { description: "Page of results, with pagination meta" }
  * /api/v1/scans/{id}:
  *   get:
  *     tags: [Verification]
@@ -100,8 +100,8 @@ scanRoutes.get("/", validate(listScansSchema), verificationController.listScans)
  *       202: { description: "Accepted: { scanId, status: pending, eventsUrl, statusUrl }" }
  *       413: { description: Photo larger than 8 MB }
  *       415: { description: Not a supported image }
- *       422: { description: No photo, or too small to read }
- *       429: { description: Scan limit reached, or today's free AI quota is used up (AI_QUOTA_EXHAUSTED) }
+ *       422: { description: "No photo, or too small to read" }
+ *       429: { description: "Scan limit reached, or today's free AI quota is used up (AI_QUOTA_EXHAUSTED)" }
  *       503: { description: No AI provider available (AI_UNAVAILABLE) }
  */
 scanRoutes.post("/", scanUploadLimiter, scanDailyLimiter, uploadImage, validate(scanUploadSchema), photoScanController.submit);

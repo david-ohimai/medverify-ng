@@ -38,7 +38,7 @@ assistantRoutes.use(authenticate, apiLimiter);
  *     responses:
  *       200: { description: Event stream }
  *       404: { description: Conversation not found (or another device's) }
- *       429: { description: Too many questions, or today's AI quota is used up }
+ *       429: { description: "Too many questions, or today's AI quota is used up" }
  * /api/v1/assistant/tools:
  *   get:
  *     tags: [Assistant]

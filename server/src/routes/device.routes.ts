@@ -32,7 +32,7 @@ export const deviceRoutes = Router();
  *               appVersion: { type: string, example: "1.0.0+1" }
  *               language: { type: string, enum: [en, pcm, ha, yo, ig], default: en }
  *     responses:
- *       201: { description: Device registered, returns device and token pair }
+ *       201: { description: "Device registered, returns device and token pair" }
  *       422: { description: Validation failed }
  *       429: { description: Too many registrations from this network }
  */
@@ -72,7 +72,7 @@ deviceRoutes.use(authenticate, apiLimiter);
  *     security: [{ bearerAuth: [] }]
  *     responses:
  *       200: { description: Device }
- *       401: { description: Missing, invalid or expired access token }
+ *       401: { description: "Missing, invalid or expired access token" }
  *   patch:
  *     tags: [Devices]
  *     summary: Update preferences

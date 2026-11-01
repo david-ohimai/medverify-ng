@@ -37,7 +37,7 @@ registryRoutes.get("/search", searchLimiter, validate(productSearchSchema), regi
  *     parameters:
  *       - { in: path, name: nafdacNo, required: true, schema: { type: string }, example: "A4-1234" }
  *     responses:
- *       200: { description: Product with batches and referenceImages [{ id, side, width, height }] }
+ *       200: { description: "Product with batches and referenceImages [{ id, side, width, height }]" }
  *       404: { description: Not registered }
  * /api/v1/products/{nafdacNo}/reference-images/{imageId}:
  *   get:
