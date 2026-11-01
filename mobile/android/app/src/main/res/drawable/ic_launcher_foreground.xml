@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Launcher icon foreground (and Android 13 themed-icon layer): the white
+     shield and tick from splash_logo.xml, scaled 1.2x and centred inside the
+     66dp safe zone so no launcher shape crops it. Same shapes as
+     tool/generate_app_icons.mjs, which renders the PNG icons. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:pivotX="48"
+        android:pivotY="48.5"
+        android:scaleX="1.2"
+        android:scaleY="1.2"
+        android:translateX="6"
+        android:translateY="5.5">
+        <path
+            android:pathData="M48,25L67,32L67,47C67,59 59,68 48,72C37,68 29,59 29,47L29,32Z"
+            android:fillColor="#00000000"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeWidth="3.5"
+            android:strokeLineJoin="round" />
+        <path
+            android:pathData="M39.5,48.5L45.5,54.5L57,43"
+            android:fillColor="#00000000"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeWidth="3.5"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+    </group>
+</vector>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 12+ launch icon: the 96dp logo centred on the 288dp canvas the
+     system splash expects, so it shows at the same size as on older Android
+     and in Flutter's splash. -->
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/splash_logo"
+    android:inset="96dp" />

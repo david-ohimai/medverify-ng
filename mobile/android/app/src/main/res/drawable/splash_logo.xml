@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The MedVerify logo: a shield with a tick in a violet-to-blue circle.
+     Drawn the same way by SplashLogo (splash_screen.dart), so the native
+     launch screen hands over to Flutter's splash without a jump. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="96dp"
+    android:height="96dp"
+    android:viewportWidth="96"
+    android:viewportHeight="96">
+    <path android:pathData="M48,0a48,48 0,1 1,0 96a48,48 0,1 1,0 -96z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="0"
+                android:startY="48"
+                android:endX="96"
+                android:endY="48"
+                android:startColor="#FF8B82FF"
+                android:endColor="#FF5CC4FF" />
+        </aapt:attr>
+    </path>
+    <path
+        android:pathData="M48,25L67,32L67,47C67,59 59,68 48,72C37,68 29,59 29,47L29,32Z"
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="3.5"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M39.5,48.5L45.5,54.5L57,43"
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+</vector>
