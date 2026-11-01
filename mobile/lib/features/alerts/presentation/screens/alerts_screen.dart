@@ -145,7 +145,7 @@ class _AlertCard extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
-      child: GlassCard(
+      child: GlassContainer.card(
         padding: const EdgeInsets.all(AppSpacing.lg),
         shape: const LiquidRoundedSuperellipse(borderRadius: AppRadius.lg),
         child: Column(

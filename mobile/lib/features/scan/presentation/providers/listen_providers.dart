@@ -2,6 +2,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/app_language.dart';
+import '../../../../core/errors/failure.dart';
 import '../../../../core/locale/language_controller.dart';
 import '../../../../core/result/result.dart';
 import '../../../../core/speech/tts_service.dart';
@@ -70,8 +71,13 @@ class ListenController extends Notifier<ListenState> {
           speech = (text: value.text, locale: value.ttsLocale);
           _texts[language] = speech;
         case Err(:final failure):
-          state = ListenState(language: language, error: failure.message);
-          return;
+          // English needs no translation: read the verdict already on screen.
+          final onScreen = language == AppLanguage.en ? _englishFromVerdict() : null;
+          if (onScreen == null) {
+            state = ListenState(language: language, error: _messageFor(failure, language));
+            return;
+          }
+          speech = (text: onScreen, locale: 'en-NG');
       }
     }
 
@@ -80,6 +86,19 @@ class ListenController extends Notifier<ListenState> {
     if (!ref.mounted || state.language != language) return;
     state = ListenState(language: language, text: speech.text, voiceMissing: !spoke);
   }
+
+  String? _englishFromVerdict() {
+    final scan = ref.read(scanResultProvider(scanId)).value;
+    if (scan == null) return null;
+    return '${scan.headline}. ${scan.advice}';
+  }
+
+  /// Short, plain words for the card. Offline, slow or over the daily limit
+  /// already read well; anything else (a server fault) gets one calm line.
+  static String _messageFor(Failure failure, AppLanguage language) => switch (failure) {
+    NetworkFailure() || TimeoutFailure() || RateLimitedFailure() => failure.message,
+    _ => 'The ${language.englishName} version isn’t available right now.',
+  };
 
   Future<void> stop() async {
     await ref.read(ttsServiceProvider).stop();

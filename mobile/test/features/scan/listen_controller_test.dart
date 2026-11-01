@@ -5,6 +5,7 @@ import 'package:medverify/core/errors/failure.dart';
 import 'package:medverify/core/locale/language_controller.dart';
 import 'package:medverify/core/result/result.dart';
 import 'package:medverify/core/speech/tts_service.dart';
+import 'package:medverify/features/scan/data/scan_models.dart';
 import 'package:medverify/features/scan/data/scan_repository.dart';
 import 'package:medverify/features/scan/presentation/providers/listen_providers.dart';
 import 'package:medverify/features/scan/presentation/providers/scan_providers.dart';
@@ -71,5 +72,49 @@ void main() {
     when(() => repository.speech('s-1', 'pcm')).thenAnswer((_) async => const Err(NetworkFailure()));
     await container.read(listenControllerProvider('s-1').notifier).play();
     expect(container.read(listenControllerProvider('s-1')).error, contains('internet'));
+  });
+
+  test('a server fault shows one calm line, not the raw error', () async {
+    when(() => repository.speech('s-1', 'pcm'))
+        .thenAnswer((_) async => const Err(NotFoundFailure('Route not found: GET /api/v1/scans/s-1/speech')));
+    await container.read(listenControllerProvider('s-1').notifier).play();
+    final error = container.read(listenControllerProvider('s-1')).error!;
+    expect(error, isNot(contains('/api')));
+    expect(error, contains('Pidgin'));
+  });
+
+  test('English still plays from the verdict on screen when the server fails', () async {
+    when(() => repository.get('s-1')).thenAnswer(
+      (_) async => Success(
+        ScanModels.result({
+          'scanId': 's-1',
+          'kind': 'photo',
+          'status': 'done',
+          'verdict': 'unregistered',
+          'riskScore': 45,
+          'confidence': 'high',
+          'headline': 'Not found in the NAFDAC register',
+          'advice': "Don't take it until a pharmacist has checked it.",
+          'signals': [],
+          'checkedAt': '2026-11-01T07:54:51.476Z',
+        }),
+      ),
+    );
+    container.listen(scanResultProvider('s-1'), (_, _) {});
+    await container.read(scanResultProvider('s-1').future);
+    when(() => repository.speech('s-1', 'en')).thenAnswer((_) async => const Err(ServerFailure()));
+    when(() => tts.speak(any(), locale: any(named: 'locale'))).thenAnswer((_) async => true);
+    final controller = container.read(listenControllerProvider('s-1').notifier);
+
+    await controller.selectLanguage(AppLanguage.en);
+    await controller.play();
+
+    verify(
+      () => tts.speak(
+        "Not found in the NAFDAC register. Don't take it until a pharmacist has checked it.",
+        locale: 'en-NG',
+      ),
+    ).called(1);
+    expect(container.read(listenControllerProvider('s-1')).error, isNull);
   });
 }

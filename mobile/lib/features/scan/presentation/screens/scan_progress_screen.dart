@@ -48,7 +48,7 @@ class ScanProgressScreen extends ConsumerWidget {
               ),
             ),
           const SizedBox(height: AppSpacing.lg),
-          GlassCard(
+          GlassContainer.card(
             padding: const EdgeInsets.all(AppSpacing.lg),
             shape: const LiquidRoundedSuperellipse(borderRadius: AppRadius.lg),
             child: Column(

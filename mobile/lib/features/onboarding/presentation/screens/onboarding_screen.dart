@@ -57,8 +57,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         icon: Iconsax.scan_barcode,
                         title: 'Verify a medicine before you take it',
                         message:
-                            'Photograph any medicine pack. MedVerify reads the label, checks it against NAFDAC '
-                            'records and compares it with genuine packs — in seconds.',
+                            'Scan any medicine pack. MedVerify reads the label, checks it against NAFDAC '
+                            'records and compares it with genuine packs in seconds.',
                       ),
                       OnboardingSlide(
                         icon: Iconsax.language_square,
