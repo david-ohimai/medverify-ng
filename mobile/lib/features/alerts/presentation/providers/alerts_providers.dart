@@ -72,6 +72,35 @@ class NearbyAlertsController extends AsyncNotifier<NearbyAlerts> {
     state = await AsyncValue.guard(() => _forCity(city));
   }
 
+  /// Re-checks the same place in the background: the list on screen stays
+  /// (no skeleton) and a failed refresh keeps it. Called on visiting Alerts,
+  /// on returning to the app, and every few minutes while it is open.
+  Future<void> refresh() async {
+    final current = state.value;
+    if (current == null) {
+      // Nothing to keep: a failed first load just tries again.
+      if (state.hasError) ref.invalidateSelf();
+      return;
+    }
+    if (_refreshing || state.isLoading) return;
+    _refreshing = true;
+    try {
+      final location = current.usingLocation ? await ref.read(locationServiceProvider).current(ask: false) : null;
+      // Location switched off since: keep the last "near you" list.
+      if (current.usingLocation && location == null) return;
+      final next = await AsyncValue.guard(
+        () => location != null ? _forLocation(location) : _forCity(current.city ?? City.lagos),
+      );
+      // The user may have picked another place meanwhile; theirs wins.
+      if (!ref.mounted || state.value != current) return;
+      if (next case AsyncData(:final value) when value != current) state = next;
+    } finally {
+      _refreshing = false;
+    }
+  }
+
+  bool _refreshing = false;
+
   Future<NearbyAlerts> _forLocation(ApproxLocation location) async =>
       NearbyAlerts(alerts: await _load(location.latitude, location.longitude), place: 'Near you', usingLocation: true);
 

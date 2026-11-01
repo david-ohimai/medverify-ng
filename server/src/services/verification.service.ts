@@ -11,8 +11,8 @@ import { adviceFor, assessRisk, DISCLAIMER, type RiskAssessment, type Signal } f
 
 /** Why a photo scan ended without a verdict, in words the user can act on. */
 export const SCAN_FAILURES: Record<string, string> = {
-  NOT_A_MEDICINE_PACK: "This doesn't look like a medicine pack. Photograph the side that shows the NAFDAC number.",
-  NAFDAC_NO_UNREADABLE: "We couldn't read a NAFDAC number. Retake the photo in good light, or type the number in.",
+  NOT_A_MEDICINE_PACK: "This doesn't look like a medicine pack. Scan the side that shows the NAFDAC number.",
+  NAFDAC_NO_UNREADABLE: "We couldn't read a NAFDAC number. Rescan the medicine pack in good light, or type the number in.",
   IMAGE_EXPIRED: "The photo expired before it could be checked. Please scan again.",
   AI_UNAVAILABLE: "The AI service is unavailable right now. Please try again shortly, or type the details in.",
   AI_QUOTA_EXHAUSTED: "Photo checks are paused for today (free AI limit reached). You can still type the NAFDAC number in.",

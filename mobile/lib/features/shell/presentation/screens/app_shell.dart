@@ -6,6 +6,7 @@ import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import '../../../../core/router/app_routes.dart';
 import '../../../../shared/widgets/app_backdrop.dart';
 import '../../../alerts/presentation/providers/alerts_providers.dart';
+import '../providers/live_refresh_provider.dart';
 import '../widgets/app_tab_bar.dart';
 
 /// The frame around the five tabs: mesh backdrop, the current tab's page, and
@@ -30,6 +31,10 @@ class AppShell extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Background refresh on resume and on a timer; it never changes, so this
+    // never rebuilds the shell.
+    ref.watch(liveRefreshProvider);
+
     // New alerts arriving while the Alerts tab is open are seen at once.
     ref.listen(nearbyAlertsProvider, (_, _) {
       if (navigationShell.currentIndex == alertsTab) _markAlertsSeen(ref);

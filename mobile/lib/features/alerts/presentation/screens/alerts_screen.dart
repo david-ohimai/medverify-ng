@@ -22,7 +22,8 @@ class AlertsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) => RefreshIndicator(
-    onRefresh: () => ref.refresh(nearbyAlertsProvider.future),
+    // Optional: alerts also refresh on their own, keeping the chosen place.
+    onRefresh: () => ref.read(nearbyAlertsProvider.notifier).refresh(),
     child: const PageLayout(
       title: 'Alerts',
       subtitle: 'Suspicious medicines reported near you',

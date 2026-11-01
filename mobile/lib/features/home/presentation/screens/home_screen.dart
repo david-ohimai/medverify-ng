@@ -26,7 +26,8 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) => RefreshIndicator(
     // Refreshes recent checks only; the tips change when Home comes into view (app_router.dart).
-    onRefresh: () => ref.refresh(historyProvider.future),
+    // Optional: recent checks also refresh on their own (app_router.dart, live_refresh_provider.dart).
+    onRefresh: () => ref.read(historyProvider.notifier).refresh(),
     child: PageLayout(
       title: ref.watch(greetingProvider),
       subtitle: AppConstants.tagline,

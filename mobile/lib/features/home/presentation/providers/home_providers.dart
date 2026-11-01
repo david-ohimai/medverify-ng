@@ -39,7 +39,7 @@ const homeTips = <InsightLine>[
   ),
   InsightLine(
     icon: Iconsax.calendar_remove,
-    text: 'Never take a medicine past its expiry date — return it to the pharmacy.',
+    text: 'Never take a medicine past its expiry date, return it to the pharmacy.',
     tone: InsightTone.danger,
   ),
   InsightLine(
@@ -58,14 +58,14 @@ const homeTips = <InsightLine>[
   ),
   InsightLine(
     icon: Iconsax.copy,
-    text: 'A real NAFDAC number printed on a different product is a common counterfeit trick — check the name matches.',
+    text: 'A real NAFDAC number printed on a different product is a common counterfeit trick, check the name matches.',
     tone: InsightTone.warning,
   ),
   InsightLine(icon: Iconsax.box_tick, text: 'Check that the pack is sealed and undamaged before you buy.'),
   InsightLine(icon: Iconsax.people, text: 'Every suspicious scan helps warn people near you.'),
   InsightLine(
     icon: Iconsax.magic_star,
-    text: 'Not sure? Ask MedVerify — answers come from official WHO and NAFDAC guidance, with the sources.',
+    text: 'Not sure? Ask MedVerify! Answers come from official WHO and NAFDAC guidance, with the sources.',
     tone: InsightTone.info,
   ),
   InsightLine(
@@ -75,7 +75,7 @@ const homeTips = <InsightLine>[
   ),
   InsightLine(
     icon: Iconsax.keyboard,
-    text: 'Typed in a NAFDAC number? Scan the pack too — fakes often copy real numbers.',
+    text: 'Typed in a NAFDAC number? Scan the pack too, fakes often copy real numbers.',
     tone: InsightTone.info,
   ),
   InsightLine(
