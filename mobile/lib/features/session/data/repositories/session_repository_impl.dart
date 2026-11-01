@@ -5,6 +5,7 @@ import '../../../../core/errors/failure.dart';
 import '../../../../core/network/auth_token_source.dart';
 import '../../../../core/result/result.dart';
 import '../../domain/entities/device.dart';
+import '../../domain/entities/token_pair.dart';
 import '../../domain/repositories/session_repository.dart';
 import '../datasources/session_local_data_source.dart';
 import '../datasources/session_remote_data_source.dart';
@@ -51,6 +52,9 @@ class SessionRepositoryImpl implements SessionRepository, AuthTokenSource {
     if (await _local.refreshToken() != null) return const Success(null);
     return _register();
   });
+
+  @override
+  Future<void> adoptTokens(TokenPair tokens) => _exclusive(() => _local.saveTokens(tokens));
 
   @override
   Future<String?> accessToken() => _local.accessToken();

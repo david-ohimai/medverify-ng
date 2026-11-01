@@ -9,6 +9,9 @@ import '../../features/home/presentation/providers/home_providers.dart';
 import '../../features/home/presentation/screens/home_screen.dart';
 import '../../features/onboarding/presentation/providers/onboarding_providers.dart';
 import '../../features/onboarding/presentation/screens/onboarding_screen.dart';
+import '../../features/regulator/presentation/screens/regulator_dashboard_screen.dart';
+import '../../features/regulator/presentation/screens/review_queue_screen.dart';
+import '../../features/regulator/presentation/screens/review_screen.dart';
 import '../../features/scan/presentation/screens/manual_check_screen.dart';
 import '../../features/scan/presentation/screens/scan_progress_screen.dart';
 import '../../features/scan/presentation/screens/scan_screen.dart';
@@ -66,6 +69,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, state) => VerdictScreen(scanId: state.pathParameters['id']!),
       ),
       GoRoute(path: AppRoutes.manualCheck, builder: (_, _) => const ManualCheckScreen()),
+      GoRoute(path: AppRoutes.regulator, builder: (_, _) => const RegulatorDashboardScreen()),
+      GoRoute(path: AppRoutes.reviewQueue, builder: (_, _) => const ReviewQueueScreen()),
+      GoRoute(
+        path: AppRoutes.reviewPattern,
+        builder: (_, state) => ReviewScreen(reviewId: state.pathParameters['id']!),
+      ),
       GoRoute(path: AppRoutes.camera, builder: (_, _) => const ScannerScreen()),
       GoRoute(
         path: AppRoutes.assistant,

@@ -40,6 +40,13 @@ final chatControllerProvider = NotifierProvider.autoDispose<ChatController, Chat
 class ChatController extends Notifier<ChatState> {
   StreamSubscription<SseEvent>? _subscription;
 
+  static const regulatorSuggestions = [
+    'Which hotspots should inspectors visit first this week?',
+    'Summarise the latest hotspot alerts',
+    'How many scans were flagged in the last 30 days?',
+    'What does NAFDAC say about falsified oxytocin?',
+  ];
+
   static const suggestions = [
     'How do I report a fake drug in Nigeria?',
     'What is the scratch code on medicine packs for?',

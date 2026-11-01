@@ -6,6 +6,7 @@ import '../../../../core/extensions/context_x.dart';
 import '../../../../core/theme/app_dimens.dart';
 import '../../../../shared/widgets/detail_scaffold.dart';
 import '../../domain/chat_message.dart';
+import '../../../regulator/presentation/providers/regulator_providers.dart';
 import '../providers/assistant_providers.dart';
 import '../widgets/chat_bubbles.dart';
 
@@ -64,7 +65,8 @@ class _Suggestions extends ConsumerWidget {
         textAlign: TextAlign.center,
       ),
       const SizedBox(height: AppSpacing.xl),
-      for (final question in ChatController.suggestions)
+      for (final question
+          in ref.watch(isRegulatorProvider) ? ChatController.regulatorSuggestions : ChatController.suggestions)
         Padding(
           padding: const EdgeInsets.only(bottom: AppSpacing.sm),
           child: OutlinedButton(
