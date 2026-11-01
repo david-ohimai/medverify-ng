@@ -56,6 +56,10 @@
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
+        <!-- Text-to-speech engines, for reading verdicts aloud (Android 11+ package visibility). -->
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE"/>
+        </intent>
         <!-- Opening an official WHO / NAFDAC source cited by the assistant. -->
         <intent>
             <action android:name="android.intent.action.VIEW"/>

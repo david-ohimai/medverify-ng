@@ -22,3 +22,9 @@ export const scanParamsSchema = z.object({
   }),
 });
 export type ScanParams = z.infer<typeof scanParamsSchema>["params"];
+
+export const scanSpeechSchema = z.object({
+  params: z.object({ id: z.uuid("Scan id must be a UUID") }),
+  query: z.object({ lang: z.enum(["en", "pcm", "ha", "yo", "ig"]).default("en") }),
+});
+export type ScanSpeechInput = z.infer<typeof scanSpeechSchema>;

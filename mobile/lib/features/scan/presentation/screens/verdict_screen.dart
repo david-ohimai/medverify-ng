@@ -11,6 +11,7 @@ import '../../../../shared/widgets/detail_scaffold.dart';
 import '../../../../shared/widgets/page_layout.dart';
 import '../../domain/entities/scan_result.dart';
 import '../providers/scan_providers.dart';
+import '../widgets/listen_card.dart';
 import '../widgets/verdict_widgets.dart';
 
 /// One check's result: verdict, review, yours vs genuine, what was read,
@@ -46,6 +47,7 @@ class _VerdictBody extends ConsumerWidget {
       padding: const EdgeInsets.all(AppSpacing.gutter),
       children: [
         if (result.status == ScanStatus.failed) _FailedCard(message: result.advice) else VerdictHero(result: result),
+        if (result.status == ScanStatus.done) ...[const SizedBox(height: AppSpacing.md), ListenCard(scanId: result.id)],
         if (result.review != null) ...[const SizedBox(height: AppSpacing.md), ReviewBanner(review: result.review!)],
         if (product?.isDemo ?? false) ...[const SizedBox(height: AppSpacing.md), const DemoNotice()],
         if (result.isPhoto && product != null) ...[

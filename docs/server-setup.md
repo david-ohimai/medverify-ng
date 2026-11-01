@@ -27,7 +27,7 @@ Shell: **Git Bash** unless noted. Working folder: `medverify-ng/server/`.
 | 9b | `npm run seed` | Loads the registry CSVs, the genuine-pack reference photos and the AI prompt versions |
 | 9b++ | `npm run kb:ingest` | Embeds the official WHO / NAFDAC documents in `kb/documents/` for the assistant (needs the Gemini key; ~1 minute) |
 | 9b+ | `npm run simulate` | Optional: ~1,400 simulated pilot scans with planted clusters, then clusters them — fills the hotspot map |
-| 9c | `npm test` | 264 unit + HTTP tests; no database, Redis or AI key needed |
+| 9c | `npm test` | 268 unit + HTTP tests; no database, Redis or AI key needed |
 | 10 | `npm run typecheck` | Strict TypeScript check of `src/` and `tests/` |
 | 11 | `npm run dev` | API on http://localhost:3000, restarts on save |
 | 12 | Open http://localhost:3000/api-docs | Swagger UI — try every endpoint |
@@ -46,7 +46,7 @@ npm run smoke
 
 | Job | What it proves |
 |---|---|
-| Server · typecheck, test, build | `prisma validate`, strict typecheck, 264 tests, production build |
+| Server · typecheck, test, build | `prisma validate`, strict typecheck, 268 tests, production build |
 | Server · migrations + smoke test | Starts the real Docker Postgres + Redis, applies every migration with `migrate deploy`, checks the extensions, seeds the registry, boots the built server and runs `npm run smoke` (device security + registry search + every verdict) |
 | Mobile · format, analyze, test | `dart format` (120 columns), `flutter analyze --fatal-infos`, all tests |
 | Mobile · Android APK | Pull requests into `main` only: obfuscated arm64 release APK, downloadable from the run for 5 days |
@@ -257,6 +257,7 @@ Endpoints:
 | GET | `/api/v1/alerts/nearby?lat=&lng=&radiusKm=` | access token | Medium/high hotspots near the user |
 | POST | `/api/v1/assistant/messages` | access token | Ask the assistant — **SSE**: `conversation`, `tool_start`/`tool_end`, `answer`, `citations`, `done` |
 | GET | `/api/v1/assistant/tools` | access token | Tools available to this role |
+| GET | `/api/v1/scans/:id/speech?lang=en\|pcm\|ha\|yo\|ig` | access token | The verdict as short text to read aloud (headline, main reason, advice), translated by the light model (`translate_verdict` task, cached by text + language + prompt version) with the phone's TTS locale |
 | GET | `/api/v1/assistant/conversations/:id` | access token | Transcript with the full tool trace |
 | GET | `/api/v1/reviews?status=` | regulator | Human review queue (escalated, then priority, then deadline) |
 | GET | `/api/v1/reviews/stats` | regulator | Queue health and reviewer agreement rate |
@@ -550,6 +551,7 @@ npm pkg set scripts.test="vitest run" scripts.test:watch="vitest"
 | `tests/unit/knowledge.test.ts` | Verified-source allowlist (look-alike hosts, HTTP, ports, credentials), **every committed document is verified**, front matter, chunking, keyword query, rank fusion |
 | `tests/unit/assistant.test.ts` | Role-gated tools, invalid arguments never run, device taken from the token, citation numbering, the agent loop (tool round → answer, max rounds, 404, AI outage, injection logging), citation parsing |
 | `tests/http/assistant.test.ts` | SSE event stream, 404 before streaming, question validation, auth, tools per role, transcripts scoped to the device |
+| `tests/unit/speech.test.ts` | Spoken text (headline, heaviest warning, advice), English without AI, Pidgin translated once and cached, cached translations cost no AI call |
 | `tests/unit/review.test.ts` | Which scans are queued and at what priority, SLA and escalation deadlines, final verdict, enqueue with photo, 409 / 404 on claims, decision validation, the accountability event, the SLA job |
 | `tests/http/reviews.test.ts` | Regulator-only queue and photos, filters, uncached photo, claim / decide as the token's reviewer, decision validation |
 | `tests/http/scans.test.ts` | Upload auth, 202 + Location, missing / wrong-field file, 413 over 8 MB, SSE 404 for another device, control plane regulator-only |

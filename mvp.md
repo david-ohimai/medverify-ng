@@ -29,14 +29,35 @@
 
 ---
 
-## 0. TL;DR checklist
+## 0. MVP status — built vs planned
+
+*Updated 1 Nov 2026. The rest of this file is the original plan; this table is what actually exists.*
+
+| Area | Built ✅ | Not built (yet) |
+|---|---|---|
+| Device identity & security | Silent registration, rotating refresh tokens with reuse detection, instant token revocation, regulator role via PIN (API), layered rate limits, Helmet/CORS/sanitising, audit log | Regulator-mode PIN screen in the app |
+| Registry & typed-in check | CSV import with validation, fuzzy search (pg_trgm), `POST /verify/manual` with explainable signals | Real Greenbook rows (demo `X9-` rows only, labelled fictional) |
+| Photo scan | Live camera scanner (scan box, torch) + gallery; `POST /scans` 202 → BullMQ worker → AI label reading → registry → batch → **pack comparison** → score; SSE progress with polling fallback; photos never kept except for human review | Live OCR chips and auto-capture in the scanner; a second shot of the back of the pack; real reference photos |
+| Verdict | Verdict, risk ring, confidence, every signal, yours vs genuine, review banner, demo notice, **Listen in 5 languages** | "Share warning" and "Report to NAFDAC" buttons |
+| Languages & voice | `GET /scans/:id/speech?lang=` (AI translation, cached) + on-device text-to-speech; text shown when the phone has no voice | The rest of the UI is in English only |
+| AI control plane | Gemini → OpenRouter fallback, retries, circuit breaker, timeouts, free-quota guard, Zod-validated JSON, versioned prompts, `ai_audit_logs`, `/ai/*` admin API | Local embeddings fallback |
+| Hotspots | Coarse location, PostGIS DBSCAN job + debounced trigger, AI alert summaries, `/hotspots*`, `/alerts/nearby`, simulated pilot data | Hotspot map in the app, Socket.io live pushes |
+| Assistant (RAG + agent) | 14 official WHO/NAFDAC documents, hybrid search, 8 read-only tools, SSE chat with live tool chips and citations | "Ask the data" screen for regulators in the app (tools exist on the API) |
+| Human in the loop | Review queue with priorities, SLAs, escalation job, claim/decide API, reviewer verdict shown to the user | Reviewer screens in the app |
+| Evaluation | Photo pipeline, retrieval and assistant evals + live reviewer agreement → [docs/eval-results.md](docs/eval-results.md) | Real pack photos in the eval set |
+| App extras | Splash, onboarding, Home (random safety tips, recent checks), History (infinite scroll), Alerts (unseen badge), Settings (theme, language) | Report a seller, Home insights from live data, history search/filters, offline history, notifications, export my data, a **Delete my data** button |
+| Deployment | — | Not deployed by choice: the demo runs locally |
+
+---
+
+## 0b. TL;DR checklist (original plan)
 
 - [ ] **No sign-up / sign-in.** The app registers the device silently and gets a token (§2). Regulator mode is unlocked with a demo PIN.
 - [ ] Monorepo: `mobile/` (Flutter 3.47 + Riverpod 3), `server/` (Express 5 + TypeScript 7 + Prisma 7 + PostgreSQL 18 + Redis 8), `docs/`.
 - [ ] Server follows the **bootcamp's DocuChat architecture** (layered routes → controllers → services → repositories, Zod, events, BullMQ, Redis rate limits, Pino, Prometheus, Swagger) — see §12 for lesson-by-lesson coverage. Build guides: [docs/server-setup.md](docs/server-setup.md), [docs/database-setup.md](docs/database-setup.md).
 - [ ] Flutter core extracted from **Laba** (network, failures, storage, theme, router), restyled with an **Idey × Laba × Ridify** palette, the **Satoshi** font and the screenshot layout language (soft cards, pill tabs, orange FAB).
 - [ ] **Every loading state is a shimmer skeleton** shaped like the content it replaces. No bare spinners.
-- [ ] Scan flow: **live camera OCR → upload → streamed AI steps → animated verdict with reasons → listen → report.**
+- [ ] Scan flow: **live camera OCR → upload → streamed AI steps → animated verdict with reasons → listen → report.** *(Built: live camera with a scan box and a manual shutter → upload → streamed steps → verdict → listen. Not built: live OCR, report. See §0.)*
 - [ ] AI: **Gemini (free tier)** by default behind a provider interface; **OpenRouter free models** as fallback; OpenAI pluggable later. Vision for label reading + pack comparison (structured JSON), a transparent risk scorer, PostGIS hotspot clustering, AI-written regulator alerts.
 - [ ] **Agent with data-search tools:** "Ask MedVerify" (public) and "Ask the data" (regulator) call read-only tools that search the registry, batches, recalls, scans, hotspots and the knowledge base. Tool calls show live in the UI.
 - [ ] **Local Postgres in Docker** (PostGIS + pgvector + pgAdmin) — follow [docs/database-setup.md](docs/database-setup.md) to start it, run the server, run tests and see the data.

@@ -76,6 +76,7 @@ export const cacheKeys = {
   registryAll: "registry:*",
   activePrompt: (task: string) => `ai:prompt:${task}`,
   labelRead: (imageHash: string, promptVersion: number) => `ai:label:${imageHash}:v${promptVersion}`,
+  translation: (textHash: string, language: string, promptVersion: number) => `ai:translation:${textHash}:${language}:v${promptVersion}`,
   packCompare: (imageHash: string, referencesKey: string, promptVersion: number) =>
     `ai:compare:${imageHash}:${referencesKey}:v${promptVersion}`,
 } as const;

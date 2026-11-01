@@ -10,6 +10,14 @@ import '../../../core/result/result.dart';
 import '../domain/entities/scan_result.dart';
 import 'scan_models.dart';
 
+/// A verdict to speak: the words and the voice locale to read them with.
+class SpeechText {
+  const SpeechText({required this.text, required this.ttsLocale});
+
+  final String text;
+  final String ttsLocale;
+}
+
 /// Typed-in check fields, as the user entered them (the server normalises).
 class ManualCheckInput {
   const ManualCheckInput({required this.nafdacNo, this.productName, this.batchNo, this.expiry});
@@ -58,6 +66,16 @@ class ScanRepository {
       if (location != null) 'lng': location.longitude,
     },
     parse: ScanModels.result,
+  );
+
+  /// The verdict as text to read aloud, translated by the server when needed.
+  Future<Result<SpeechText>> speech(String scanId, String language) => _client.get(
+    ApiEndpoints.scanSpeech(scanId),
+    query: {'lang': language},
+    parse: (data) {
+      final json = data! as Map<String, dynamic>;
+      return SpeechText(text: json['text'] as String, ttsLocale: json['ttsLocale'] as String);
+    },
   );
 
   Future<Result<List<String>>> referenceImageIds(String nafdacNo) =>
