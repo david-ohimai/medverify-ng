@@ -41,7 +41,7 @@ dependencies:
   flutter_secure_storage: ^11.2.0
   shared_preferences: ^2.5.6
   shimmer: ^4.0.0
-  liquid_glass_widgets: ^1.14.2
+  liquid_glass_widgets: ^1.16.1
   iconsax_flutter: ^1.0.1
   uuid: ^4.6.0
   package_info_plus: ^10.2.2

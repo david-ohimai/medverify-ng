@@ -23,7 +23,7 @@ class AiInsightCard extends StatelessWidget {
   final List<InsightLine> lines;
 
   @override
-  Widget build(BuildContext context) => GlassCard(
+  Widget build(BuildContext context) => GlassContainer.card(
     padding: const EdgeInsets.all(AppSpacing.lg),
     shape: const LiquidRoundedSuperellipse(borderRadius: AppRadius.lg),
     child: Column(

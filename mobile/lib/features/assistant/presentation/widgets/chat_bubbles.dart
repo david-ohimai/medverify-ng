@@ -44,7 +44,7 @@ class AssistantBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.only(right: 24, bottom: AppSpacing.md),
-    child: GlassCard(
+    child: GlassContainer.card(
       padding: const EdgeInsets.all(AppSpacing.md),
       shape: const LiquidRoundedSuperellipse(borderRadius: AppRadius.md),
       child: Column(

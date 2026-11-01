@@ -108,7 +108,7 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Expanded(
-    child: GlassCard(
+    child: GlassContainer.card(
       padding: const EdgeInsets.all(AppSpacing.md),
       shape: const LiquidRoundedSuperellipse(borderRadius: AppRadius.md),
       child: Column(

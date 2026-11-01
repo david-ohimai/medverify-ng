@@ -43,7 +43,7 @@ class _CaptureCard extends ConsumerWidget {
     final state = ref.watch(captureControllerProvider);
     final palette = context.palette;
 
-    return GlassCard(
+    return GlassContainer.card(
       padding: const EdgeInsets.all(AppSpacing.lg),
       shape: const LiquidRoundedSuperellipse(borderRadius: AppRadius.lg),
       child: Column(

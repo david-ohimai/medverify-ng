@@ -73,8 +73,15 @@ class ListenCard extends ConsumerWidget {
               ),
             ],
             if (state.error != null) ...[
-              const SizedBox(height: AppSpacing.xs),
-              Text(state.error!, style: context.text.bodySmall?.copyWith(color: palette.danger)),
+              const SizedBox(height: AppSpacing.sm),
+              Row(
+                children: [
+                  Icon(Iconsax.info_circle, size: 18, color: palette.suspicious),
+                  const SizedBox(width: AppSpacing.xs),
+                  Expanded(child: Text(state.error!, style: context.text.bodyMedium)),
+                  TextButton(onPressed: controller.play, child: const Text('Try again')),
+                ],
+              ),
             ],
           ],
         ),
