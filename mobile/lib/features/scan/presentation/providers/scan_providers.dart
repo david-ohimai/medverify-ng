@@ -48,7 +48,7 @@ final class CaptureFailed extends CaptureState {
 
 final captureControllerProvider = NotifierProvider.autoDispose<CaptureController, CaptureState>(CaptureController.new);
 
-/// Uploads a pack photo — from the live scanner, or picked from the gallery —
+/// Uploads a pack photo, from the live scanner, or picked from the gallery,
 /// with the (optional, approximate) location. Returns the new scan id for
 /// the screen to navigate to.
 class CaptureController extends Notifier<CaptureState> {

@@ -49,7 +49,7 @@ beforeEach(() => {
   vi.mocked(knowledgeService.search).mockResolvedValue({ mode: "hybrid", passages: [PASSAGE] });
 });
 
-describe("tools — validated, role-gated, read-only", () => {
+describe("tools, validated, role-gated, read-only", () => {
   const ctx = (role: "public" | "regulator") => ({ deviceId: "device-1", role, citations: [] });
 
   it("regulators get the hotspot tools; the public doesn't", () => {
@@ -62,10 +62,10 @@ describe("tools — validated, role-gated, read-only", () => {
     expect(result).toMatchObject({ ok: false, summary: "unknown tool" });
   });
 
-  it("invalid arguments come back as an error the model can read — the tool never runs", async () => {
+  it("invalid arguments come back as an error the model can read, the tool never runs", async () => {
     const result = await runTool("search_registry", { query: "x" }, ctx("public"));
     expect(result.ok).toBe(false);
-    expect(JSON.stringify(result.data)).toMatch(/Invalid arguments — query/);
+    expect(JSON.stringify(result.data)).toMatch(/Invalid arguments, query/);
     expect(registryService.search).not.toHaveBeenCalled();
   });
 
@@ -89,11 +89,11 @@ describe("tools — validated, role-gated, read-only", () => {
   });
 });
 
-describe("assistantService.ask — the agent loop", () => {
+describe("assistantService.ask, the agent loop", () => {
   it("tool round → answer with only the sources it cited, all saved and streamed", async () => {
     chat
       .mockResolvedValueOnce(reply({ toolCalls: [{ id: "c1", name: "search_guidance", args: { query: "Postinor T36184B" } }] }))
-      .mockResolvedValueOnce(reply({ text: "Yes — batch T36184B is listed as counterfeit [1]." }));
+      .mockResolvedValueOnce(reply({ text: "Yes, batch T36184B is listed as counterfeit [1]." }));
 
     const events = await collect(assistantService.ask("device-1", "public", { message: "Is Postinor batch T36184B fake?" }));
 

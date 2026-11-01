@@ -11,7 +11,7 @@ final clockProvider = Provider<DateTime Function()>((ref) => DateTime.now);
 /// Injectable randomness, so the tip picker is testable.
 final randomProvider = Provider<Random>((ref) => Random());
 
-/// "Good morning" / "Good afternoon" / "Good evening" — computed here, not in the widget.
+/// "Good morning" / "Good afternoon" / "Good evening", computed here, not in the widget.
 final greetingProvider = Provider<String>((ref) {
   final hour = ref.watch(clockProvider)().hour;
   if (hour < 12) return 'Good morning';
@@ -24,7 +24,7 @@ final greetingProvider = Provider<String>((ref) {
 const homeTips = <InsightLine>[
   InsightLine(
     icon: Iconsax.scan_barcode,
-    text: 'Scan the side with the NAFDAC number — MedVerify reads the number, batch and expiry for you.',
+    text: 'Scan the side with the NAFDAC number, MedVerify reads the number, batch and expiry for you.',
     tone: InsightTone.info,
   ),
   InsightLine(

@@ -23,7 +23,7 @@ export const deviceRepository = {
     return prisma.device.findUnique({ where: { installIdHash }, select: deviceSelect });
   },
 
-  /** What authenticate needs on every request — two columns, by primary key. */
+  /** What authenticate needs on every request, two columns, by primary key. */
   findAuthState(id: string) {
     return prisma.device.findUnique({ where: { id }, select: { role: true, tokenVersion: true } });
   },

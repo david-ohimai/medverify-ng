@@ -13,7 +13,7 @@ class ApproxLocation {
   final double longitude;
 }
 
-/// Why there is no location — each has a different fix for the user.
+/// Why there is no location, each has a different fix for the user.
 enum LocationProblem {
   /// The phone's Location switch is off.
   serviceOff('Location is turned off on this phone.'),
@@ -74,7 +74,7 @@ class LocationService {
         return LocationFound(ApproxLocation(last.latitude, last.longitude));
       }
       final position = await Geolocator.getCurrentPosition(
-        // Coarse is all we need — and all the app asks permission for.
+        // Coarse is all we need, and all the app asks permission for.
         locationSettings: const LocationSettings(accuracy: LocationAccuracy.low, timeLimit: Duration(seconds: 10)),
       );
       AppLog.info('Location found (coarse)');

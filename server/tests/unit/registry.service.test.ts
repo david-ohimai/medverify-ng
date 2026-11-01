@@ -8,10 +8,10 @@ vi.mock("../../src/repositories/product.repository.js", () => ({
 
 const search = vi.mocked(productRepository.search);
 
-describe("registryService.search — when to match a number prefix", () => {
+describe("registryService.search, when to match a number prefix", () => {
   it.each([
     ["coartem", null],
-    ["nafdac", null], // normalises to "" — must NOT become an "everything" prefix
+    ["nafdac", null], // normalises to "", must NOT become an "everything" prefix
     ["NAFDAC Reg No", null],
     ["paracetamol 500", null],
     ["A4", "A4"],

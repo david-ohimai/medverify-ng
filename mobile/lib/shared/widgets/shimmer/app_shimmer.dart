@@ -6,7 +6,7 @@ import '../../../core/theme/app_dimens.dart';
 
 /// Wraps a skeleton in the shimmer sweep, using the theme's shimmer colours
 /// so it works in light and dark mode. Every loading state in the app uses
-/// this — never a bare spinner.
+/// this, never a bare spinner.
 class AppShimmer extends StatelessWidget {
   const AppShimmer({required this.child, super.key});
 

@@ -1,4 +1,4 @@
-# Knowledge base — official sources only
+# Knowledge base, official sources only
 
 The assistant's `search_guidance` tool answers from these documents and nothing else. Every one is an official page from the **World Health Organization (who.int)** or **NAFDAC (nafdac.gov.ng)**.
 

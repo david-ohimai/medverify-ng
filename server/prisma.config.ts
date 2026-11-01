@@ -1,4 +1,4 @@
-// Prisma 7 does not read .env by itself — load it before anything else.
+// Prisma 7 does not read .env by itself, load it before anything else.
 import "dotenv/config";
 import { defineConfig, env } from "prisma/config";
 

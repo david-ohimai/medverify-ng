@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 ///
 ///   fvm flutter run --dart-define-from-file=env/dev.json
 ///
-/// Nothing secret lives here — the app ships no API keys.
+/// Nothing secret lives here, the app ships no API keys.
 abstract final class Env {
   /// REST base URL including the /api/v1 prefix.
   static const String apiBaseUrl = String.fromEnvironment('API_URL');

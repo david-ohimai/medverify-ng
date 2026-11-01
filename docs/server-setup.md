@@ -1,4 +1,4 @@
-# Server build guide — MedVerify NG API
+# Server build guide, MedVerify NG API
 
 > Audience: me. Every command, in order, that builds the server in `server/`, and why each piece exists.
 > Part A runs what's already built. Part B rebuilds it from an empty folder, step by step. Part C explains the architecture for the defense.
@@ -11,7 +11,7 @@ Shell: **Git Bash** unless noted. Working folder: `medverify-ng/server/`.
 
 ---
 
-## Part A — Run it (from a fresh clone)
+## Part A, Run it (from a fresh clone)
 
 | # | Command | What it does |
 |---|---|---|
@@ -20,17 +20,17 @@ Shell: **Git Bash** unless noted. Working folder: `medverify-ng/server/`.
 | 3 | `npm install` | Installs every dependency from `package-lock.json` |
 | 4 | `cp .env.example .env` | Local settings (PowerShell: `Copy-Item .env.example .env`) |
 | 5 | `node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"` | Paste the output into `.env` as `JWT_ACCESS_SECRET` |
-| 6 | Open https://aistudio.google.com → **Get API key** → **Create API key** | Free, no card. Paste it into `.env` as `GEMINI_API_KEY=…` — never into a chat, an issue or a commit. Optional: an OpenRouter key as `OPENROUTER_API_KEY` for the fallback. Without a key, everything except photo scans still works |
-| 7 | `npm run db:up` | Starts Postgres (port 5433) and Redis (6379) in Docker — needs Docker Desktop running ([database guide §1](database-setup.md#1-install-docker-desktop-once)) |
+| 6 | Open https://aistudio.google.com → **Get API key** → **Create API key** | Free, no card. Paste it into `.env` as `GEMINI_API_KEY=…`, never into a chat, an issue or a commit. Optional: an OpenRouter key as `OPENROUTER_API_KEY` for the fallback. Without a key, everything except photo scans still works |
+| 7 | `npm run db:up` | Starts Postgres (port 5433) and Redis (6379) in Docker, needs Docker Desktop running ([database guide §1](database-setup.md#1-install-docker-desktop-once)) |
 | 8 | `npm run prisma:migrate` | Creates the tables |
 | 9 | `npm run prisma:generate` | Builds the typed Prisma client into `src/generated/prisma` |
 | 9b | `npm run seed` | Loads the registry CSVs, the genuine-pack reference photos and the AI prompt versions |
 | 9b++ | `npm run kb:ingest` | Embeds the official WHO / NAFDAC documents in `kb/documents/` for the assistant (needs the Gemini key; ~1 minute) |
-| 9b+ | `npm run simulate` | Optional: ~1,400 simulated pilot scans with planted clusters, then clusters them — fills the hotspot map |
+| 9b+ | `npm run simulate` | Optional: ~1,400 simulated pilot scans with planted clusters, then clusters them, fills the hotspot map |
 | 9c | `npm test` | 268 unit + HTTP tests; no database, Redis or AI key needed |
 | 10 | `npm run typecheck` | Strict TypeScript check of `src/` and `tests/` |
 | 11 | `npm run dev` | API on http://localhost:3000, restarts on save |
-| 12 | Open http://localhost:3000/api-docs | Swagger UI — try every endpoint |
+| 12 | Open http://localhost:3000/api-docs | Swagger UI, try every endpoint |
 | 13 | `curl -s http://localhost:3000/health/ready` | `{"status":"ready",...}` when Postgres and Redis both answer |
 | 14 | `npm run prisma:studio` | See the data at http://localhost:5555 |
 
@@ -51,7 +51,7 @@ npm run smoke
 | Mobile · format, analyze, test | `dart format` (120 columns), `flutter analyze --fatal-infos`, all tests |
 | Mobile · Android APK | Pull requests into `main` only: obfuscated arm64 release APK, downloadable from the run for 5 days |
 
-All Linux runners, cached dependencies, superseded runs cancelled — a full run is roughly 15–20 of the 2,000 free minutes a month on a private repo.
+All Linux runners, cached dependencies, superseded runs cancelled, a full run is roughly 15–20 of the 2,000 free minutes a month on a private repo.
 
 Production build:
 
@@ -64,9 +64,9 @@ The full try-it walkthrough (register → refresh → elevate → see the rows) 
 
 ---
 
-## Part B — Build it from scratch, step by step
+## Part B, Build it from scratch, step by step
 
-### Step 1 — Project and TypeScript
+### Step 1, Project and TypeScript
 
 ```bash
 mkdir server && cd server
@@ -87,7 +87,7 @@ Create `tsconfig.json` (type-checking; `noEmit`) and `tsconfig.build.json` (comp
 
 `tsx` runs TypeScript directly in development (`tsx watch src/server.ts`); `tsc` compiles for production.
 
-### Step 2 — Express and the folder structure
+### Step 2, Express and the folder structure
 
 ```bash
 npm install express@latest helmet@latest cors@latest dotenv@latest zod@latest
@@ -119,24 +119,24 @@ src/
 
 Each layer only calls the one below it: routes → controllers → services → repositories.
 
-### Step 3 — Validated configuration (`src/lib/config.ts`)
+### Step 3, Validated configuration (`src/lib/config.ts`)
 
-All environment variables are validated with Zod **at startup**. A missing or weak value (e.g. `JWT_ACCESS_SECRET` under 32 characters) prints which one is wrong and exits with code 1 — the server never runs half-configured. `z.coerce.number()` turns `PORT="3000"` into a number.
+All environment variables are validated with Zod **at startup**. A missing or weak value (e.g. `JWT_ACCESS_SECRET` under 32 characters) prints which one is wrong and exits with code 1, the server never runs half-configured. `z.coerce.number()` turns `PORT="3000"` into a number.
 
 Create `.env.example` (committed, placeholders) and `.env` (git-ignored, real values).
 
-### Step 4 — Structured logging and correlation IDs
+### Step 4, Structured logging and correlation IDs
 
 ```bash
 npm install pino@latest pino-http@latest
 npm install -D pino-pretty@latest
 ```
 
-- `src/lib/logger.ts` — Pino, JSON in production, coloured in development. Log with objects and a `namespace:action` event: `logger.info({ event: "device:registered", deviceId })`. Tokens, PINs, install ids and the `Authorization` header are **redacted** before anything is written.
-- `src/lib/requestContext.ts` — `AsyncLocalStorage` holding the correlation id for the current request.
-- `src/middleware/requestLogger.ts` — gives each request an id (or reuses a safe `X-Correlation-Id` from the caller), returns it in the response header, and logs one line per request. Every log line and audit row carries it, without passing it through function arguments.
+- `src/lib/logger.ts`, Pino, JSON in production, coloured in development. Log with objects and a `namespace:action` event: `logger.info({ event: "device:registered", deviceId })`. Tokens, PINs, install ids and the `Authorization` header are **redacted** before anything is written.
+- `src/lib/requestContext.ts`, `AsyncLocalStorage` holding the correlation id for the current request.
+- `src/middleware/requestLogger.ts`, gives each request an id (or reuses a safe `X-Correlation-Id` from the caller), returns it in the response header, and logs one line per request. Every log line and audit row carries it, without passing it through function arguments.
 
-### Step 5 — Database with Prisma 7
+### Step 5, Database with Prisma 7
 
 ```bash
 npm install -D prisma@7.10.1
@@ -147,7 +147,7 @@ npx prisma init --datasource-provider postgresql
 
 Then:
 1. Write `prisma.config.ts` (loads `.env`, points at the schema and migrations).
-2. Write the models in `prisma/schema.prisma` — generator `prisma-client` with `output = "../src/generated/prisma"`, `moduleFormat = "esm"`, `importFileExtension = "js"`; datasource with `extensions = [postgis, vector, pg_trgm]` (preview feature `postgresqlExtensions`).
+2. Write the models in `prisma/schema.prisma`, generator `prisma-client` with `output = "../src/generated/prisma"`, `moduleFormat = "esm"`, `importFileExtension = "js"`; datasource with `extensions = [postgis, vector, pg_trgm]` (preview feature `postgresqlExtensions`).
 3. Start Docker: create `docker-compose.yml`, `docker/postgres/Dockerfile`, `docker/postgres/init/01-init.sql` ([database guide](database-setup.md)), then `npm run db:up`.
 4. Create and apply the first migration, then generate the client:
    ```bash
@@ -156,27 +156,27 @@ Then:
    npx prisma migrate dev --name init
    npx prisma generate
    ```
-5. `src/lib/prisma.ts` — one `PrismaClient` for the whole process, through the `PrismaPg` adapter.
+5. `src/lib/prisma.ts`, one `PrismaClient` for the whole process, through the `PrismaPg` adapter.
 
 Tables today: `devices`, `refresh_tokens`, `audit_logs`.
 
-### Step 6 — Redis
+### Step 6, Redis
 
 ```bash
 npm install ioredis@latest
 ```
 
-`src/lib/redis.ts` — one shared connection with `keyPrefix: "medverify:"` and `lazyConnect` (tests can import the app without Redis; `server.ts` waits for `PING` at startup). BullMQ will get its own connections on day 3.
+`src/lib/redis.ts`, one shared connection with `keyPrefix: "medverify:"` and `lazyConnect` (tests can import the app without Redis; `server.ts` waits for `PING` at startup). BullMQ will get its own connections on day 3.
 
-### Step 7 — Response envelope and error classes
+### Step 7, Response envelope and error classes
 
-- `src/lib/response.ts` — every response is `{ success, message, statusCode, code, data, errors, meta }`. The mobile app parses this one shape.
-- `src/lib/errors.ts` — `AppError` (operational: the client can act on it) and subclasses `ValidationError` 422, `UnauthorizedError` 401, `ForbiddenError` 403, `NotFoundError` 404, `ConflictError` 409, `RateLimitError` 429. Each has a machine-readable `code` (`TOKEN_EXPIRED`, `INVALID_PIN`…) the app can branch on.
-- `src/middleware/errorHandler.ts` — registered **last**. AppErrors go back as they are; bad JSON → 400; Prisma unique violation → 409; anything else is a bug → logged with secrets scrubbed (`src/lib/scrub.ts`), client gets a generic 500 with no stack trace.
+- `src/lib/response.ts`, every response is `{ success, message, statusCode, code, data, errors, meta }`. The mobile app parses this one shape.
+- `src/lib/errors.ts`, `AppError` (operational: the client can act on it) and subclasses `ValidationError` 422, `UnauthorizedError` 401, `ForbiddenError` 403, `NotFoundError` 404, `ConflictError` 409, `RateLimitError` 429. Each has a machine-readable `code` (`TOKEN_EXPIRED`, `INVALID_PIN`…) the app can branch on.
+- `src/middleware/errorHandler.ts`, registered **last**. AppErrors go back as they are; bad JSON → 400; Prisma unique violation → 409; anything else is a bug → logged with secrets scrubbed (`src/lib/scrub.ts`), client gets a generic 500 with no stack trace.
 
 Express 5 forwards rejected promises from `async` handlers to the error handler, so controllers need no `try/catch` or `asyncHandler` wrapper.
 
-### Step 8 — Security middleware
+### Step 8, Security middleware
 
 ```bash
 npm install xss@latest express-rate-limit@latest rate-limit-redis@latest
@@ -191,14 +191,14 @@ npm install xss@latest express-rate-limit@latest rate-limit-redis@latest
 | Validation (strict) | `middleware/validate.ts` + `validators/` | Wrong shapes, and unknown fields (e.g. sending `"role":"regulator"` on register → 422) |
 | Rate limits in Redis | `middleware/rateLimiter.ts` | Floods, PIN guessing, device-minting. Standard `RateLimit` headers + `Retry-After` |
 | Access tokens | `lib/tokens.ts`, `middleware/authenticate.ts` | HS256 pinned (`alg: none` rejected), issuer/audience/type checked, 15-minute life. Each token carries the device's **token version**; `authenticate` checks it against the device (Redis-cached 60 s) so demote, re-registration and delete-my-data revoke old tokens **immediately** (`TOKEN_REVOKED`). The role used for authorisation comes from the device, not the token |
-| Refresh-token rotation + reuse detection | `services/token.service.ts` | A stolen refresh token: reusing a **rotated** one revokes the whole chain. Each revocation records a reason (`rotated` / `session_reset` / `reuse_detected`), so a token ended by a role change is just stale — no false security alert |
+| Refresh-token rotation + reuse detection | `services/token.service.ts` | A stolen refresh token: reusing a **rotated** one revokes the whole chain. Each revocation records a reason (`rotated` / `session_reset` / `reuse_detected`), so a token ended by a role change is just stale, no false security alert |
 | Hashing | `lib/hash.ts` | DB leak: install ids and refresh tokens are stored as SHA-256 only |
 | Constant-time PIN check | `lib/hash.ts` `secureEquals` | Timing attacks on the regulator PIN |
 | Role guard | `middleware/authorize.ts` | Public devices calling regulator endpoints |
 | Trust proxy = exact hop count | `app.ts` | Spoofed `X-Forwarded-For` dodging rate limits |
 | Redaction + scrubbing | `lib/logger.ts`, `lib/scrub.ts` | Secrets in logs |
 
-Rate limits (they stack — a request passes every limiter on its route):
+Rate limits (they stack, a request passes every limiter on its route):
 
 | Limiter | Key | Limit |
 |---|---|---|
@@ -206,15 +206,15 @@ Rate limits (they stack — a request passes every limiter on its route):
 | `refresh` | IP | 30 / 15 min |
 | `api` | device | 300 / 15 min (public), 1000 (regulator) |
 | `pin-device` | device | 5 **wrong** PINs / 15 min |
-| `pin-ip` | IP | 10 wrong PINs / hour — new device ids don't buy more guesses |
-| `pin-global` | everyone | 30 wrong PINs / 15 min — many IPs don't either (≈2,900 guesses/day max; use 8+ digits beyond the demo) |
+| `pin-ip` | IP | 10 wrong PINs / hour, new device ids don't buy more guesses |
+| `pin-global` | everyone | 30 wrong PINs / 15 min, many IPs don't either (≈2,900 guesses/day max; use 8+ digits beyond the demo) |
 | `verify` | device | 20 typed-in checks / min (public), 60 (regulator) |
 | `search` | device | 60 searches / min (public), 120 (regulator) |
 | `scan-upload` | device | 10 photo scans / min (public), 30 (regulator) |
-| `scan-daily` | device | 60 photo scans / day (public), 200 (regulator) — also protects the shared free AI quota |
+| `scan-daily` | device | 60 photo scans / day (public), 200 (regulator), also protects the shared free AI quota |
 | `chat` | device | added with the agent |
 
-### Step 9 — Events and the audit trail
+### Step 9, Events and the audit trail
 
 `src/lib/events.ts` is a typed `EventEmitter`. Services **emit** (`device:registered`, `device:elevated`, `token:reuse-detected`…); listeners in `src/events/` **react**:
 
@@ -223,23 +223,23 @@ Rate limits (they stack — a request passes every limiter on its route):
 
 `events/listen.ts` wraps every listener so a failure is logged and never breaks the request. `app.ts` imports `./events/index.js` once.
 
-### Step 10 — The device feature (one full vertical slice)
+### Step 10, The device feature (one full vertical slice)
 
 Built in this order, one layer at a time:
 
-1. `validators/device.validator.ts` — Zod: `installId` must be a UUID v4, `platform` ∈ android/ios, `appVersion` like `1.0.0+1`, `language` defaults to `en`; PIN 6–12 digits.
-2. `repositories/device.repository.ts`, `refreshToken.repository.ts`, `auditLog.repository.ts` — Prisma calls only. Token rotation runs in a `$transaction` and only succeeds if the old token is still unrevoked, so two simultaneous refreshes can't both win.
-3. `services/token.service.ts` — issue pair, rotate, detect reuse, revoke.
-4. `services/device.service.ts` — register (re-registering resets the role to public and revokes old sessions), elevate with PIN, demote, update preferences, delete.
-5. `controllers/device.controller.ts` — reads `req.validated` and `req.device`, calls the service, sends the envelope, sets `Cache-Control: no-store` on anything returning tokens.
-6. `routes/device.routes.ts` — the middleware chain per route, with `@openapi` comments for Swagger.
+1. `validators/device.validator.ts`, Zod: `installId` must be a UUID v4, `platform` ∈ android/ios, `appVersion` like `1.0.0+1`, `language` defaults to `en`; PIN 6–12 digits.
+2. `repositories/device.repository.ts`, `refreshToken.repository.ts`, `auditLog.repository.ts`, Prisma calls only. Token rotation runs in a `$transaction` and only succeeds if the old token is still unrevoked, so two simultaneous refreshes can't both win.
+3. `services/token.service.ts`, issue pair, rotate, detect reuse, revoke.
+4. `services/device.service.ts`, register (re-registering resets the role to public and revokes old sessions), elevate with PIN, demote, update preferences, delete.
+5. `controllers/device.controller.ts`, reads `req.validated` and `req.device`, calls the service, sends the envelope, sets `Cache-Control: no-store` on anything returning tokens.
+6. `routes/device.routes.ts`, the middleware chain per route, with `@openapi` comments for Swagger.
 
 Endpoints:
 
 | Method | Route | Auth | Purpose |
 |---|---|---|---|
-| POST | `/api/v1/devices/register` | — | Silent registration → device + tokens |
-| POST | `/api/v1/devices/refresh` | — | Rotate the refresh token |
+| POST | `/api/v1/devices/register` |, | Silent registration → device + tokens |
+| POST | `/api/v1/devices/refresh` |, | Rotate the refresh token |
 | GET / PATCH / DELETE | `/api/v1/devices/me` | access token | Profile / preferences / delete my data |
 | POST | `/api/v1/devices/me/elevate` | access token | Regulator PIN → new tokens with the regulator role |
 | POST | `/api/v1/devices/me/demote` | access token | Back to public |
@@ -255,7 +255,7 @@ Endpoints:
 | GET | `/api/v1/hotspots/stats?window=24h\|7d\|30d` | regulator | Map stat cards and top flagged products |
 | POST | `/api/v1/hotspots/refresh` | regulator | Re-cluster now (202) |
 | GET | `/api/v1/alerts/nearby?lat=&lng=&radiusKm=` | access token | Medium/high hotspots near the user |
-| POST | `/api/v1/assistant/messages` | access token | Ask the assistant — **SSE**: `conversation`, `tool_start`/`tool_end`, `answer`, `citations`, `done` |
+| POST | `/api/v1/assistant/messages` | access token | Ask the assistant, **SSE**: `conversation`, `tool_start`/`tool_end`, `answer`, `citations`, `done` |
 | GET | `/api/v1/assistant/tools` | access token | Tools available to this role |
 | GET | `/api/v1/scans/:id/speech?lang=en\|pcm\|ha\|yo\|ig` | access token | The verdict as short text to read aloud (headline, main reason, advice), translated by the light model (`translate_verdict` task, cached by text + language + prompt version) with the phone's TTS locale |
 | GET | `/api/v1/assistant/conversations/:id` | access token | Transcript with the full tool trace |
@@ -265,14 +265,14 @@ Endpoints:
 | POST | `/api/v1/reviews/:id/claim`, `/:id/decision` | regulator | Claim for an hour (409 if taken) / agree, disagree with a verdict, or inconclusive |
 | GET | `/api/v1/ai/status` | regulator | Provider chain, circuit state, today's free quota, active prompt versions, 24 h usage |
 | GET / POST | `/api/v1/ai/prompts` | regulator | List prompt versions / add a new one (optionally activate) |
-| POST | `/api/v1/ai/prompts/:id/activate` | regulator | Switch (or roll back) a task's prompt — takes effect immediately |
+| POST | `/api/v1/ai/prompts/:id/activate` | regulator | Switch (or roll back) a task's prompt, takes effect immediately |
 | GET | `/api/v1/ai/calls` | regulator | Recent rows of `ai_audit_logs` |
-| GET | `/health`, `/health/live` | — | Process is up |
-| GET | `/health/ready` | — | Postgres and Redis answer (503 if not) |
+| GET | `/health`, `/health/live` |, | Process is up |
+| GET | `/health/ready` |, | Postgres and Redis answer (503 if not) |
 | GET | `/metrics` | `METRICS_TOKEN` if set | Prometheus |
-| GET | `/api-docs`, `/api-docs.json` | — | Swagger UI / OpenAPI spec |
+| GET | `/api-docs`, `/api-docs.json` |, | Swagger UI / OpenAPI spec |
 
-### Step 10b — The registry and manual verification
+### Step 10b, The registry and manual verification
 
 ```bash
 npm install csv-parse@latest
@@ -297,16 +297,16 @@ The rules (weights add up, clamped 0–100; ≥30 suspicious, ≥65 high risk):
 |---|---|---|
 | `NOT_IN_REGISTRY` | +45 | Verdict **unregistered** |
 | `BATCH_RECALLED` | +50 | Always **high risk** |
-| `EXPIRED` | +35 | Always **high risk**, headline "Expired — do not take it" |
+| `EXPIRED` | +35 | Always **high risk**, headline "Expired, do not take it" |
 | `NAME_MISMATCH` (real number, wrong product) | +40 | |
 | `REGISTRATION_INACTIVE` (expired/cancelled) | +35 | |
 | `EXPIRY_MISMATCH` (printed vs record, by month) | +30 | |
 | `BATCH_KNOWN` | −10 | Only when nothing else about the product or batch is wrong |
 | `BATCH_UNKNOWN` / `BATCH_NOT_GIVEN` | 0 | Lowers **confidence** (our batch records are incomplete) |
-| `PACK_NOT_SEEN` | 0 | Typed-in checks are at most **medium** confidence — fakes copy real numbers |
+| `PACK_NOT_SEEN` | 0 | Typed-in checks are at most **medium** confidence, fakes copy real numbers |
 | `DEMO_RECORD` | 0 | The match is fictional test data: says so, and confidence is always **low** |
 
-### Step 10c — The AI layer and photo scans
+### Step 10c, The AI layer and photo scans
 
 ```bash
 npm install @google/genai@latest openai@latest opossum@latest multer@latest sharp@latest
@@ -318,18 +318,18 @@ npm run seed                      # also stores prompt version 1 of every AI tas
 
 Then put `GEMINI_API_KEY` in `.env` (Part A, step 6) and restart `npm run dev`. The startup log shows `AI provider chain ready` with the models in use.
 
-**The model control plane** (`src/ai/`) — nothing outside it imports a vendor SDK:
+**The model control plane** (`src/ai/`), nothing outside it imports a vendor SDK:
 
 | Piece | File | What it does |
 |---|---|---|
 | Interface | `ai/types.ts` | `LlmProvider.generateJson()`; `LlmError` says whether a failure is retryable and carries the provider's Retry-After |
-| Providers | `ai/providers/gemini.provider.ts`, `openrouter.provider.ts` | Gemini via `@google/genai` (`responseJsonSchema`); OpenRouter via the `openai` SDK with a different `baseURL`. SDK retries off — ours are smarter |
+| Providers | `ai/providers/gemini.provider.ts`, `openrouter.provider.ts` | Gemini via `@google/genai` (`responseJsonSchema`); OpenRouter via the `openai` SDK with a different `baseURL`. SDK retries off, ours are smarter |
 | Tasks | `ai/tasks.ts` | Each task fixes its **Zod output schema**, model tier and token cap. Zod 4's `z.toJSONSchema()` turns the schema into the provider's JSON Schema, and the same schema validates the reply |
 | Prompts | `ai/prompts.ts`, `repositories/prompt.repository.ts` | Prompt text is **versioned in `prompt_versions`**: one active version per task, cached 5 min; the built-in prompt is the fallback |
 | Resilience | `ai/resilience.ts` | `withRetry` (exponential backoff, **Retry-After wins**, gives up at once if the wait is too long so the fallback answers) inside an **opossum circuit breaker** per provider |
 | Budget | `ai/quota.ts` | A Redis counter per provider per UTC day, kept under the free tier's cap; spent → next provider; all spent → `429 AI_QUOTA_EXHAUSTED` |
 | Orchestrator | `ai/llm.service.ts` | Prompt → provider chain (skip open circuit / spent budget) → retry → validate → **one repair round** with the validation errors → next provider. Emits `ai:called` per attempt |
-| Audit | `events/audit.events.ts` → `ai_audit_logs` | Task, provider, model, prompt version, success / error code, fallback used, tokens, latency, scan id, correlation id. Inputs are summarised — **never the image** |
+| Audit | `events/audit.events.ts` → `ai_audit_logs` | Task, provider, model, prompt version, success / error code, fallback used, tokens, latency, scan id, correlation id. Inputs are summarised, **never the image** |
 | Metrics | `events/metrics.events.ts` | `ai_calls_total`, `ai_call_duration_seconds`, `ai_tokens_total`, `scan_jobs_total` |
 
 **The photo pipeline:**
@@ -351,13 +351,13 @@ worker (in-process, or `npm run worker`):
 | Upload + validation | `middleware/upload.ts`, `lib/image.ts` |
 | Queue, photo store, DLQ | `queues/scan.queue.ts` (connections opened on first use, so tests need no Redis) |
 | Worker | `workers/scan.worker.ts`, `worker.ts` (standalone) |
-| Pipeline | `services/photoScan.service.ts` — `submit` and `process`; `factsFromLabel` ignores any field the model was under 60 % sure of |
-| Shared rules | `services/verification.service.ts` `checkAgainstRegistry` — the **same** registry rules and scorer as a typed-in check, with `packNotSeen: false` |
-| Progress | `lib/scanProgress.ts` — each step goes into a Redis list (replay for late or reconnecting clients) **and** a pub/sub channel (live). Works across processes |
-| SSE | `controllers/photoScan.controller.ts` — subscribes before replaying, `id:` on every event (`Last-Event-ID` resumes), 15 s heartbeat, closes after `verdict`/`error` or 3 min |
-| Control plane API | `routes/ai.routes.ts`, `services/aiAdmin.service.ts` — regulator only |
+| Pipeline | `services/photoScan.service.ts`, `submit` and `process`; `factsFromLabel` ignores any field the model was under 60 % sure of |
+| Shared rules | `services/verification.service.ts` `checkAgainstRegistry`, the **same** registry rules and scorer as a typed-in check, with `packNotSeen: false` |
+| Progress | `lib/scanProgress.ts`, each step goes into a Redis list (replay for late or reconnecting clients) **and** a pub/sub channel (live). Works across processes |
+| SSE | `controllers/photoScan.controller.ts`, subscribes before replaying, `id:` on every event (`Last-Event-ID` resumes), 15 s heartbeat, closes after `verdict`/`error` or 3 min |
+| Control plane API | `routes/ai.routes.ts`, `services/aiAdmin.service.ts`, regulator only |
 
-A photo that can't be read ends as `failed` with a reason the user can act on — `NOT_A_MEDICINE_PACK`, `NAFDAC_NO_UNREADABLE`, `IMAGE_EXPIRED`, `AI_UNAVAILABLE`, `AI_QUOTA_EXHAUSTED` — not as a guess.
+A photo that can't be read ends as `failed` with a reason the user can act on, `NOT_A_MEDICINE_PACK`, `NAFDAC_NO_UNREADABLE`, `IMAGE_EXPIRED`, `AI_UNAVAILABLE`, `AI_QUOTA_EXHAUSTED`, not as a guess.
 
 **Try it** (server running, key set; Git Bash):
 
@@ -381,7 +381,7 @@ Then look at `ai_audit_logs` and `prompt_versions` in Prisma Studio (`npm run pr
 
 Scanning the same photo again is answered from the cache: no AI call, no quota used (`llmProvider: "cache"`).
 
-### Step 10d — Pack comparison, photo signals and the eval set
+### Step 10d, Pack comparison, photo signals and the eval set
 
 ```bash
 npm run prisma:migrate -- --name reference_images
@@ -394,9 +394,9 @@ npm run eval -- --fresh    # golden eval set, real AI calls
 
 | Piece | File | What it does |
 |---|---|---|
-| Reference photos | `prisma/seed/reference/<NAFDAC no>/front-1.jpg`, `prisma/seed/reference-import.ts`, `repositories/referenceImage.repository.ts` | Photos of the **genuine** pack, validated and re-encoded to 1024 px, stored in `reference_images` (bytes in Postgres — no bucket). The seed syncs the table to the folder. See the folder's README |
+| Reference photos | `prisma/seed/reference/<NAFDAC no>/front-1.jpg`, `prisma/seed/reference-import.ts`, `repositories/referenceImage.repository.ts` | Photos of the **genuine** pack, validated and re-encoded to 1024 px, stored in `reference_images` (bytes in Postgres, no bucket). The seed syncs the table to the folder. See the folder's README |
 | Comparison task | `ai/tasks.ts` `compare_pack` | Up to two references (front first) + the scan in one vision call → `comparable`, `same_product`, logo / colour / typography / layout / print scores, real differences (lighting and angle excluded), overall similarity |
-| Photo rules | `services/risk/photoSignals.ts` | Pure function, weights from the plan (below). `combineSignals` drops `BATCH_KNOWN` when the pack itself looks wrong — fakes copy batch numbers |
+| Photo rules | `services/risk/photoSignals.ts` | Pure function, weights from the plan (below). `combineSignals` drops `BATCH_KNOWN` when the pack itself looks wrong, fakes copy batch numbers |
 | Pipeline | `services/photoScan.service.ts` `analysePhoto` | read_label → registry → batch → **compare_pack** (skipped for unregistered numbers; no reference / AI down → `PACK_NOT_COMPARED`, the scan still completes) → score. Comparison answers are cached by photo hash + references + prompt version |
 | Genuine photo for the app | `GET /products/:nafdacNo/reference-images/:id` | The JPEG, with an ETag, to show "yours vs genuine" side by side |
 | Eval | `eval/cases.json`, `eval/fixtures/`, `scripts/eval.ts` | Runs `analysePhoto` on every case; reports fakes passed as genuine (must be 0), false alarms, verdict and field accuracy, latency → `eval/results/latest.md`. See `eval/README.md` |
@@ -411,13 +411,13 @@ Photo signals (they add to the registry signals in Step 10b):
 | `TEXT_ANOMALIES` | +10 each, max +20 | Misspellings, odd fonts, smudged reprinting |
 | `VISUAL_MATCH` (similarity ≥ 0.85) | −20 | Only with clean records and no text anomalies |
 | `PACK_NOT_COMPARED` | 0 | No reference / other side / AI unavailable: a clean result is at most **medium** confidence |
-| `POOR_IMAGE` | 0 | **Low** confidence — retake the photo |
+| `POOR_IMAGE` | 0 | **Low** confidence, retake the photo |
 
 Confidence is now: demo record → low; a hard fact behind a warning → high; any uncertainty (unknown batch, poor photo) → low; a warning built only on inferences (looks, spelling) → medium; clean but pack not seen / not compared → medium; otherwise high.
 
 Every AI attempt also has a hard deadline (`LLM_TIMEOUT_MS`, 30 s): a hung free model is cut off and the fallback answers.
 
-### Step 10e — Hotspots: locations, clustering and AI alerts
+### Step 10e, Hotspots: locations, clustering and AI alerts
 
 ```bash
 npm run prisma:migrate -- --name hotspots
@@ -432,14 +432,14 @@ npm run simulate -- --clear  # remove the simulated scans again
 | Location | `lib/areas.ts`, `validators/fields.ts` | `lat`/`lng` are optional on `POST /verify/manual` and `POST /scans` (form fields), both or neither. **Rounded to 2 decimals (~1 km) before storing** and named after the nearest known market within 3 km. Coordinates are never returned to devices |
 | Schema | `scans.latitude/longitude/area_name/simulated`, `hotspots`, `hotspot_alerts` | A hotspot keeps its centre, radius, counts, severity, product/batch, area and simulated share; alerts keep the exact facts they were written from |
 | Clustering | `repositories/hotspot.repository.ts` `computeClusters` | **PostGIS `ST_ClusterDBSCAN`** (eps 2 km on EPSG:3857, min 3 scans) over the last 7 days of flagged scans (risk ≥ 30), then per cluster: centroid, radius (`ST_Distance` on geography), counts by reason, `MODE()` of number/batch/name, recall involvement, simulated share |
-| Rules | `services/hotspot/hotspotRules.ts` | Pure functions: severity (recall / ≥ 5 high-risk / ≥ 10 scans → high), matching a new cluster to the hotspot it continues (≤ 3 km, same number — DBSCAN renumbers every run), when it has grown enough for a new alert, the alert facts, and a template alert |
+| Rules | `services/hotspot/hotspotRules.ts` | Pure functions: severity (recall / ≥ 5 high-risk / ≥ 10 scans → high), matching a new cluster to the hotspot it continues (≤ 3 km, same number, DBSCAN renumbers every run), when it has grown enough for a new alert, the alert facts, and a template alert |
 | Service | `services/hotspot/hotspot.service.ts` | `refresh()`: cluster → continue / open / close hotspots → an alert for each new or grown one. The **`alert_summary`** AI task (light model) writes title, 2-sentence body and recommended action **from the facts only**; if no provider answers, the template does |
 | Jobs | `queues/hotspot.queue.ts`, `workers/hotspot.worker.ts` | BullMQ **job scheduler** every 15 min (`upsertJobScheduler`, idempotent across instances) + a **debounced** run 10 s after any flagged scan (fixed job id → a burst costs one run); concurrency 1 |
-| Simulation | `scripts/simulate-scans.ts` | Seeded, repeatable: background scans at 12 markets over 30 days, plus planted clusters — recalled batch at Idumota (high), unregistered number at Bridgehead Onitsha (high), number on the wrong product at Sabon Gari Kano (medium), expired stock at Aba 20–25 days ago (outside the window). Verdicts come from the real rules; every row is `simulated = true` and every hotspot built from them says `includesSimulatedData` |
+| Simulation | `scripts/simulate-scans.ts` | Seeded, repeatable: background scans at 12 markets over 30 days, plus planted clusters, recalled batch at Idumota (high), unregistered number at Bridgehead Onitsha (high), number on the wrong product at Sabon Gari Kano (medium), expired stock at Aba 20–25 days ago (outside the window). Verdicts come from the real rules; every row is `simulated = true` and every hotspot built from them says `includesSimulatedData` |
 
 Try it (server running): register, elevate with the PIN, then `GET $API/hotspots`, `GET $API/hotspots/stats?window=30d`, `GET $API/hotspots/alerts`. As a public device: `GET "$API/alerts/nearby?lat=6.46&lng=3.39"`. Three flagged checks with a location close together (e.g. an unknown number with `"lat":9.07,"lng":7.47` three times) make a new hotspot within ~10 s.
 
-### Step 10f — RAG over official documents, and the assistant (agent with tools)
+### Step 10f, RAG over official documents, and the assistant (agent with tools)
 
 ```bash
 npm install -D @mozilla/readability@latest linkedom@latest turndown@latest @types/turndown@latest
@@ -461,7 +461,7 @@ npm run eval:agent         # 10 questions: right tools, citations, exact details
 | Store | `kb_documents`, `kb_chunks` (`vector(768)`) | Exact cosine search: 139 passages need no HNSW index |
 | Search | `services/knowledge/knowledge.service.ts` | **Hybrid**: vector search (cosine ≥ 0.60, a threshold measured on this knowledge base) + Postgres full-text, merged by **Reciprocal Rank Fusion**. Batch and registration numbers are found by keyword search. If embeddings fail, it falls back to keywords only |
 | Agent | `services/assistant/assistant.service.ts` | The model answers or asks for tools; tools run; results go back. At most **5 rounds, 4 calls per round, 60 s** in total, then one last answer with no tools. History is the last 10 turns. Suspected prompt injection is logged and counted |
-| Tools | `services/assistant/tools.ts` | `search_guidance`, `search_registry`, `check_product`, `check_batch`, `my_recent_scans`, `alerts_near_area`; plus `hotspot_overview` and `hotspot_alerts` for regulators. Each one has **Zod-validated arguments, a role check and read-only services** — the model never writes SQL. Invalid arguments or a forbidden tool come back as an error the model can read |
+| Tools | `services/assistant/tools.ts` | `search_guidance`, `search_registry`, `check_product`, `check_batch`, `my_recent_scans`, `alerts_near_area`; plus `hotspot_overview` and `hotspot_alerts` for regulators. Each one has **Zod-validated arguments, a role check and read-only services**, the model never writes SQL. Invalid arguments or a forbidden tool come back as an error the model can read |
 | Providers | `ai/providers/*` `chat()` | Gemini function calling (thought signatures replayed) or OpenAI-style tools on OpenRouter, through the same fallback chain; the assistant uses the light model |
 | Trace | `assistant_conversations`, `assistant_messages` | Every question, tool call (arguments and result summary) and answer (with the sources it cited) |
 | Prompt | `ai/tasks.ts` `ASSISTANT_PROMPT` | Versioned like the other prompts. It requires facts to come from tools, `search_guidance` to be cited as [n], contact details and numbers to be copied **exactly**, and the assistant never to say a medicine is safe |
@@ -470,7 +470,7 @@ During testing the model wrote a NAFDAC phone number in the wrong format. The pr
 
 Try it: `POST $API/assistant/messages` with `{"message":"Is Postinor 2 batch T36184B fake?"}` (and `curl -N` to watch the stream). It calls `check_batch`, which finds nothing, then `search_guidance`, which finds NAFDAC Public Alert 027/2025, and it answers with the citation.
 
-### Step 10g — Human in the loop (review queue) and the evaluation report
+### Step 10g, Human in the loop (review queue) and the evaluation report
 
 ```bash
 npm run prisma:migrate -- --name scan_reviews
@@ -485,7 +485,7 @@ npm run eval:report        # docs/eval-results.md from every eval + live review 
 |---|---|---|
 | P1 | The verdict says don't take it (high risk / unregistered) | 4 h |
 | P2 | Suspicious | 24 h |
-| P3 | "Likely genuine", but the photo raised a doubt (poor image, odd spelling, visual differences) — where a fake could slip through | 48 h |
+| P3 | "Likely genuine", but the photo raised a doubt (poor image, odd spelling, visual differences), where a fake could slip through | 48 h |
 
 | Piece | File | What it does |
 |---|---|---|
@@ -495,7 +495,7 @@ npm run eval:report        # docs/eval-results.md from every eval + live review 
 | Decide | `decide()` | Only the reviewer who holds the claim can decide: **agree**, **disagree** (with the correct verdict) or **inconclusive**, plus a note for the user. The audit row records the AI's verdict next to the reviewer's |
 | User sees it | `verification.service.ts` | `GET /scans/:id` returns `review` ({ status, decision, verdict, note, message }); when the reviewer disagrees, their verdict becomes the scan's `verdict` and headline |
 | SLA job | `workers/review.worker.ts` | BullMQ job scheduler every 5 minutes: escalate overdue reviews (level + 1, new deadline at half the SLA), release lapsed claims, delete photos past 7 days |
-| Agreement | `GET /reviews/stats` | Open / urgent / overdue counts, and **how often reviewers agree with the system** — a live accuracy signal, also in the eval report |
+| Agreement | `GET /reviews/stats` | Open / urgent / overdue counts, and **how often reviewers agree with the system**, a live accuracy signal, also in the eval report |
 
 **Evaluation, all in one place.** `npm run eval:report` writes [docs/eval-results.md](eval-results.md) from:
 - the photo pipeline: 8/8, 0 of 5 fakes passed as genuine;
@@ -503,22 +503,22 @@ npm run eval:report        # docs/eval-results.md from every eval + live review 
 - the assistant: 10/10;
 - live review agreement, once at least 5 decisions exist.
 
-### Step 11 — Observability
+### Step 11, Observability
 
 ```bash
 npm install prom-client@latest swagger-jsdoc@latest swagger-ui-express@latest
 npm install -D @types/swagger-jsdoc@latest @types/swagger-ui-express@latest
 ```
 
-- `lib/metrics.ts` + `middleware/metrics.ts` — request counter and duration histogram labelled by **route pattern** (`/devices/me`), never raw URLs, so ids don't explode the number of series. Plus `rate_limited_requests_total` and `security_events_total`.
-- `routes/health.routes.ts` — liveness vs readiness, each check with a 2-second timeout.
-- `config/swagger.ts` — OpenAPI 3.1 built from the `@openapi` comments.
+- `lib/metrics.ts` + `middleware/metrics.ts`, request counter and duration histogram labelled by **route pattern** (`/devices/me`), never raw URLs, so ids don't explode the number of series. Plus `rate_limited_requests_total` and `security_events_total`.
+- `routes/health.routes.ts`, liveness vs readiness, each check with a 2-second timeout.
+- `config/swagger.ts`, OpenAPI 3.1 built from the `@openapi` comments.
 
-### Step 12 — Startup and shutdown (`src/server.ts`)
+### Step 12, Startup and shutdown (`src/server.ts`)
 
 Starts only after a real `SELECT 1` and a Redis `PING` succeed (with the Prisma 7 adapter, `$connect()` alone proves nothing), logs the AI provider chain, and starts the scan worker if `SCAN_WORKER_ENABLED=true`. On `SIGINT`/`SIGTERM` it stops accepting requests, lets in-flight ones finish (open SSE streams are cut after 3 seconds), lets running scan jobs finish, closes the queues, Postgres and Redis, and force-exits after 10 seconds.
 
-### Step 13 — Tests
+### Step 13, Tests
 
 ```bash
 npm install -D vitest@latest supertest@latest @types/supertest@latest
@@ -561,13 +561,13 @@ npm test
 npm run typecheck
 ```
 
-### Step 14 — Scripts in `package.json`
+### Step 14, Scripts in `package.json`
 
 | Script | Runs |
 |---|---|
 | `dev` | `tsx watch src/server.ts` |
 | `build` / `start` | `prisma generate && tsc -p tsconfig.build.json` / `node dist/server.js` |
-| `worker` / `worker:dev` | Scan worker on its own (`node dist/worker.js` / `tsx watch src/worker.ts`) — set `SCAN_WORKER_ENABLED=false` on the API then |
+| `worker` / `worker:dev` | Scan worker on its own (`node dist/worker.js` / `tsx watch src/worker.ts`), set `SCAN_WORKER_ENABLED=false` on the API then |
 | `typecheck` / `test` / `test:watch` | `tsc --noEmit` / `vitest run` / `vitest` |
 | `db:up` / `db:stop` / `db:wipe` | Docker compose up / stop / down **-v** |
 | `db:psql` / `redis:cli` | Shells inside the containers |
@@ -585,9 +585,9 @@ npm run typecheck
 
 ---
 
-## Part C — Architecture, for the defense
+## Part C, Architecture, for the defense
 
-**One sentence:** a layered Express API — routes route, controllers translate HTTP, services hold the rules, repositories hold the queries — with validation, sanitising, auth and rate limits as middleware in front, and side effects (audit, metrics) moved out to event listeners.
+**One sentence:** a layered Express API, routes route, controllers translate HTTP, services hold the rules, repositories hold the queries, with validation, sanitising, auth and rate limits as middleware in front, and side effects (audit, metrics) moved out to event listeners.
 
 **Request life cycle** (`POST /api/v1/devices/me/elevate`):
 
@@ -605,8 +605,8 @@ correlationId → requestLogger → helmet → cors → express.json → sanitiz
 
 | Question | Where the answer is |
 |---|---|
-| Why does the controller never import Prisma? | Repositories own queries — change a query in one file |
-| Why validate config at startup and exit? | `lib/config.ts` — a half-configured server fails silently later |
+| Why does the controller never import Prisma? | Repositories own queries, change a query in one file |
+| Why validate config at startup and exit? | `lib/config.ts`, a half-configured server fails silently later |
 | Why two tokens? Why hash the refresh token? | `services/token.service.ts`, `lib/tokens.ts` |
 | What's a timing attack? | `lib/hash.ts` `secureEquals` (regulator PIN) |
 | Why limit auth by IP but the API by device? | No device identity exists before registration |
@@ -614,8 +614,8 @@ correlationId → requestLogger → helmet → cors → express.json → sanitiz
 | Validation vs sanitisation? | `middleware/validate.ts` (shape) vs `middleware/sanitize.ts` (content) |
 | Why `default-src 'none'` on an API? | It serves no HTML; nothing should ever load |
 | Liveness vs readiness? | `routes/health.routes.ts` |
-| Why normalise metric paths? | `middleware/metrics.ts` — cardinality |
-| Why events for audit logs? | `events/` — services stay single-purpose; a listener failure never breaks a request |
+| Why normalise metric paths? | `middleware/metrics.ts`, cardinality |
+| Why events for audit logs? | `events/`, services stay single-purpose; a listener failure never breaks a request |
 | Why is the risk score rules, not ML? | No labelled field data yet; transparent weights are explainable and tunable on the eval set (`services/risk/`) |
 | Why can a typed-in check never be "high confidence genuine"? | Counterfeiters copy real numbers; only the pack itself can show that (`PACK_NOT_SEEN`) |
 | Why trigram search, not embeddings, for names? | Typos and OCR misreads are character-level; pg_trgm is exact, indexed and free |
@@ -627,17 +627,17 @@ correlationId → requestLogger → helmet → cors → express.json → sanitiz
 | How do you stop the model hallucinating a NAFDAC number? | Prompt says "null rather than guess"; JSON validated by Zod; fields under 60 % confidence are ignored; the number must match the NAFDAC format; and the **registry**, not the model, decides the verdict |
 | How do you change a prompt safely? | New row in `prompt_versions`, activate it; roll back by activating the old one. Every AI call records its prompt version |
 | What about privacy? | Photos are re-encoded (GPS/EXIF gone) and kept in Redis ≤ 30 min; only a scan queued for human review keeps its photo, until the decision (≤ 7 days); audit rows hold a hash, not the image |
-| How do you know it works? | `npm run eval`: a golden set of packs with known answers; the headline metric is fakes passed as genuine (must be 0) — `eval/results/latest.md` |
+| How do you know it works? | `npm run eval`: a golden set of packs with known answers; the headline metric is fakes passed as genuine (must be 0), `eval/results/latest.md` |
 | Can the AI's opinion of the pack override the registry? | No. A recall, expiry or unregistered number decides on its own; looks only add or remove weight, and a warning built only on looks is never high confidence |
 | What if there's no photo of the genuine pack? | The scan still completes on the registry facts, with `PACK_NOT_COMPARED` capping a clean result at medium confidence |
-| How do you find hotspots? | PostGIS `ST_ClusterDBSCAN` — density-based, so no fixed number of clusters and lone scans are ignored (`repositories/hotspot.repository.ts`) |
-| DBSCAN renumbers clusters every run — how is a hotspot the same hotspot tomorrow? | It's matched to the stored hotspot within 3 km about the same NAFDAC number (`hotspotRules.ts` `matchClusters`) |
+| How do you find hotspots? | PostGIS `ST_ClusterDBSCAN`, density-based, so no fixed number of clusters and lone scans are ignored (`repositories/hotspot.repository.ts`) |
+| DBSCAN renumbers clusters every run, how is a hotspot the same hotspot tomorrow? | It's matched to the stored hotspot within 3 km about the same NAFDAC number (`hotspotRules.ts` `matchClusters`) |
 | Doesn't location tracking hurt privacy? | Optional, rounded to ~1 km before storing, never returned to devices; regulators see cluster centres, not scans |
 | Is the map real data? | Simulated pilot data is flagged on every row and every hotspot (`includesSimulatedData`); it's there to demonstrate the pipeline |
 | Can the AI make up an alert? | It only sees the cluster's facts (stored with the alert), is told to say "suspected", and a template takes over if it's unavailable |
 | Where does the assistant's knowledge come from? | Only official WHO and NAFDAC pages, allowlisted in code and checked at fetch, ingest and search (`lib/verifiedSources.ts`, `kb/`) |
 | How do you stop it making things up? | Facts only from tools; guidance answers cite [n] from retrieved passages; off-topic passages are filtered by a measured similarity threshold; "no official guidance" when nothing matches; numbers copied exactly; `npm run eval:agent` checks it |
-| Can the model run arbitrary queries? | No — it picks from fixed tools whose arguments are Zod-validated and which call read-only services. The role in the token decides which tools exist |
+| Can the model run arbitrary queries? | No, it picks from fixed tools whose arguments are Zod-validated and which call read-only services. The role in the token decides which tools exist |
 | Why hybrid search? | Embeddings catch meaning ("scratch code" → MAS); keywords catch exact codes (batch T36184B); RRF merges them without calibrating scores |
 | Where is the human in the loop? | Scans that say "don't take it", are suspicious, or look doubtful go to a review queue with SLAs and escalation; the reviewer's verdict reaches the user; agreement is measured (`services/review/`) |
 | Didn't you say photos are never stored? | They aren't, except for a scan a human must review: then only until the decision, at most 7 days, and never after "delete my data" |

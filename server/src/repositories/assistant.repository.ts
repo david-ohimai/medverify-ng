@@ -12,7 +12,7 @@ export const assistantRepository = {
     return prisma.assistantConversation.findFirst({ where: { id, deviceId }, select: { id: true, role: true, createdAt: true } });
   },
 
-  /** The last N user/assistant turns, oldest first — what the model sees as history. */
+  /** The last N user/assistant turns, oldest first, what the model sees as history. */
   async recentTurns(conversationId: string, limit: number) {
     const rows = await prisma.assistantMessage.findMany({
       where: { conversationId, role: { in: ["user", "assistant"] } },

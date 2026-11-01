@@ -45,7 +45,7 @@ function isUniqueViolation(err: unknown): boolean {
 /**
  * Device identity. There are no accounts: the app generates a random install
  * id once, and that id (stored only as a hash) is the device's credential.
- * Plain data in, plain data out — this layer never sees req or res.
+ * Plain data in, plain data out, this layer never sees req or res.
  */
 export const deviceService = {
   async register(input: RegisterDeviceInput): Promise<DeviceSession> {

@@ -16,7 +16,7 @@ class SseEvent {
 
 /// Parses a `text/event-stream` byte stream into events. Comment lines
 /// (": ping" heartbeats) are skipped; an event ends at a blank line.
-/// Small and dependency-free on purpose — it's the whole SSE client.
+/// Small and dependency-free on purpose, it's the whole SSE client.
 Stream<SseEvent> parseSse(Stream<List<int>> bytes) async* {
   String? event;
   String? id;

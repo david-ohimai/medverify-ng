@@ -27,8 +27,8 @@ const NOT_COMPARED_LABEL: Record<Exclude<ComparisonOutcome["status"], "compared"
 
 /**
  * Registry and photo signals together. A known batch number only
- * reassures when nothing about the pack itself looks wrong — fakes copy
- * real batch numbers too — so BATCH_KNOWN is dropped when the photo raised
+ * reassures when nothing about the pack itself looks wrong, fakes copy
+ * real batch numbers too, so BATCH_KNOWN is dropped when the photo raised
  * a concern.
  */
 export function combineSignals(registry: readonly Signal[], photo: readonly Signal[]): Signal[] {
@@ -37,7 +37,7 @@ export function combineSignals(registry: readonly Signal[], photo: readonly Sign
 }
 
 /**
- * What the AI saw on the photo, as weighted, explained signals — the
+ * What the AI saw on the photo, as weighted, explained signals, the
  * photo-only half of the rules (the registry half is registrySignals).
  * Weights from the plan (mvp.md §6.4). Pure function, fully tested.
  */

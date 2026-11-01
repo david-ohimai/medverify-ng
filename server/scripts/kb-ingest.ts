@@ -48,7 +48,7 @@ async function main(): Promise<void> {
     const { meta, body } = parseDocument(readFileSync(join(DOCS_DIR, file), "utf8"));
     const domain = verifiedDomain(meta.url);
     if (!domain || VERIFIED_PUBLISHERS[domain] !== meta.publisher) {
-      throw new Error(`${file}: ${meta.url} (${meta.publisher}) is not a verified source — refusing to ingest anything`);
+      throw new Error(`${file}: ${meta.url} (${meta.publisher}) is not a verified source, refusing to ingest anything`);
     }
     if (`${meta.id}.md` !== file) throw new Error(`${file}: id "${meta.id}" doesn't match the file name`);
     seen.add(meta.id);

@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/app_language.dart';
 import '../constants/storage_keys.dart';
 
-/// Plain settings — nothing sensitive. Loaded into memory once at startup
+/// Plain settings, nothing sensitive. Loaded into memory once at startup
 /// (SharedPreferencesWithCache), so every read is synchronous.
 class PreferencesStore {
   const PreferencesStore(this._prefs);

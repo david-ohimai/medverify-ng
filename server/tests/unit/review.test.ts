@@ -28,7 +28,7 @@ const scan = (overrides: Partial<Parameters<typeof reviewNeeded>[0]> = {}) => ({
   ...overrides,
 });
 
-describe("reviewNeeded — which scans a human must see", () => {
+describe("reviewNeeded, which scans a human must see", () => {
   it("P1 (4 h) when the scan says don't take it", () => {
     expect(reviewNeeded(scan({ verdict: "high_risk" }))).toEqual({ priority: 1, reasons: ["HIGH_RISK"], slaHours: 4 });
     expect(reviewNeeded(scan({ verdict: "unregistered", confidence: "low" }))).toEqual({
@@ -46,7 +46,7 @@ describe("reviewNeeded — which scans a human must see", () => {
     });
   });
 
-  it("P3 (48 h) when 'likely genuine' but the photo raised a doubt — where a fake could slip through", () => {
+  it("P3 (48 h) when 'likely genuine' but the photo raised a doubt, where a fake could slip through", () => {
     expect(reviewNeeded(scan({ signals: [signal("POOR_IMAGE")] }))).toMatchObject({ priority: 3, reasons: ["GENUINE_BUT_DOUBTFUL", "POOR_IMAGE"] });
   });
 

@@ -71,7 +71,7 @@ export const knowledgeService = {
 
     // Keyword matching is loose ("any word"), so when meaning-search works, a passage it
     // didn't find counts only if the question has an exact code in it (a batch or
-    // registration number). "Best jollof rice recipe" then finds nothing — correctly.
+    // registration number). "Best jollof rice recipe" then finds nothing, correctly.
     const hasCode = /\d/.test(keywords);
     const relevantKeywordHits =
       mode === "hybrid" && !hasCode

@@ -73,7 +73,7 @@ async function loadRegistry() {
     const product = await productRepository.findByNafdacNo(nafdacNo);
     if (product) products.set(nafdacNo, product);
   }
-  if (products.size === 0) throw new Error("Demo registry not found — run `npm run seed` first (without --no-demo).");
+  if (products.size === 0) throw new Error("Demo registry not found, run `npm run seed` first (without --no-demo).");
   return products;
 }
 
@@ -167,7 +167,7 @@ async function main(): Promise<void> {
   console.log(`Simulated scans: removed ${removed}, added ${added} (${flagged} flagged) over ${DAYS} days.`);
 
   const summary = await hotspotService.refresh();
-  console.log(`Hotspots: ${summary.clusters} cluster(s) — ${summary.appeared} new, ${summary.continued} continued, ${summary.resolved} resolved, ${summary.alerts} alert(s) written.`);
+  console.log(`Hotspots: ${summary.clusters} cluster(s), ${summary.appeared} new, ${summary.continued} continued, ${summary.resolved} resolved, ${summary.alerts} alert(s) written.`);
 }
 
 main()

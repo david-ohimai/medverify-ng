@@ -73,7 +73,7 @@ export interface RiskAssessment {
 /**
  * Turns signals into one score and verdict. Transparent on purpose: the
  * weights live on the signals, the sum is clamped to 0–100, and three facts
- * override the bands — an unregistered number is "unregistered", and a
+ * override the bands, an unregistered number is "unregistered", and a
  * recalled or expired batch is always "high_risk" (whatever the pack's
  * authenticity, it must not be taken). Pure function: no I/O, fully tested.
  */
@@ -118,7 +118,7 @@ const ADVICE: Record<Verdict, { headline: string; advice: string }> = {
     advice: "Something doesn't match the records. Ask a pharmacist before taking it.",
   },
   high_risk: {
-    headline: "High risk — do not take it",
+    headline: "High risk, do not take it",
     advice: "Don't take this medicine. Show it to a pharmacist or report it to NAFDAC.",
   },
   unregistered: {
@@ -132,7 +132,7 @@ export function adviceFor(verdict: Verdict, signals: readonly Signal[] = []): { 
   const has = (code: SignalCode) => signals.some((signal) => signal.code === code);
   if (has("EXPIRED") && !has("BATCH_RECALLED") && !has("NOT_IN_REGISTRY")) {
     return {
-      headline: "Expired — do not take it",
+      headline: "Expired, do not take it",
       advice: "This medicine is past its expiry date. Don't take it; return it to the pharmacy.",
     };
   }

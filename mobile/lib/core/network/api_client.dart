@@ -13,7 +13,7 @@ import 'sse.dart';
 /// Converts the envelope's `data` into a typed value.
 typedef DataParser<T> = T Function(Object? data);
 
-/// Thin wrapper over Dio. Every call returns a [Result] — the envelope's
+/// Thin wrapper over Dio. Every call returns a [Result], the envelope's
 /// `data` parsed into [T], or a [Failure]. Nothing above this layer sees
 /// Dio, JSON or HTTP status codes.
 class ApiClient {
@@ -131,7 +131,7 @@ class ApiClient {
       return const Err(UnexpectedFailure('The server sent something we could not read.'));
     } catch (_) {
       // Anything else (a plugin or interceptor bug): still a Result, never a
-      // crash — callers rely on this method not throwing.
+      // crash, callers rely on this method not throwing.
       return const Err(UnexpectedFailure());
     }
   }

@@ -7,7 +7,7 @@ export function sha256(value: string | Buffer): string {
 
 /**
  * Constant-time comparison. Both sides are hashed first so the comparison
- * takes the same time whatever the inputs' lengths — no timing side channel.
+ * takes the same time whatever the inputs' lengths, no timing side channel.
  */
 export function secureEquals(a: string, b: string): boolean {
   const left = createHash("sha256").update(a, "utf8").digest();

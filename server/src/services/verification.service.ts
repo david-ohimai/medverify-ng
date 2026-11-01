@@ -31,7 +31,7 @@ export interface VerificationResult {
   advice: string;
   signals: Signal[];
   failure: { code: string; message: string } | null;
-  /** Human review: queued (open/claimed) or decided — the reviewer's verdict wins when they disagree. */
+  /** Human review: queued (open/claimed) or decided, the reviewer's verdict wins when they disagree. */
   review: {
     status: "open" | "claimed" | "decided";
     decision: "agree" | "disagree" | "inconclusive" | null;

@@ -6,8 +6,8 @@
  *                                               altered label, cloned number, unregistered,
  *                                               a product with no reference, not a pack
  *
- * Every pack says "DEMO PROP — NOT A REAL MEDICINE" and uses X9- numbers,
- * which are reserved for demo data. Real packs are photographed, not drawn —
+ * Every pack says "DEMO PROP, NOT A REAL MEDICINE" and uses X9- numbers,
+ * which are reserved for demo data. Real packs are photographed, not drawn,
  * this only exists so the whole pipeline can be demonstrated and evaluated
  * without real photos. Regenerate with:  npx tsx scripts/generate-demo-images.ts
  */
@@ -67,7 +67,7 @@ function packSvg(d: PackDesign): string {
   <text x="110" y="680" font-family="${font}" font-size="42" fill="#1d2b2a">MFG: ${d.mfg}    EXP: ${d.exp}</text>
   <text x="110" y="730" font-family="${font}" font-size="30" fill="#667">Store below 30°C. Keep out of reach of children.</text>
   <rect x="0" y="820" width="1400" height="80" fill="#c62828"/>
-  <text x="700" y="874" text-anchor="middle" font-family="${font}" font-size="40" font-weight="700" fill="#fff">DEMO PROP — NOT A REAL MEDICINE</text>
+  <text x="700" y="874" text-anchor="middle" font-family="${font}" font-size="40" font-weight="700" fill="#fff">DEMO PROP, NOT A REAL MEDICINE</text>
 </svg>`;
 }
 

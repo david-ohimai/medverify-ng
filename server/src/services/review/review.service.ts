@@ -107,7 +107,7 @@ export const reviewService = {
     return summary;
   },
 
-  /** Queue health and how often people agree with the system — a live accuracy signal. */
+  /** Queue health and how often people agree with the system, a live accuracy signal. */
   async stats() {
     const { byStatus, overdue, decided } = await reviewRepository.stats();
     const count = (status: string, priority?: number) =>

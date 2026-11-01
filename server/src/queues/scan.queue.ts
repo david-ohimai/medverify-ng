@@ -61,7 +61,7 @@ export async function closeQueues(): Promise<void> {
 }
 
 /**
- * The uploaded photo waits in Redis only until the worker has read it — it
+ * The uploaded photo waits in Redis only until the worker has read it, it
  * is never written to disk or a bucket. Short TTL: an unprocessed photo
  * disappears on its own.
  */

@@ -16,7 +16,7 @@ const quotaKey = (provider: ProviderName, now = new Date()) => `ai:quota:${provi
  * by every server instance. We stop below the provider's own cap, so the
  * app degrades cleanly ("try again tomorrow" / fallback) instead of failing
  * half-way through a scan with a 429. If Redis is down the guard lets calls
- * through — the provider's own limit still applies.
+ * through, the provider's own limit still applies.
  */
 export const aiQuota = {
   limit: (provider: ProviderName) => DAILY_LIMIT[provider],

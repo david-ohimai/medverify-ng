@@ -39,7 +39,7 @@ export const productRow = z.object({
   strength: optionalText(80),
   dosage_form: optionalText(60),
   manufacturer: optionalText(160),
-  // A blank cell arrives as "", not undefined — treat it as "use the default".
+  // A blank cell arrives as "", not undefined, treat it as "use the default".
   status: z.preprocess(
     (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
     z.enum(["active", "expired", "cancelled"]).default("active")

@@ -135,7 +135,7 @@ class _CitationRow extends StatelessWidget {
           Text('[${citation.n}] ', style: context.text.labelLarge?.copyWith(color: context.palette.info)),
           Expanded(
             child: Text(
-              '${citation.publisher} — ${citation.title}',
+              '${citation.publisher}, ${citation.title}',
               style: context.text.bodyMedium?.copyWith(
                 color: context.palette.info,
                 decoration: TextDecoration.underline,

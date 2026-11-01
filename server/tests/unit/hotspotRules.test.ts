@@ -58,7 +58,7 @@ describe("severityFor", () => {
   });
 });
 
-describe("matchClusters — continuity across runs", () => {
+describe("matchClusters, continuity across runs", () => {
   it("a cluster within 3 km about the same number continues the stored hotspot", () => {
     const moved = cluster({ latitude: 6.47, longitude: 3.39 }); // ~1.6 km away
     const result = matchClusters([moved], [stored()]);
@@ -88,7 +88,7 @@ describe("matchClusters — continuity across runs", () => {
   });
 });
 
-describe("hasGrown — when to write a fresh alert", () => {
+describe("hasGrown, when to write a fresh alert", () => {
   it("more severe → yes", () => {
     expect(hasGrown({ scanCount: 9, severity: "medium" }, { scanCount: 9, severity: "high" })).toBe(true);
   });

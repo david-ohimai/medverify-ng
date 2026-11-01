@@ -26,7 +26,7 @@ export const photoScanController = {
       toScanLocation(req.validated.body as ScanUploadInput)
     );
     res.setHeader("Location", accepted.statusUrl);
-    sendSuccess(res, 202, "Scan accepted — follow eventsUrl for progress", accepted);
+    sendSuccess(res, 202, "Scan accepted, follow eventsUrl for progress", accepted);
   },
 
   /**

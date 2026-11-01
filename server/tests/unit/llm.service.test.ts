@@ -93,7 +93,7 @@ describe("llmService.run", () => {
     expect(gemini.calls).toHaveLength(2);
   });
 
-  it("falls back to the next provider when the primary keeps failing — and says so", async () => {
+  it("falls back to the next provider when the primary keeps failing, and says so", async () => {
     const gemini = scripted("gemini", [rateLimited("gemini"), rateLimited("gemini")]);
     const openrouter = scripted("openrouter", [JSON.stringify(LABEL)]);
     const audit = vi.fn();

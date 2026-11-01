@@ -55,7 +55,7 @@ void main() {
     ).thenAnswer((_) async => Success(alerts));
   });
 
-  test('the badge counts unseen alerts and clears once they are seen — and stays cleared', () async {
+  test('the badge counts unseen alerts and clears once they are seen, and stays cleared', () async {
     final c = container();
     await c.read(nearbyAlertsProvider.future);
     expect(c.read(alertBadgeCountProvider), 2);

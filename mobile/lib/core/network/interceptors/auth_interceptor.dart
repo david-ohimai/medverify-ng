@@ -6,7 +6,7 @@ import '../auth_token_source.dart';
 /// Adds the access token to every request, and on a 401 recovers the
 /// session once (refresh, or re-register) and replays the request.
 ///
-/// Requests made while recovering wait for the same recovery — the
+/// Requests made while recovering wait for the same recovery, the
 /// [AuthTokenSource] guarantees a single refresh in flight.
 ///
 /// Every path ends in exactly one handler call (next / resolve / reject):

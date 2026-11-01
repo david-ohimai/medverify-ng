@@ -6,8 +6,8 @@
  *
  * Runs exactly what the queue worker runs (analysePhoto) against the real
  * database, Redis and AI providers, but saves no scans. Reports pass rate,
- * verdict accuracy, the safety metric that matters most — fakes passed as
- * "likely genuine" — false alarms, field-reading accuracy and latency, and
+ * verdict accuracy, the safety metric that matters most, fakes passed as
+ * "likely genuine", false alarms, field-reading accuracy and latency, and
  * writes eval/results/latest.{json,md} (fresh runs) or cached.{json,md}. Exits 1 if any fake passed as genuine.
  */
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -123,7 +123,7 @@ async function runCase(c: EvalCase): Promise<CaseResult> {
 const pct = (n: number, d: number) => (d === 0 ? "—" : `${Math.round((100 * n) / d)}%`);
 
 async function main(): Promise<void> {
-  if (!llmService.configured) throw new Error("No AI provider configured — set GEMINI_API_KEY in server/.env");
+  if (!llmService.configured) throw new Error("No AI provider configured, set GEMINI_API_KEY in server/.env");
   const { cases } = z.object({ cases: z.array(caseSchema) }).parse(JSON.parse(readFileSync(join(EVAL_DIR, "cases.json"), "utf8")));
 
   console.log(`Running ${cases.length} eval cases${fresh ? " (fresh: no cached AI answers)" : ""}…\n`);
@@ -175,7 +175,7 @@ Median latency            ${summary.medianLatencyMs} ms (${summary.liveAiCases} 
   writeFileSync(
     join(EVAL_DIR, "results", `${name}.md`),
     [
-      `# Eval results — ${summary.ranAt}${fresh ? " (fresh)" : ""}`,
+      `# Eval results, ${summary.ranAt}${fresh ? " (fresh)" : ""}`,
       "",
       "| Metric | Value |",
       "|---|---|",

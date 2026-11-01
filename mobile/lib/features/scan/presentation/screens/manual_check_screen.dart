@@ -32,7 +32,7 @@ class ManualCheckScreen extends ConsumerWidget {
         padding: const EdgeInsets.all(AppSpacing.gutter),
         children: [
           Text(
-            'Copy them exactly as printed on the pack. Only the NAFDAC number is required — the more you add, the '
+            'Copy them exactly as printed on the pack. Only the NAFDAC number is required, the more you add, the '
             'more we can check.',
             style: context.text.bodyMedium,
           ),

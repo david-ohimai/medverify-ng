@@ -23,7 +23,7 @@ export const refreshTokenRepository = {
 
   /**
    * Revokes the presented token and stores its replacement in one transaction,
-   * and only if the token is still unrevoked — two concurrent refreshes with
+   * and only if the token is still unrevoked, two concurrent refreshes with
    * the same token can't both succeed.
    */
   async rotate(

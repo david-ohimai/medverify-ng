@@ -25,7 +25,7 @@ export interface TokenSubject {
  * Issues and rotates tokens. A 15-minute access token (JWT) authorises
  * requests; a 30-day refresh token (opaque, stored hashed) gets new ones.
  * Every refresh replaces the refresh token, and presenting one that was
- * already rotated revokes the whole chain — a stolen token stops working.
+ * already rotated revokes the whole chain, a stolen token stops working.
  */
 export const tokenService = {
   async issuePair(device: TokenSubject, familyId: string = randomUUID()): Promise<TokenPair> {

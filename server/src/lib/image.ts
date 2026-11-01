@@ -25,7 +25,7 @@ export interface PreparedImage {
 }
 
 /**
- * Validates an uploaded photo by decoding it — the real format comes from the
+ * Validates an uploaded photo by decoding it, the real format comes from the
  * file's bytes, never from its name or Content-Type, so a renamed file or a
  * script posing as an image is rejected. The output is a fresh JPEG, which
  * also strips location data the phone may have embedded.

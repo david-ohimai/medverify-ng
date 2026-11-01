@@ -10,7 +10,7 @@ import '../../../../shared/widgets/shimmer/app_shimmer.dart';
 import '../providers/listen_providers.dart';
 
 /// 🔊 Listen: the verdict read aloud in English, Pidgin, Hausa, Yoruba or
-/// Igbo. The words are always shown too — for phones without that voice,
+/// Igbo. The words are always shown too, for phones without that voice,
 /// and for anyone who prefers to read.
 class ListenCard extends ConsumerWidget {
   const ListenCard({required this.scanId, super.key});
@@ -68,7 +68,7 @@ class ListenCard extends ConsumerWidget {
             if (state.voiceMissing) ...[
               const SizedBox(height: AppSpacing.xs),
               Text(
-                'No ${state.language.englishName} voice on this phone — the text is shown instead.',
+                'No ${state.language.englishName} voice on this phone, the text is shown instead.',
                 style: context.text.bodySmall,
               ),
             ],

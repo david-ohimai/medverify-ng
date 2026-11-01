@@ -1,4 +1,4 @@
-# Database setup — PostgreSQL + Redis in Docker, managed with Prisma
+# Database setup, PostgreSQL + Redis in Docker, managed with Prisma
 
 > Audience: me, on Windows 11, running the MedVerify database for the first time.
 > Goal: start PostgreSQL (with PostGIS, pgvector, pg_trgm) and Redis, create the tables with Prisma, run the server against them, run the tests, and **see the data** in Prisma Studio. Everything here is free.
@@ -12,13 +12,13 @@ Commands are for **Git Bash** (the VS Code terminal can use it). Where PowerShel
 | Thing | Where | Login |
 |---|---|---|
 | PostgreSQL 18 + PostGIS 3.6 + pgvector + pg_trgm | `localhost:5433` | `medverify` / `medverify` |
-| Dev database | `medverify` | — |
-| Test database | `medverify_test` | — |
+| Dev database | `medverify` |, |
+| Test database | `medverify_test` |, |
 | Read-only user (for the AI agent's tools) | `medverify_reader` | `medverify_reader` / `reader` |
 | Redis 8 (rate limits, cache, queues) | `localhost:6379` | no password (local only) |
-| Prisma Studio (browse and edit data) | http://localhost:5555 | — |
+| Prisma Studio (browse and edit data) | http://localhost:5555 |, |
 
-**Why port 5433 and not 5432?** This laptop also has a Windows PostgreSQL service (`postgresql-x64-18`) on 5432 — it belongs to **KodeBuddy** (`KodeBuddyAI` database), not MedVerify. The Docker database uses 5433 so the two never clash. MedVerify never touches the Windows one.
+**Why port 5433 and not 5432?** This laptop also has a Windows PostgreSQL service (`postgresql-x64-18`) on 5432, it belongs to **KodeBuddy** (`KodeBuddyAI` database), not MedVerify. The Docker database uses 5433 so the two never clash. MedVerify never touches the Windows one.
 
 It's safe to stop when you're not working on KodeBuddy (it doesn't delete any data). PowerShell **as administrator**:
 
@@ -48,29 +48,29 @@ schema.prisma ──(prisma migrate dev)──► prisma/migrations/*.sql ──
 | `prisma/schema.prisma` | **The source of truth for tables.** Models, enums, indexes, extensions |
 | `prisma.config.ts` | Prisma 7 settings: where the schema and migrations are, and `DATABASE_URL` |
 | `prisma/migrations/` | Generated SQL, one folder per change. Committed to git |
-| `src/generated/prisma/` | Generated TypeScript client. **Not** committed — rebuild with `npm run prisma:generate` |
+| `src/generated/prisma/` | Generated TypeScript client. **Not** committed, rebuild with `npm run prisma:generate` |
 | `src/lib/prisma.ts` | The one `PrismaClient` the app uses (Prisma 7 connects through the `pg` driver adapter) |
 
 Prisma 7 differences from the bootcamp's Prisma 6 (worth knowing for the defense):
-- The database URL lives in `prisma.config.ts`, not in `schema.prisma`, and `.env` is loaded by `import "dotenv/config"` there — Prisma no longer reads `.env` by itself.
+- The database URL lives in `prisma.config.ts`, not in `schema.prisma`, and `.env` is loaded by `import "dotenv/config"` there, Prisma no longer reads `.env` by itself.
 - The client is generated into `src/generated/prisma`, not `node_modules`, and connects through a **driver adapter** (`@prisma/adapter-pg`).
-- `migrate dev` no longer runs `generate` or the seed for you — they are separate commands.
+- `migrate dev` no longer runs `generate` or the seed for you, they are separate commands.
 
 ---
 
 ## 1. Install Docker Desktop (once)
 
-1. Install WSL 2 first — PowerShell **as administrator** — then **restart Windows** (the output says changes apply after a reboot):
+1. Install WSL 2 first, PowerShell **as administrator**, then **restart Windows** (the output says changes apply after a reboot):
    ```powershell
    wsl --install
    ```
-2. Install Docker Desktop — download from docker.com, or in PowerShell:
+2. Install Docker Desktop, download from docker.com, or in PowerShell:
    ```powershell
    winget install --id Docker.DockerDesktop -e
    ```
    Keep **"Use WSL 2"** ticked. On this laptop it installed **per-user**, in `C:\Users\David\AppData\Local\Programs\DockerDesktop` (not `C:\Program Files\Docker`), and added itself to the *user* PATH.
 3. Open Docker Desktop. Accept the terms, skip sign-in (no Docker account needed), and wait for **Engine running** (bottom-left).
-4. **Close VS Code completely and reopen it.** Terminals started before the install keep the old PATH, and new terminal tabs inherit VS Code's environment — so `docker` stays "not recognized" until VS Code itself restarts.
+4. **Close VS Code completely and reopen it.** Terminals started before the install keep the old PATH, and new terminal tabs inherit VS Code's environment, so `docker` stays "not recognized" until VS Code itself restarts.
 5. Check it:
    ```bash
    docker --version          # Docker version 29.x
@@ -114,7 +114,7 @@ docker compose logs redis
 
 ## 4. Check the containers work
 
-**PostgreSQL** — open `psql` inside the container (nothing to install on Windows):
+**PostgreSQL**, open `psql` inside the container (nothing to install on Windows):
 
 ```bash
 npm run db:psql
@@ -161,7 +161,7 @@ npm run prisma:status       # = prisma migrate status → "Database schema is up
 npm run seed                # load the registry CSVs → "Registry seeded: 5 products (5 demo), 5 batches"
 ```
 
-`npm run seed` reads `prisma/seed/data/*.csv` — fictional demo rows until you add real ones ([how](../server/prisma/seed/data/README.md)). It's safe to run again any time.
+`npm run seed` reads `prisma/seed/data/*.csv`, fictional demo rows until you add real ones ([how](../server/prisma/seed/data/README.md)). It's safe to run again any time.
 
 Check the extensions really are there:
 
@@ -281,11 +281,11 @@ npm run prisma:studio
 
 Open **http://localhost:5555**. Click a model to see its rows:
 
-- **Device** — the registered device. Note `installIdHash` is a hash; the raw install id is never stored.
-- **RefreshToken** — one row per token. After the refresh test above, the old ones have `revokedAt` set, and the reuse revoked the whole family.
-- **AuditLog** — `device.registered`, `device.elevated`, `token.reuse_detected`, each with the request's `correlationId` (it matches the `X-Correlation-Id` response header and the server log line).
+- **Device**, the registered device. Note `installIdHash` is a hash; the raw install id is never stored.
+- **RefreshToken**, one row per token. After the refresh test above, the old ones have `revokedAt` set, and the reuse revoked the whole family.
+- **AuditLog**, `device.registered`, `device.elevated`, `token.reuse_detected`, each with the request's `correlationId` (it matches the `X-Correlation-Id` response header and the server log line).
 
-Studio can also edit rows — handy for testing, but remember it writes to the real dev database.
+Studio can also edit rows, handy for testing, but remember it writes to the real dev database.
 
 ### psql
 
@@ -328,7 +328,7 @@ curl -s http://localhost:3000/metrics | grep -E "http_requests_total|security_ev
 ## 9. Run the tests
 
 ```bash
-npm test               # unit + HTTP tests — no database or Redis needed (repositories are mocked)
+npm test               # unit + HTTP tests, no database or Redis needed (repositories are mocked)
 npm run typecheck
 ```
 
@@ -371,7 +371,7 @@ Integration tests that use the real `medverify_test` database arrive with the sc
 | `type "vector" does not exist` | Migrations didn't run on this database. `npm run prisma:migrate`. |
 | Changed `01-init.sql` but nothing happened | Init scripts only run on an **empty** volume: `npm run db:wipe`, then `npm run db:up`. |
 | Postgres container restarts with a data-directory error | PostgreSQL 18 images mount `/var/lib/postgresql`, not `/var/lib/postgresql/data`. Check `docker-compose.yml`, then `npm run db:wipe`. |
-| `/health/ready` returns 503 | One check failed — the response says which. Usually Docker isn't running: `npm run db:up`. |
+| `/health/ready` returns 503 | One check failed, the response says which. Usually Docker isn't running: `npm run db:up`. |
 | Server exits with *Server failed to start* | Same: it refuses to start without both Postgres and Redis. That's deliberate. |
 
 ---
@@ -391,7 +391,7 @@ Integration tests that use the real `medverify_test` database arrive with the sc
    ```
    The extensions are created by the first migration.
 2. Copy the connection string (it ends with `?sslmode=require`).
-3. Apply migrations to Neon from your laptop — `migrate deploy`, never `migrate dev`, against a hosted database:
+3. Apply migrations to Neon from your laptop, `migrate deploy`, never `migrate dev`, against a hosted database:
    ```bash
    DATABASE_URL="<neon url>" npx prisma migrate deploy
    ```

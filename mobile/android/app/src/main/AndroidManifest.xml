@@ -2,7 +2,7 @@
     <!-- Release builds talk to the API; the template only adds this in debug. -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <!-- Coarse only: the server rounds locations to ~1 km anyway, so precise
-         GPS would collect more than is ever used. Optional — asked on the
+         GPS would collect more than is ever used. Optional, asked on the
          Alerts tab and before a scan, and the app works without it. -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
 

@@ -5,7 +5,7 @@ function signal(code: SignalCode, weight = 0): Signal {
   return { code, label: code, weight, severity: weight > 0 ? "danger" : "info" };
 }
 
-describe("assessRisk — score and verdict", () => {
+describe("assessRisk, score and verdict", () => {
   it("sums weights and clamps to 0–100", () => {
     expect(assessRisk([signal("BATCH_KNOWN", -10)]).riskScore).toBe(0);
     expect(assessRisk([signal("NAME_MISMATCH", 40), signal("REGISTRATION_INACTIVE", 35), signal("EXPIRY_MISMATCH", 30)]).riskScore).toBe(100);
@@ -28,7 +28,7 @@ describe("assessRisk — score and verdict", () => {
   });
 });
 
-describe("assessRisk — confidence", () => {
+describe("assessRisk, confidence", () => {
   it("high when a hard fact drives a negative verdict", () => {
     expect(assessRisk([signal("PACK_NOT_SEEN"), signal("NOT_IN_REGISTRY", 45)]).confidence).toBe("high");
     expect(assessRisk([signal("PACK_NOT_SEEN"), signal("BATCH_RECALLED", 50)]).confidence).toBe("high");
@@ -46,7 +46,7 @@ describe("assessRisk — confidence", () => {
 
 describe("adviceFor", () => {
   it("expired gets its own plain headline", () => {
-    expect(adviceFor("high_risk", [signal("EXPIRED", 35)]).headline).toBe("Expired — do not take it");
+    expect(adviceFor("high_risk", [signal("EXPIRED", 35)]).headline).toBe("Expired, do not take it");
   });
 
   it("never claims a medicine is safe", () => {

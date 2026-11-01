@@ -54,7 +54,7 @@ export const knowledgeRepository = {
       LIMIT ${limit}`;
   },
 
-  /** Keyword passages by Postgres full-text rank — catches exact terms like batch numbers and brand names. */
+  /** Keyword passages by Postgres full-text rank, catches exact terms like batch numbers and brand names. */
   searchByKeywords(query: string, limit: number) {
     return prisma.$queryRaw<KnowledgeHit[]>`
       SELECT c.id AS "chunkId", d.id AS "documentId", d.title, d.publisher, d.url, d.retrieved,

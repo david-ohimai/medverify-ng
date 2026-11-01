@@ -15,5 +15,5 @@ listen("assistant:injection-suspected", "security", () => {
 
 listen("token:reuse-detected", "security", ({ deviceId, familyId }) => {
   securityEventsTotal.inc({ event: "refresh_reuse" });
-  logger.warn({ event: "security:refresh-reuse", deviceId, familyId }, "Refresh token reused — token chain revoked");
+  logger.warn({ event: "security:refresh-reuse", deviceId, familyId }, "Refresh token reused, token chain revoked");
 });

@@ -22,7 +22,7 @@ beforeEach(() => {
 });
 
 describe("review queue API", () => {
-  it("is regulator-only — the public can't see other people's scans or photos", async () => {
+  it("is regulator-only, the public can't see other people's scans or photos", async () => {
     const auth = as("public");
     for (const [method, path] of [
       ["get", "/api/v1/reviews"],

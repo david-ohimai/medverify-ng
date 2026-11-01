@@ -10,13 +10,13 @@ import type { DeviceRole } from "../generated/prisma/enums.js";
 /**
  * - "ip": before authentication.
  * - "device": after it, so limits follow the device across networks.
- * - "global": one shared counter for everyone — for secrets that can be
+ * - "global": one shared counter for everyone, for secrets that can be
  *   guessed, where minting new devices or IPs must not buy more attempts.
  */
 type KeyBy = "ip" | "device" | "global";
 
 interface LimiterOptions {
-  /** Unique name — becomes the Redis key prefix and the metrics label. */
+  /** Unique name, becomes the Redis key prefix and the metrics label. */
   name: string;
   windowMs: number;
   /** A fixed limit, or one per role (regulators get more). */
@@ -64,7 +64,7 @@ export function createLimiter(options: LimiterOptions) {
   });
 }
 
-/** Device registration: per IP — stops one client minting thousands of devices. */
+/** Device registration: per IP, stops one client minting thousands of devices. */
 export const registerLimiter = createLimiter({
   name: "register",
   windowMs: 60 * 60 * 1000,
@@ -147,7 +147,7 @@ export const searchLimiter = createLimiter({
 });
 
 /**
- * Regulator PIN — three stacked limits on WRONG guesses, because a new device
+ * Regulator PIN, three stacked limits on WRONG guesses, because a new device
  * id costs an attacker nothing:
  *   per device  5 / 15 min   (normal typos)
  *   per IP     10 / hour     (minting devices from one network doesn't help)

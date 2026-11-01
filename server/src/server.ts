@@ -27,7 +27,7 @@ async function start(): Promise<void> {
 
   const providers = await llmService.status();
   if (providers.length === 0) {
-    logger.warn({ event: "ai:not-configured" }, "No AI provider key set — photo scans are disabled (manual checks still work)");
+    logger.warn({ event: "ai:not-configured" }, "No AI provider key set, photo scans are disabled (manual checks still work)");
   } else {
     logger.info({ event: "ai:providers", chain: providers.map((p) => `${p.name}:${p.models.vision}`) }, "AI provider chain ready");
   }
@@ -72,7 +72,7 @@ process.on("unhandledRejection", (reason) => {
 start().catch((err: unknown) => {
   logger.fatal(
     { event: "server:start-failed", message: err instanceof Error ? err.message : String(err) },
-    "Server failed to start — is Docker running? (npm run db:up)"
+    "Server failed to start, is Docker running? (npm run db:up)"
   );
   process.exit(1);
 });

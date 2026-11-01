@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 /// The scanner's viewfinder: everything outside the box is dimmed, the box
-/// has bright corner brackets, and a line sweeps up and down inside it —
+/// has bright corner brackets, and a line sweeps up and down inside it,
 /// the "scan box" people know from QR scanners.
 class ScanFrame extends StatelessWidget {
   const ScanFrame({required this.color, this.active = true, super.key});

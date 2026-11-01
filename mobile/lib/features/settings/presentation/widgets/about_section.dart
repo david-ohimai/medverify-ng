@@ -46,7 +46,7 @@ class AboutSection extends ConsumerWidget {
       const SizedBox(height: AppSpacing.md),
       Text(
         'MedVerify gives a careful second opinion. It never says a medicine is 100% safe. '
-        'If a pack looks suspicious, do not take it — show it to a pharmacist or report it to NAFDAC.',
+        'If a pack looks suspicious, do not take it, show it to a pharmacist or report it to NAFDAC.',
         style: context.text.bodySmall,
       ),
     ],

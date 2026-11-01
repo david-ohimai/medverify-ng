@@ -1,6 +1,6 @@
 /**
  * Retrieval eval (eval/rag-cases.json): does knowledge search find the
- * official document that answers each question — and nothing for off-topic
+ * official document that answers each question, and nothing for off-topic
  * ones? Reports hit@1, recall@3, MRR and off-topic precision, and writes
  * eval/results/rag-latest.{json,md}.
  *
@@ -52,7 +52,7 @@ async function main(): Promise<void> {
   writeFileSync(
     join(EVAL_DIR, "results", "rag-latest.md"),
     [
-      `# Retrieval eval — ${summary.ranAt}`,
+      `# Retrieval eval, ${summary.ranAt}`,
       "",
       `hit@1 **${summary.hitAt1}** · recall@3 **${summary.recallAt3}** · MRR **${summary.mrr}** · off-topic questions with nothing returned **${summary.offTopicRejected}** (${summary.mode})`,
       "",

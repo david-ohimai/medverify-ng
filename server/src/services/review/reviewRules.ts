@@ -4,13 +4,13 @@ import type { Signal, SignalCode } from "../risk/riskScorer.js";
 /**
  * When a human must look, and how fast. Pure functions, fully tested.
  *
- *   P1 — the scan says don't take it (high risk / unregistered): decide within 4 h
- *   P2 — suspicious: within 24 h
- *   P3 — "likely genuine", but the photo itself raised a doubt (blurry, odd
+ *   P1, the scan says don't take it (high risk / unregistered): decide within 4 h
+ *   P2, suspicious: within 24 h
+ *   P3, "likely genuine", but the photo itself raised a doubt (blurry, odd
  *        spelling, looks a bit different): within 48 h. This is where a fake
  *        could slip through as "genuine", so a person double-checks.
  *
- * Only photo scans are reviewed — a reviewer needs the pack to look at.
+ * Only photo scans are reviewed, a reviewer needs the pack to look at.
  */
 export const SLA_HOURS: Record<1 | 2 | 3, number> = { 1: 4, 2: 24, 3: 48 };
 /** A claim lapses if not decided within an hour, so a review is never stuck with one person. */

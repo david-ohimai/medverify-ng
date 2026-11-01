@@ -159,7 +159,7 @@ export const hotspotService = {
 
   /**
    * Public view for the app: medium/high hotspots within `radiusKm`, with
-   * the product, batch and area — enough to warn, nothing about individual scans.
+   * the product, batch and area, enough to warn, nothing about individual scans.
    */
   async nearby(latitude: number, longitude: number, radiusKm: number) {
     const hotspots = await hotspotRepository.listActiveWithAlert();

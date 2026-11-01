@@ -22,7 +22,7 @@ class ListenState extends Equatable {
   final bool loading;
   final bool speaking;
 
-  /// The verdict in [language], once fetched — always shown, even without a voice.
+  /// The verdict in [language], once fetched, always shown, even without a voice.
   final String? text;
 
   /// The phone has no voice for [language]: the text is shown, not spoken.

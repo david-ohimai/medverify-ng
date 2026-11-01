@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-/// A source the assistant cited — always an official WHO or NAFDAC page.
+/// A source the assistant cited, always an official WHO or NAFDAC page.
 class Citation extends Equatable {
   const Citation({
     required this.n,

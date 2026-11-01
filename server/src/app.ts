@@ -70,7 +70,7 @@ export function createApp() {
   );
 
   // The mobile app sends no Origin header and isn't affected by CORS. Browsers
-  // are only allowed from the explicit allowlist — never "*".
+  // are only allowed from the explicit allowlist, never "*".
   app.use(
     cors({
       origin: config.CORS_ORIGINS.length > 0 ? config.CORS_ORIGINS : false,

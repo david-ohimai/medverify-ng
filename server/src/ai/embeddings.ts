@@ -49,7 +49,7 @@ async function embedBatch(texts: string[], purpose: EmbeddingPurpose): Promise<n
 
 /**
  * Embeddings for the knowledge base (documents) and for questions. Gemini
- * only — OpenRouter has no embedding API — so callers must cope with
+ * only, OpenRouter has no embedding API, so callers must cope with
  * AiUnavailable: the knowledge search falls back to keyword search.
  * Same resilience as every other AI call: retry with Retry-After, circuit
  * breaker, daily budget (one unit per batch), an `ai:called` audit row.

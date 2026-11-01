@@ -75,7 +75,7 @@ export const scanRepository = {
     });
   },
 
-  /** Only an unfinished scan can fail — a late failure never overwrites a verdict. */
+  /** Only an unfinished scan can fail, a late failure never overwrites a verdict. */
   async fail(id: string, failureCode: string, extracted?: Prisma.InputJsonValue): Promise<boolean> {
     const { count } = await prisma.scan.updateMany({
       where: { id, status: { in: ["pending", "processing"] } },
@@ -98,7 +98,7 @@ export const scanRepository = {
     return prisma.scan.findFirst({ where: { id, deviceId }, select: scanSelect });
   },
 
-  /** Page and total in parallel — two queries, no N+1. */
+  /** Page and total in parallel, two queries, no N+1. */
   async listForDevice(deviceId: string, page: number, limit: number) {
     const where = { deviceId };
     const [items, total] = await Promise.all([

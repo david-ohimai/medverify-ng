@@ -2,7 +2,7 @@ import 'package:dio/dio.dart';
 
 import '../../logging/app_log.dart';
 
-/// Debug-only request/response log (never added in release builds — see
+/// Debug-only request/response log (never added in release builds, see
 /// network_providers.dart). Shows method, path, status, time and a masked,
 /// shortened body, in the Debug Console / terminal / logcat.
 class SafeLogInterceptor extends Interceptor {
@@ -24,7 +24,7 @@ class SafeLogInterceptor extends Interceptor {
   void onResponse(Response<dynamic> response, ResponseInterceptorHandler handler) {
     final options = response.requestOptions;
     final body = switch (options.responseType) {
-      ResponseType.stream => '(event stream — events logged as they arrive)',
+      ResponseType.stream => '(event stream, events logged as they arrive)',
       ResponseType.bytes => '(${(response.data as List?)?.length ?? 0} bytes)',
       _ => AppLog.body(response.data),
     };
@@ -38,7 +38,7 @@ class SafeLogInterceptor extends Interceptor {
     final data = err.response?.data;
     AppLog.api(
       '✕ ${err.response?.statusCode ?? err.type.name} ${options.method} ${options.path} ${_elapsed(options)} '
-      '${data is ResponseBody ? '' : AppLog.body(data)}${err.message == null ? '' : ' — ${err.message}'}',
+      '${data is ResponseBody ? '' : AppLog.body(data)}${err.message == null ? '' : ', ${err.message}'}',
     );
     handler.next(err);
   }

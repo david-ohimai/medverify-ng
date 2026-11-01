@@ -21,7 +21,7 @@ function check(overrides: Partial<RegistryCheckInput>) {
   return { codes: signals.map((s) => s.code), ...assessRisk(signals) };
 }
 
-describe("registrySignals + assessRisk — the manual-check rules", () => {
+describe("registrySignals + assessRisk, the manual-check rules", () => {
   it("known, in-date batch of a registered product → likely genuine, medium confidence", () => {
     const result = check({ nameSimilarity: 0.9 });
     expect(result.codes).toEqual(["PACK_NOT_SEEN", "NAME_MATCHES_REGISTRY", "BATCH_KNOWN"]);

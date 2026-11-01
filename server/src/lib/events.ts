@@ -28,7 +28,7 @@ export interface AppEvents {
   ];
   "review:escalated": [{ reviewId: string; scanId: string; priority: number; level: number }];
   "hotspot:alert-created": [{ alertId: string; hotspotId: string; severity: string; generatedBy: string }];
-  /** One AI provider call (successful or not) — feeds ai_audit_logs and metrics. */
+  /** One AI provider call (successful or not), feeds ai_audit_logs and metrics. */
   "ai:called": [AiCallRecord];
 }
 

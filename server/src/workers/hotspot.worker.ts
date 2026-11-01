@@ -9,7 +9,7 @@ import { hotspotService } from "../services/hotspot/hotspot.service.js";
 
 /**
  * Hotspot clustering off the request path: a repeatable job every 15 minutes
- * plus a debounced run after flagged scans. Concurrency 1 — two clustering
+ * plus a debounced run after flagged scans. Concurrency 1, two clustering
  * runs at once would race to open the same hotspot twice.
  */
 export async function startHotspotWorker(): Promise<Worker<HotspotJobData>> {
@@ -32,7 +32,7 @@ let triggerRegistered = false;
 
 /**
  * A flagged scan (risk ≥ 30) asks for a debounced refresh. Registered by the
- * processes that run jobs (server.ts, worker.ts) — not by the app itself, so
+ * processes that run jobs (server.ts, worker.ts), not by the app itself, so
  * tests never touch the queue.
  */
 export function registerHotspotTrigger(): void {

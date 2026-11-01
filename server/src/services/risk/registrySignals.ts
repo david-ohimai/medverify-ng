@@ -39,7 +39,7 @@ const monthOf = (date: Date) => date.toISOString().slice(0, 7);
 
 /**
  * The registry rules, as data: each fact about the product, name, batch and
- * expiry becomes a weighted, explained signal. No I/O — the caller looks the
+ * expiry becomes a weighted, explained signal. No I/O, the caller looks the
  * facts up; this decides what they mean.
  */
 export function registrySignals(input: RegistryCheckInput): Signal[] {
@@ -69,7 +69,7 @@ export function registrySignals(input: RegistryCheckInput): Signal[] {
   if (product.source === "demo") {
     signals.push({
       code: "DEMO_RECORD",
-      label: "Demo record — fictional data, not a real NAFDAC registration",
+      label: "Demo record, fictional data, not a real NAFDAC registration",
       weight: 0,
       severity: "warning",
       detail: "This result comes from MedVerify's made-up test data and says nothing about a real medicine.",
@@ -160,7 +160,7 @@ export function registrySignals(input: RegistryCheckInput): Signal[] {
       label: "Printed expiry doesn't match the batch record",
       weight: 30,
       severity: "danger",
-      detail: `Pack says ${monthOf(input.printedExpiry!)}, records say ${monthOf(registryExpiry!)} — a sign of relabelling.`,
+      detail: `Pack says ${monthOf(input.printedExpiry!)}, records say ${monthOf(registryExpiry!)}, a sign of relabelling.`,
     });
   }
 
