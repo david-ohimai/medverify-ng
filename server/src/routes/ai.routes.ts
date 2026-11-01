@@ -6,7 +6,7 @@ import { apiLimiter } from "../middleware/rateLimiter.js";
 import { validate } from "../middleware/validate.js";
 import { createPromptSchema, listAiCallsSchema, listPromptsSchema, promptParamsSchema } from "../validators/ai.validator.js";
 
-/** Model control plane — regulator mode only. */
+/** Model control plane, regulator mode only. */
 export const aiRoutes = Router();
 
 aiRoutes.use(authenticate, authorize("regulator"), apiLimiter);

@@ -42,7 +42,7 @@ registryRoutes.get("/search", searchLimiter, validate(productSearchSchema), regi
  * /api/v1/products/{nafdacNo}/reference-images/{imageId}:
  *   get:
  *     tags: [Registry]
- *     summary: A genuine-pack reference photo (image/jpeg) — e.g. to show beside the user's scan
+ *     summary: A genuine-pack reference photo (image/jpeg), e.g. to show beside the user's scan
  *     security: [{ bearerAuth: [] }]
  *     parameters:
  *       - { in: path, name: nafdacNo, required: true, schema: { type: string }, example: "X9-0001" }

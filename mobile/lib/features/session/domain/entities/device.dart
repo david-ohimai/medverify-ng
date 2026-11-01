@@ -10,7 +10,7 @@ enum DeviceRole {
 }
 
 /// This install of the app, as the server knows it. There are no user
-/// accounts — the device is the identity.
+/// accounts, the device is the identity.
 class Device extends Equatable {
   const Device({required this.id, required this.role, required this.language});
 

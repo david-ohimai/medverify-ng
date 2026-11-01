@@ -59,7 +59,7 @@ const envSchema = z.object({
   GEMINI_API_KEY: optionalSecret,
   GEMINI_VISION_MODEL: z.string().min(3).default("gemini-3.5-flash"),
   GEMINI_LIGHT_MODEL: z.string().min(3).default("gemini-3.5-flash-lite"),
-  /** Calls per UTC day we allow ourselves — kept under the free tier's own cap. */
+  /** Calls per UTC day we allow ourselves, kept under the free tier's own cap. */
   GEMINI_DAILY_LIMIT: z.coerce.number().int().min(0).default(200),
   OPENROUTER_API_KEY: optionalSecret,
   OPENROUTER_MODEL: z.string().min(3).default("nvidia/nemotron-3.5-super-vl:free"),

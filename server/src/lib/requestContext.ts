@@ -7,8 +7,8 @@ interface RequestContext {
 const storage = new AsyncLocalStorage<RequestContext>();
 
 /**
- * Runs `fn` with a correlation id attached. Everything it calls — services,
- * repositories, event listeners, log lines — can read the id without it being
+ * Runs `fn` with a correlation id attached. Everything it calls, services,
+ * repositories, event listeners, log lines, can read the id without it being
  * passed through every function signature.
  */
 export function runWithContext<T>(context: RequestContext, fn: () => T): T {

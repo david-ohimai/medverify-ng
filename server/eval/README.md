@@ -1,11 +1,11 @@
-# Golden eval set — photo pipeline
+# Golden eval set, photo pipeline
 
 `cases.json` lists photos in `fixtures/` and what the pipeline must conclude about each. `npm run eval` runs every case through exactly the code the scan worker runs (`analysePhoto`: read the label → registry → batch → compare with the genuine pack → score), against the real database, Redis and AI providers, and saves no scans.
 
 ```bash
 npm run seed              # demo registry rows + the Demoquine reference photo
-npm run eval              # reuses cached AI answers — free, instant, checks the rules
-npm run eval -- --fresh   # real AI calls (≈2 per case) — real accuracy and latency
+npm run eval              # reuses cached AI answers, free, instant, checks the rules
+npm run eval -- --fresh   # real AI calls (≈2 per case), real accuracy and latency
 ```
 
 Reported:

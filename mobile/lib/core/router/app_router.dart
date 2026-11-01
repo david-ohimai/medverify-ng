@@ -26,7 +26,7 @@ import '../../features/splash/presentation/screens/splash_screen.dart';
 import 'app_routes.dart';
 
 /// Created once. Redirects read providers with ref.read, and the router is
-/// refreshed when onboarding completes — so the router itself never rebuilds.
+/// refreshed when onboarding completes, so the router itself never rebuilds.
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = ValueNotifier<int>(0);
   ref

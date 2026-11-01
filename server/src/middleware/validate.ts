@@ -4,8 +4,8 @@ import { ValidationError } from "../lib/errors.js";
 
 /**
  * Validation gate. Runs BEFORE the controller; if the request doesn't match the
- * schema the controller is never called. The parsed result — with defaults
- * applied and unknown keys removed — is stored on req.validated, and
+ * schema the controller is never called. The parsed result, with defaults
+ * applied and unknown keys removed, is stored on req.validated, and
  * controllers read only from there.
  */
 export function validate(schema: ZodType) {

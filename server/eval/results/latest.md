@@ -1,4 +1,4 @@
-# Eval results — 2026-10-29T08:58:25.898Z (fresh)
+# Eval results, 2026-10-29T08:58:25.898Z (fresh)
 
 | Metric | Value |
 |---|---|
@@ -18,4 +18,4 @@
 | cloned-number | ✓ | high_risk | 70 | low | DEMO_RECORD, NAME_MISMATCH, BATCH_UNKNOWN, VISUAL_MISMATCH | 239480 |
 | unregistered-number | ✓ | unregistered | 45 | high | NOT_IN_REGISTRY | 14999 |
 | no-reference | ✓ | likely_genuine | 0 | low | DEMO_RECORD, NAME_MATCHES_REGISTRY, BATCH_KNOWN, PACK_NOT_COMPARED | 11362 |
-| not-a-pack | ✓ | NOT_A_MEDICINE_PACK | — | — |  | 11338 |
+| not-a-pack | ✓ | NOT_A_MEDICINE_PACK |, |, |  | 11338 |

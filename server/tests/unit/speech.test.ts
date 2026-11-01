@@ -16,7 +16,7 @@ vi.mock("../../src/lib/cache.js", async (original) => ({
 
 const result = {
   scanId: "s-1",
-  headline: "High risk — do not take it",
+  headline: "High risk, do not take it",
   advice: "Don't take this medicine. Show it to a pharmacist or report it to NAFDAC.",
   signals: [
     { code: "NAME_MATCHES_REGISTRY", label: "Name matches", weight: 0, severity: "good" },
@@ -34,7 +34,7 @@ beforeEach(() => {
 describe("spokenEnglish", () => {
   it("headline, the heaviest warning, then the advice", () => {
     expect(spokenEnglish(result)).toBe(
-      "High risk — do not take it. Batch DQ2310 has been recalled. Don't take this medicine. Show it to a pharmacist or report it to NAFDAC."
+      "High risk, do not take it. Batch DQ2310 has been recalled. Don't take this medicine. Show it to a pharmacist or report it to NAFDAC."
     );
   });
 });

@@ -11,7 +11,7 @@ import '../providers/assistant_providers.dart';
 import '../widgets/chat_bubbles.dart';
 
 /// Ask MedVerify: answers from the NAFDAC register, your scans, nearby
-/// warnings and official WHO / NAFDAC documents — with sources.
+/// warnings and official WHO / NAFDAC documents, with sources.
 class AssistantScreen extends ConsumerWidget {
   const AssistantScreen({this.initialQuestion, super.key});
 
@@ -60,7 +60,7 @@ class _Suggestions extends ConsumerWidget {
       const SizedBox(height: AppSpacing.xs),
       Text(
         'Answers come from the NAFDAC register, your own checks, warnings near you and official WHO and NAFDAC '
-        'documents — with the sources.',
+        'documents, with the sources.',
         style: context.text.bodyMedium,
         textAlign: TextAlign.center,
       ),

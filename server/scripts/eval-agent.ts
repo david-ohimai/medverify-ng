@@ -33,7 +33,7 @@ const caseSchema = z.object({
 });
 
 async function main(): Promise<void> {
-  if (!llmService.configured) throw new Error("No AI provider configured — set GEMINI_API_KEY");
+  if (!llmService.configured) throw new Error("No AI provider configured, set GEMINI_API_KEY");
   const { cases } = z.object({ cases: z.array(caseSchema) }).parse(JSON.parse(readFileSync(join(EVAL_DIR, "agent-cases.json"), "utf8")));
 
   // A throwaway device for the run; deleted at the end (its conversations cascade).
@@ -82,7 +82,7 @@ async function main(): Promise<void> {
   writeFileSync(
     join(EVAL_DIR, "results", "agent-latest.md"),
     [
-      `# Agent eval — ${new Date().toISOString()}`,
+      `# Agent eval, ${new Date().toISOString()}`,
       "",
       `Passed **${passed} / ${cases.length}** · right tools **${toolChoice} / ${cases.length}** · cited official sources when required **${cited} / ${needCite.length}**`,
       "",

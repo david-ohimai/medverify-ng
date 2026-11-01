@@ -42,6 +42,10 @@ class AppShell extends ConsumerWidget {
 
     return GlassScaffold(
       background: const AppBackdrop(),
+      // The keyboard slides over the tab bar instead of pushing it up with it.
+      // The inner Scaffold below still resizes the page, so a focused field
+      // (e.g. the regulator PIN) stays visible above the keyboard.
+      resizeToAvoidBottomInset: false,
       // GlassScaffold isn't a Material Scaffold, so snack bars shown from a tab
       // (e.g. "Location is turned off") need one to appear in. Transparent, so
       // the backdrop and glass still show through.

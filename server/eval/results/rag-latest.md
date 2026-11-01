@@ -1,4 +1,4 @@
-# Retrieval eval — 2026-10-29T22:06:06.571Z
+# Retrieval eval, 2026-10-29T22:06:06.571Z
 
 hit@1 **15 / 16** · recall@3 **16 / 16** · MRR **0.96** · off-topic questions with nothing returned **2 / 2** (hybrid)
 
@@ -20,5 +20,5 @@ hit@1 **15 / 16** · recall@3 **16 / 16** · MRR **0.96** · off-topic questions
 | What proportion of medicines in low- and middle-income countries are substandard or falsified? | ✓ rank 1 | who-sf-fact-sheet, who-sf-scope-scale-harm |
 | What is the WHO Global Surveillance and Monitoring System? | ✓ rank 1 | who-sf-fact-sheet, who-sf-activities |
 | Is it risky to buy medicines online? | ✓ rank 1 | who-sf-fact-sheet, nafdac-curbing-sf, who-sf-scope-scale-harm |
-| Best jollof rice recipe | ✓ off-topic | — |
-| Who won the football match yesterday? | ✓ off-topic | — |
+| Best jollof rice recipe | ✓ off-topic |, |
+| Who won the football match yesterday? | ✓ off-topic |, |

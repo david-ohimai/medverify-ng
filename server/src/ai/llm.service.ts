@@ -220,7 +220,7 @@ export function createLlmService(deps: Dependencies) {
   }
 
   return {
-    /** Runs an AI task and returns validated, typed output — or throws AiUnavailable / AiQuotaExhausted. */
+    /** Runs an AI task and returns validated, typed output, or throws AiUnavailable / AiQuotaExhausted. */
     async run<K extends AiTaskName>(task: K, parts: LlmPart[], context: AiCallContext): Promise<AiResult<AiTaskOutput<K>>> {
       if (deps.providers.length === 0) {
         throw new AiUnavailableError("No AI provider is configured (set GEMINI_API_KEY in server/.env).");

@@ -4,7 +4,7 @@ import { batchRow, checkConsistency, parseCsv, productRow } from "../../prisma/s
 
 const HEADER = "nafdac_no,brand_name,generic_name,strength,dosage_form,manufacturer,status,source";
 
-describe("parseCsv — products", () => {
+describe("parseCsv, products", () => {
   it("normalises numbers and turns empty optional cells into null", () => {
     const { rows, errors } = parseCsv("p.csv", `${HEADER}\na4 – 1234,Coartem,Artemether/Lumefantrine,,Tablet,,active,greenbook\n`, productRow);
     expect(errors).toEqual([]);
@@ -46,7 +46,7 @@ A4-1234,Coartem,Generic,,,Lab #2 Ltd,active,greenbook
   });
 });
 
-describe("parseCsv — batches", () => {
+describe("parseCsv, batches", () => {
   const header = "nafdac_no,batch_no,mfg_date,expiry_date,recalled,recall_note,source";
 
   it("parses month expiries to the end of the month and recalled flags", () => {

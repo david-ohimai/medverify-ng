@@ -1,4 +1,4 @@
-# Mobile build guide — MedVerify NG Flutter app
+# Mobile build guide, MedVerify NG Flutter app
 
 > Audience: me. Every command, in order, to run the app in `mobile/`, rebuild it from scratch, and explain its architecture.
 > Part A runs what's built. Part B rebuilds it step by step. Part C is the architecture and the rules the code follows.
@@ -15,7 +15,7 @@ Your global Flutter (`C:\Dev\flutter`, 3.38.5) is used by Laba and other project
 
 | File | Effect |
 |---|---|
-| `mobile/.fvmrc` | `{"flutter": "3.47.7"}` — FVM uses this version inside `mobile/` |
+| `mobile/.fvmrc` | `{"flutter": "3.47.7"}`, FVM uses this version inside `mobile/` |
 | `.vscode/settings.json` (repo root) | `dart.flutterSdkPath` → `C:\Users\David\fvm\versions\3.47.7`, **this workspace only** |
 | `.vscode/launch.json` | Run configs "mobile (dev)" that pass `--dart-define-from-file=env/dev.json` and run the task below first |
 | `.vscode/tasks.json` | "adb reverse API port": forwards the phone's port 3000 to the laptop before every F5 launch (see A3) |
@@ -33,7 +33,7 @@ The rest of this guide writes `fvm flutter`. In Git Bash with the alias, type `f
 
 ---
 
-## Part A — Run it
+## Part A, Run it
 
 ### A1. One-time machine setup
 
@@ -75,14 +75,14 @@ cp env/dev.example.json env/dev.json
 
 | Running on | `API_URL` in `env/dev.json` | Extra step |
 |---|---|---|
-| Android **emulator** | `http://10.0.2.2:3000/api/v1` (the example's default) | — (10.0.2.2 is the emulator's name for your laptop; it does **not** exist on a real phone) |
-| Android **phone over USB** (what this laptop uses: Xiaomi 2209116AG) | `http://localhost:3000/api/v1` | `adb reverse tcp:3000 tcp:3000` — forwards the phone's port 3000 to the laptop |
+| Android **emulator** | `http://10.0.2.2:3000/api/v1` (the example's default) |, (10.0.2.2 is the emulator's name for your laptop; it does **not** exist on a real phone) |
+| Android **phone over USB** (what this laptop uses: Xiaomi 2209116AG) | `http://localhost:3000/api/v1` | `adb reverse tcp:3000 tcp:3000`, forwards the phone's port 3000 to the laptop |
 | Phone on the **same Wi-Fi** | `http://<laptop LAN IP>:3000/api/v1` | Find the IP with `ipconfig` (PowerShell); allow Node through Windows Firewall |
-| A hosted server (not used — the MVP runs locally) | `https://<host>/api/v1` | Use `env/prod.json` for release builds |
+| A hosted server (not used, the MVP runs locally) | `https://<host>/api/v1` | Use `env/prod.json` for release builds |
 
-Not sure whether you're on an emulator or a phone? `adb devices -l` — a real phone shows its model (`model:2209116AG`), an emulator shows `emulator-5554`.
+Not sure whether you're on an emulator or a phone? `adb devices -l`, a real phone shows its model (`model:2209116AG`), an emulator shows `emulator-5554`.
 
-**About `adb reverse`:** the rule lives in adb, not on the phone, and it is **lost whenever adb restarts or the phone is unplugged** — `flutter run` can restart adb. Launching with **F5 → "mobile (dev)"** in VS Code re-adds it automatically (`.vscode/tasks.json`). From a terminal, run it again before `flutter run`:
+**About `adb reverse`:** the rule lives in adb, not on the phone, and it is **lost whenever adb restarts or the phone is unplugged**, `flutter run` can restart adb. Launching with **F5 → "mobile (dev)"** in VS Code re-adds it automatically (`.vscode/tasks.json`). From a terminal, run it again before `flutter run`:
 
 ```bash
 adb reverse tcp:3000 tcp:3000
@@ -92,7 +92,7 @@ adb shell curl -s http://localhost:3000/health/live                  # from the 
 
 (`adb` lives in `%LOCALAPPDATA%\Android\Sdk\platform-tools` if it isn't on your PATH.)
 
-`API_URL` is compiled into the app, so after editing `env/dev.json` **stop the app and run it again** — hot reload and hot restart keep the old URL.
+`API_URL` is compiled into the app, so after editing `env/dev.json` **stop the app and run it again**, hot reload and hot restart keep the old URL.
 
 Plain `http://` only works in **debug** builds. Release builds refuse it (see Part C, security).
 
@@ -114,8 +114,8 @@ The banner means silent registration failed. The debug console tells you why:
 
 | Banner | Console | Cause | Fix |
 |---|---|---|---|
-| "The server is taking too long" | `✕ connectionTimeout` after ~15 s | The address doesn't exist from where the app runs — usually `10.0.2.2` on a **real phone** | Use the right `API_URL` for your device (A3), then stop and re-run the app |
-| "No internet connection" | `✕ connectionError` after ~20 ms | Nothing is listening at that address: the `adb reverse` rule is gone, or the server isn't running | `adb reverse tcp:3000 tcp:3000` (and `npm run dev` in `server/`), then tap **Retry** — no rebuild needed |
+| "The server is taking too long" | `✕ connectionTimeout` after ~15 s | The address doesn't exist from where the app runs, usually `10.0.2.2` on a **real phone** | Use the right `API_URL` for your device (A3), then stop and re-run the app |
+| "No internet connection" | `✕ connectionError` after ~20 ms | Nothing is listening at that address: the `adb reverse` rule is gone, or the server isn't running | `adb reverse tcp:3000 tcp:3000` (and `npm run dev` in `server/`), then tap **Retry**, no rebuild needed |
 
 Retry works once the network path is fixed; only a changed `API_URL` needs a re-run.
 
@@ -139,7 +139,7 @@ adb install -r build/app/outputs/flutter-apk/app-release.apk
 
 ---
 
-## Part B — Build it from scratch, step by step
+## Part B, Build it from scratch, step by step
 
 ### B1. Project and SDK pin
 
@@ -167,7 +167,7 @@ fvm flutter pub add image_picker geolocator url_launcher camera flutter_animate 
 
 | Package | Used for |
 |---|---|
-| `flutter_riverpod` 3 | State and dependency injection — every controller and service is a provider |
+| `flutter_riverpod` 3 | State and dependency injection, every controller and service is a provider |
 | `go_router` 18 | Routing, the onboarding redirect, `StatefulShellRoute` for the five tabs |
 | `dio` | HTTP, interceptors (auth, safe logging) |
 | `equatable` | Value equality for states, entities and failures (fewer rebuilds) |
@@ -197,7 +197,7 @@ lib/
 ├── main.dart              # void main() => bootstrap();
 ├── bootstrap.dart         # composition root: prefs, glass shaders, ProviderScope + overrides
 ├── app.dart               # MaterialApp.router, theme mode, silent registration kick-off
-├── core/                  # no feature imports — everything here is reusable
+├── core/                  # no feature imports, everything here is reusable
 │   ├── config/env.dart                 # API_URL from --dart-define, validated at startup
 │   ├── constants/                      # endpoints, storage keys, app constants, AppLanguage
 │   ├── errors/failure.dart             # sealed Failure hierarchy (safe messages)
@@ -212,37 +212,37 @@ lib/
 ├── shared/widgets/        # design system: backdrop, page layout, AI insight card, pills, tiles, empty/error, shimmer
 └── features/<feature>/
     ├── data/              # datasources (remote/local), models (JSON ↔ entity), repository implementations
-    ├── domain/            # entities, repository interfaces — pure Dart
+    ├── domain/            # entities, repository interfaces, pure Dart
     └── presentation/      # providers (controllers), screens, widgets
 ```
 
 ### B4. Core, in this order
 
-1. `core/config/env.dart` — `String.fromEnvironment('API_URL')`; `Env.validate()` throws on startup if it's missing, malformed, or `http://` in a release build.
-2. `core/result/result.dart` and `core/errors/failure.dart` — sealed types, so `switch` must handle every case.
-3. `core/network/api_envelope.dart` — parses the server's `{ success, message, statusCode, code, data, errors, meta }`.
-4. `core/errors/failure_mapper.dart` — timeouts → `TimeoutFailure`, no connection → `NetworkFailure`, every Dio error type (incl. `transformTimeout`) maps to a failure, 401 keeps the server `code` (`TOKEN_EXPIRED`, `TOKEN_REVOKED`…), 422 keeps field errors, 429 reads `Retry-After`, 5xx never shows server text.
-5. `core/network/api_client.dart` — `get/post/patch/delete<T>(path, parse:)` → `Result<T>`; plus `upload` (multipart), `bytes` (images) and `stream` (**Server-Sent Events**, parsed by the small `core/network/sse.dart`; error responses are read so the server's message still reaches the user). Nothing above it sees Dio or JSON.
-6. `core/network/auth_token_source.dart` + `interceptors/auth_interceptor.dart` — adds the token; on a 401 with a token code (or any 401 on a stream, whose body can't be read yet), asks the session to recover once and replays the request with a Dio that has no auth interceptor (no loops). A multipart body is cloned before the replay.
-6b. `core/location/location_service.dart` — a coarse position or null; never throws, never delays a scan by more than 5 s.
-7. `core/network/interceptors/safe_log_interceptor.dart` + `core/logging/app_log.dart` — debug-only console log of every request and response (method, path, status, time, masked and shortened body) and of every streamed SSE event, via `debugPrint`, so it shows in the VS Code **Debug Console**, the `flutter run` terminal and `adb logcat -s flutter`. Tokens, PIN and install id are masked at any depth; nothing is printed in release builds. Lines start with `[MedVerify] 🌐` (API), `📡` (stream) or `ℹ️` (location, camera).
-8. `core/storage/*` — `SecureStore` (Keychain item `first_unlock_this_device`: not synced to iCloud), `PreferencesStore` (synchronous after startup).
-9. `core/theme/*` — `AppPalette` holds what `ColorScheme` can't (action orange, verdict colours, AI gradient, shimmer, backdrop tints); `AppTheme.light()/dark()` from one recipe; `ThemeModeController` persists the choice.
-10. `core/router/app_router.dart` — created once; redirects to onboarding until it's done; `refreshListenable` bumps when the flag changes.
+1. `core/config/env.dart`, `String.fromEnvironment('API_URL')`; `Env.validate()` throws on startup if it's missing, malformed, or `http://` in a release build.
+2. `core/result/result.dart` and `core/errors/failure.dart`, sealed types, so `switch` must handle every case.
+3. `core/network/api_envelope.dart`, parses the server's `{ success, message, statusCode, code, data, errors, meta }`.
+4. `core/errors/failure_mapper.dart`, timeouts → `TimeoutFailure`, no connection → `NetworkFailure`, every Dio error type (incl. `transformTimeout`) maps to a failure, 401 keeps the server `code` (`TOKEN_EXPIRED`, `TOKEN_REVOKED`…), 422 keeps field errors, 429 reads `Retry-After`, 5xx never shows server text.
+5. `core/network/api_client.dart`, `get/post/patch/delete<T>(path, parse:)` → `Result<T>`; plus `upload` (multipart), `bytes` (images) and `stream` (**Server-Sent Events**, parsed by the small `core/network/sse.dart`; error responses are read so the server's message still reaches the user). Nothing above it sees Dio or JSON.
+6. `core/network/auth_token_source.dart` + `interceptors/auth_interceptor.dart`, adds the token; on a 401 with a token code (or any 401 on a stream, whose body can't be read yet), asks the session to recover once and replays the request with a Dio that has no auth interceptor (no loops). A multipart body is cloned before the replay.
+6b. `core/location/location_service.dart`, a coarse position or null; never throws, never delays a scan by more than 5 s.
+7. `core/network/interceptors/safe_log_interceptor.dart` + `core/logging/app_log.dart`, debug-only console log of every request and response (method, path, status, time, masked and shortened body) and of every streamed SSE event, via `debugPrint`, so it shows in the VS Code **Debug Console**, the `flutter run` terminal and `adb logcat -s flutter`. Tokens, PIN and install id are masked at any depth; nothing is printed in release builds. Lines start with `[MedVerify] 🌐` (API), `📡` (stream) or `ℹ️` (location, camera).
+8. `core/storage/*`, `SecureStore` (Keychain item `first_unlock_this_device`: not synced to iCloud), `PreferencesStore` (synchronous after startup).
+9. `core/theme/*`, `AppPalette` holds what `ColorScheme` can't (action orange, verdict colours, AI gradient, shimmer, backdrop tints); `AppTheme.light()/dark()` from one recipe; `ThemeModeController` persists the choice.
+10. `core/router/app_router.dart`, created once; redirects to onboarding until it's done; `refreshListenable` bumps when the flag changes.
 
 ### B5. Features
 
 | Feature | What's in it |
 |---|---|
 | `session` | Silent registration and tokens. `SessionRepositoryImpl` registers on first launch (install id + platform + version + language), stores tokens, and implements `AuthTokenSource`. Every session operation (launch registration, recovery after a 401) runs **one at a time** through a small queue, so a 401 during first-launch registration waits for it instead of registering a second device; **one refresh in flight** is shared by every request that got a 401, and a late 401 for an already-replaced token just reuses the new one; a rejected refresh token clears the session and re-registers; offline keeps tokens. The install id is created once and shared by concurrent callers. `SessionController` (AsyncNotifier) runs it at launch without blocking the UI. |
-| `splash` | Launch splash in the Ridify style: the brand navy (the native Android launch screen uses the same colour, so there's no flash), the shield logo rising in, **"MedVerify" written letter by letter** (75 ms apart, "Med" white, "Verify" orange), an "NG" badge, a light sweep across the name, then the tagline — all declarative with `flutter_animate`. `splashDoneProvider` ends it after 2.8 s (the test guarantees ≤ 3 s), and the router moves on to onboarding or Home while registration runs in the background. |
+| `splash` | Launch splash in the Ridify style: the brand navy (the native Android launch screen uses the same colour, so there's no flash), the shield logo rising in, **"MedVerify" written letter by letter** (75 ms apart, "Med" white, "Verify" orange), an "NG" badge, a light sweep across the name, then the tagline, all declarative with `flutter_animate`. `splashDoneProvider` ends it after 2.8 s (the test guarantees ≤ 3 s), and the router moves on to onboarding or Home while registration runs in the background. |
 | `onboarding` | 3 slides, language picker, "never 100% safe" promise. `OnboardingController` owns page + language; the screen only owns its `PageController`. |
 | `shell` | `AppShell` = `GlassScaffold` + `AppBackdrop` + `AppTabBar` (`GlassTabBar.bottom` with a sliding glass pill and a `GlassBadge` for alerts). |
-| `home` | Greeting (from `greetingProvider` + injectable clock), AI Insight glass card with **3 random safety tips** from a pool of 14 (facts from the official WHO / NAFDAC documents; a new set every time Home comes into view — from another tab or back from any screen — via a listener on the router; `randomProvider` is injectable for tests), quick actions (scan, type a number, ask, alerts), the 3 most recent checks (refreshed in the background, see History), offline banner with retry. |
-| `scan` | **Live scanner** (`ScannerScreen`, opened by the Scan tab and every "Scan a pack" button): full-screen camera preview with a QR-style scan box (dimmed surround, corner brackets, sweeping line), torch toggle, shutter, gallery and "type it" shortcuts. `ScannerController` owns the `camera` plugin's controller — opened with the screen, released when the app is hidden or the screen closes, reopened when the app returns. The Scan tab page itself lists the same options for when the scanner is closed. **Then**: `CaptureController` uploads the photo with the optional location → **progress screen** follows `GET /scans/:id/events` (SSE) in `ScanProgressController`: each pipeline step ticks and the active one shimmers; if the stream drops it polls `GET /scans/:id` every 1.5 s → **verdict screen**: coloured verdict, risk ring, confidence, **Listen** card (verdict read aloud in English / Pidgin / Hausa / Yoruba / Igbo: `ListenController` fetches `/scans/:id/speech` once per language and `TtsService` speaks it with the phone's voices, falling back to showing the text when the voice isn't installed), pharmacist review banner, demo notice, **yours vs genuine** (your photo beside the reference photo), what was read, every signal with its weight, "Ask MedVerify about this". **Manual check** form: fields report to `ManualCheckController`; server field errors appear on the right field. |
+| `home` | Greeting (from `greetingProvider` + injectable clock), AI Insight glass card with **3 random safety tips** from a pool of 14 (facts from the official WHO / NAFDAC documents; a new set every time Home comes into view, from another tab or back from any screen, via a listener on the router; `randomProvider` is injectable for tests), quick actions (scan, type a number, ask, alerts), the 3 most recent checks (refreshed in the background, see History), offline banner with retry. |
+| `scan` | **Live scanner** (`ScannerScreen`, opened by the Scan tab and every "Scan a pack" button): full-screen camera preview with a QR-style scan box (dimmed surround, corner brackets, sweeping line), torch toggle, shutter, gallery and "type it" shortcuts. `ScannerController` owns the `camera` plugin's controller, opened with the screen, released when the app is hidden or the screen closes, reopened when the app returns. The Scan tab page itself lists the same options for when the scanner is closed. **Then**: `CaptureController` uploads the photo with the optional location → **progress screen** follows `GET /scans/:id/events` (SSE) in `ScanProgressController`: each pipeline step ticks and the active one shimmers; if the stream drops it polls `GET /scans/:id` every 1.5 s → **verdict screen**: coloured verdict, risk ring, confidence, **Listen** card (verdict read aloud in English / Pidgin / Hausa / Yoruba / Igbo: `ListenController` fetches `/scans/:id/speech` once per language and `TtsService` speaks it with the phone's voices, falling back to showing the text when the voice isn't installed), pharmacist review banner, demo notice, **yours vs genuine** (your photo beside the reference photo), what was read, every signal with its weight, "Ask MedVerify about this". **Manual check** form: fields report to `ManualCheckController`; server field errors appear on the right field. |
 | `history` | Every check, newest first, infinite scroll (`HistoryController.loadMore`), tap → verdict. Refreshes **in the background** with no skeleton (`HistoryController.refresh`): when Home or History comes into view, when the app returns to the foreground, after a check finishes, every 5 s while a scan is still running and every minute while one awaits review. Alerts do the same (`NearbyAlertsController.refresh`, keeping the chosen place), plus every 3 minutes (`liveRefreshProvider`). Pull to refresh still works. |
 | `alerts` | Warnings within 50 km from `/alerts/nearby`: your coarse location if already allowed (no prompt at launch), "Use my location", or a city. "Use my location" shows progress and, when it can't, says why (Location off → **Turn on** opens location settings; blocked → **Settings**; no fix → pick a city). Cards show severity / recalled batch, product, batch, distance, and demo / simulated-data labels. The tab badge counts **unseen** alerts only: opening the Alerts tab marks them seen (saved across launches), and a hotspot that grows (new alert title) counts again. |
-| `assistant` | **Ask MedVerify** (full screen): suggested questions, a composer, and the SSE stream from `/assistant/messages` rendered live — a shimmering chip per tool call ("Searching WHO & NAFDAC guidance"…) that ticks when it finishes, the answer (bold and bullets only), and tappable official sources. `ChatController` keeps the conversation id for follow-ups. |
+| `assistant` | **Ask MedVerify** (full screen): suggested questions, a composer, and the SSE stream from `/assistant/messages` rendered live, a shimmering chip per tool call ("Searching WHO & NAFDAC guidance"…) that ticks when it finishes, the answer (bold and bullets only), and tappable official sources. `ChatController` keeps the conversation id for follow-ups. |
 | `settings` | Tabs: **Preferences** (theme, language), **Regulator** (see below), **About** (version loads with a shimmer). |
 | `regulator` | **Regulator mode** for NAFDAC officers and pharmacists. Settings → Regulator → PIN (digits only, obscured) → `POST /devices/me/elevate`; the server returns tokens with the new role (old ones are revoked at once), and `DeviceRoleController` hands them to the session (`adoptTokens`, inside its one-at-a-time queue). The role shown comes from `GET /devices/me`, so the app never trusts itself: offline counts as public, and every regulator endpoint is checked by the server. When on: a **Regulator** tile on Home, role-specific "Ask the data" suggestions in the assistant (regulator tools are switched on by the token), and three screens: **dashboard** (24 h / 7 d / 30 d stat cards, review queue summary with the reviewer agreement rate, hotspots with their AI alerts and recommended actions), **review queue** (waiting / in progress / decided; priority, reasons, due or overdue, escalation), and **review** (the scanned pack beside the genuine pack, what the AI read with its confidence, every signal, claim for an hour, then agree / disagree with a verdict / inconclusive, plus a note for the user). "Leave regulator mode" demotes the device. |
 
@@ -306,7 +306,7 @@ fvm flutter test
 
 ---
 
-## Part C — Architecture and the rules the code follows
+## Part C, Architecture and the rules the code follows
 
 ### Data flow
 
@@ -316,7 +316,7 @@ Widget ──watch──► Controller (Notifier / AsyncNotifier) ──► Repo
                                                                                           └─ returns Result<T> (never throws)
 ```
 
-### Rule 1 — No logic in the UI
+### Rule 1, No logic in the UI
 
 Widgets render state and forward taps; they decide nothing.
 - Greeting by time of day → `greetingProvider` (with an injectable `clockProvider`, so it's testable).
@@ -325,34 +325,34 @@ Widgets render state and forward taps; they decide nothing.
 - Registration, refresh, retry → `SessionRepositoryImpl` / `SessionController`.
 - Error text → `Failure.message`, chosen in `failure_mapper.dart`, not in widgets.
 
-### Rule 2 — No `setState`
+### Rule 2, No `setState`
 
 There is **no `setState` anywhere** (`grep -r setState lib` returns nothing). State lives in Riverpod controllers. The only `StatefulWidget` is `OnboardingScreen`, and only to create and dispose its `PageController`. The page index itself is in the controller, and the `PageView` follows it through `ref.listen`.
 
-### Rule 3 — No unnecessary rebuilds
+### Rule 3, No unnecessary rebuilds
 
 | Technique | Where |
 |---|---|
-| `ref.watch(provider.select(...))` — rebuild only when that field changes | Onboarding footer (page only), language picker (language only), connection banner (error only) |
+| `ref.watch(provider.select(...))`, rebuild only when that field changes | Onboarding footer (page only), language picker (language only), connection banner (error only) |
 | Small `ConsumerWidget`s at the leaves; parent screens stay `StatelessWidget` | `HomeScreen` sections, `AppTabBar` (only it watches the alert count), settings sections |
 | `ref.listen` instead of `watch` for side effects | `MedVerifyApp` starts registration without rebuilding the app; onboarding animates the `PageView` |
 | Router created once; redirect uses `ref.read` + `refreshListenable` | `app_router.dart` |
 | Themes built once (`static final`) | `app.dart` |
 | `const` constructors everywhere they're possible | all widgets |
 | `RepaintBoundary` around constantly animating/painted layers | shimmer sweep, mesh backdrop |
-| `MediaQuery.sizeOf` instead of `MediaQuery.of` | `context_x.dart` — keyboard opening doesn't rebuild width-based layouts |
+| `MediaQuery.sizeOf` instead of `MediaQuery.of` | `context_x.dart`, keyboard opening doesn't rebuild width-based layouts |
 | `Equatable` states | Riverpod 3 compares with `==`; equal states don't notify |
 | `StatefulShellRoute.indexedStack` | Tabs keep their state; switching tabs doesn't rebuild them |
 
-### Rule 4 — Loading is always a shimmer
+### Rule 4, Loading is always a shimmer
 
 `AsyncValueView` maps loading → a skeleton shaped like the content (`AppShimmer` + `ShimmerBox/Line/Circle`, colours from the theme so dark mode works), error → `ErrorView` with retry, data → content. No bare spinners.
 
-### Rule 5 — Liquid glass on floating chrome only
+### Rule 5, Liquid glass on floating chrome only
 
 Glass: tab bar, AI Insight card, onboarding icon tiles (later: app bar, sheets, verdict overlay). Solid: list cards. Every screen sits on `AppBackdrop` so the glass has colour to refract. Glass follows the app's theme through `brightnessResolver: Theme.maybeBrightnessOf`.
 
-### Rule 6 — Security
+### Rule 6, Security
 
 | Threat | Defence | Where |
 |---|---|---|
@@ -360,7 +360,7 @@ Glass: tab bar, AI Insight card, onboarding icon tiles (later: app bar, sheets, 
 | Tokens copied via backups / device transfer | `allowBackup=false`, data extraction rules exclude everything | Android manifest + `data_extraction_rules.xml` |
 | Traffic interception | HTTPS-only release builds (Android network config, iOS ATS), system CAs only, `Env.validate()` refuses `http://` in release | platform configs, `env.dart` |
 | Secrets in logs | Logging only in debug; tokens/PIN/install id masked | `safe_log_interceptor.dart` |
-| Secrets in the app binary | None exist — no API keys ship in the app; LLM keys stay on the server | — |
+| Secrets in the app binary | None exist, no API keys ship in the app; LLM keys stay on the server |, |
 | Stolen refresh token | Server rotates refresh tokens and revokes the chain on reuse; app shares one refresh in flight so it never trips that itself | `session_repository_impl.dart` |
 | Reverse engineering | `--obfuscate --split-debug-info` on release builds | A6 |
 | Text that breaks layouts | Text scaling clamped at 1.3× (still accessible) | `app.dart` |

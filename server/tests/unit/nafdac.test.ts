@@ -15,7 +15,7 @@ describe("normalizeNafdacNo", () => {
     ["nafdac no. 04-5678", "04-5678"],
     ["A4--1234", "A4-1234"],
     ["NAFDAC No – A4-1234", "A4-1234"], // en dash as the separator after the prefix
-    ["NAFDAC No — A4–1234", "A4-1234"],
+    ["NAFDAC No — A4–1234", "A4-1234"], // em dash: test input as OCR reads it, keep
   ])("%j → %s", (raw, expected) => {
     const normalized = normalizeNafdacNo(raw);
     expect(normalized).toBe(expected);

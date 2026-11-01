@@ -6,7 +6,7 @@ import { MAX_IMAGE_BYTES } from "../lib/image.js";
 const MULTER_ERRORS: Record<string, () => AppError> = {
   LIMIT_FILE_SIZE: () => new AppError(`Photo is too large (max ${MAX_IMAGE_BYTES / 1024 / 1024} MB)`, 413, "PAYLOAD_TOO_LARGE"),
   LIMIT_FILE_COUNT: () => new BadRequestError("Send one photo per scan"),
-  LIMIT_UNEXPECTED_FILE: () => new BadRequestError('Unexpected file field — send the photo as "image"'),
+  LIMIT_UNEXPECTED_FILE: () => new BadRequestError('Unexpected file field, send the photo as "image"'),
   LIMIT_FIELD_COUNT: () => new BadRequestError("Too many form fields"),
   LIMIT_PART_COUNT: () => new BadRequestError("Too many form parts"),
 };

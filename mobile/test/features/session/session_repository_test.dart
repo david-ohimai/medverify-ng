@@ -100,7 +100,7 @@ void main() {
       },
     );
 
-    test('later launches: does nothing — no network call at startup', () async {
+    test('later launches: does nothing, no network call at startup', () async {
       storeTokensInMemory(access: 'old-access', refresh: 'old-refresh');
 
       final result = await repository.ensureRegistered();
@@ -142,7 +142,7 @@ void main() {
       verify(() => local.saveTokens(_newPair)).called(1);
     });
 
-    test('concurrent 401s share ONE refresh — the refresh token is used once', () async {
+    test('concurrent 401s share ONE refresh, the refresh token is used once', () async {
       storeTokensInMemory(access: 'old-access', refresh: 'old-refresh');
       final gate = Completer<Result<TokenPair>>();
       when(() => remote.refresh('old-refresh')).thenAnswer((_) => gate.future);

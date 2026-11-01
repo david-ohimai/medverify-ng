@@ -21,7 +21,7 @@ const label = (overrides: Partial<LabelRead> = {}): LabelRead => ({
   ...overrides,
 });
 
-describe("factsFromLabel — what the AI read becomes registry facts", () => {
+describe("factsFromLabel, what the AI read becomes registry facts", () => {
   it("normalises every field the same way a typed-in check does", () => {
     expect(factsFromLabel(label())).toEqual({
       nafdacNo: "X9-0001",
@@ -31,7 +31,7 @@ describe("factsFromLabel — what the AI read becomes registry facts", () => {
     });
   });
 
-  it("ignores fields the model wasn't sure of — no guessing", () => {
+  it("ignores fields the model wasn't sure of, no guessing", () => {
     const facts = factsFromLabel(label({ nafdac_no: field("X9-0001", 0.4), batch_no: field("DQ2401", 0.59) }));
     expect(facts.nafdacNo).toBeNull();
     expect(facts.batchNo).toBeNull();

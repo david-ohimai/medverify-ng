@@ -1,6 +1,6 @@
 /**
  * Downloads the knowledge base from its official sources (kb/sources.json)
- * into kb/documents/<id>.md — main content only, as Markdown, with its URL,
+ * into kb/documents/<id>.md, main content only, as Markdown, with its URL,
  * publisher, retrieval date and a content hash in the front matter.
  *
  *   npm run kb:fetch            every source
@@ -119,7 +119,7 @@ async function fetchSource(source: z.infer<typeof manifestSchema>["sources"][num
 
   const body = clean(turndown.turndown(article.content));
   const words = body.split(/\s+/).length;
-  if (words < MIN_WORDS) throw new Error(`only ${words} words extracted — check the page`);
+  if (words < MIN_WORDS) throw new Error(`only ${words} words extracted, check the page`);
 
   const title = (article.title ?? source.topic).replace(/\s+/g, " ").trim();
   const sha256 = createHash("sha256").update(body).digest("hex");

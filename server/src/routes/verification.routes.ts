@@ -21,7 +21,7 @@ scanRoutes.use(authenticate, apiLimiter);
  *     tags: [Verification]
  *     summary: Check a typed-in NAFDAC number (and optionally name, batch, expiry) against the registry
  *     description: |
- *       Registry rules only — no AI, no photo. Returns a verdict (likely_genuine / suspicious /
+ *       Registry rules only, no AI, no photo. Returns a verdict (likely_genuine / suspicious /
  *       high_risk / unregistered), a 0–100 risk score, a confidence level and the signals that
  *       explain it. Saved to the device's scan history.
  *     security: [{ bearerAuth: [] }]
@@ -34,7 +34,7 @@ scanRoutes.use(authenticate, apiLimiter);
  *             required: [nafdacNo]
  *             properties:
  *               nafdacNo: { type: string, example: "A4-1234", description: "Any printed form; normalised" }
- *               productName: { type: string, example: "Coartem", description: "Name on the pack — catches a real number on the wrong product" }
+ *               productName: { type: string, example: "Coartem", description: "Name on the pack, catches a real number on the wrong product" }
  *               batchNo: { type: string, example: "LT2391" }
  *               expiry: { type: string, example: "2027-08", description: "YYYY-MM as printed, or YYYY-MM-DD" }
  *               lat: { type: number, example: 6.4553, description: "Optional, with lng. Rounded to ~1 km before storing" }
@@ -81,7 +81,7 @@ scanRoutes.get("/", validate(listScansSchema), verificationController.listScans)
  *       Returns **202** at once with a scanId. The photo is validated by decoding it (JPEG, PNG,
  *       WebP or HEIC; at least 480 px on the short side; max 8 MB), re-encoded without metadata,
  *       and queued. Follow `eventsUrl` (SSE) for live progress, or poll `statusUrl`.
- *       The photo is deleted once the worker has read it — unless the scan is queued for human review,
+ *       The photo is deleted once the worker has read it, unless the scan is queued for human review,
  *       which keeps it only until the decision (at most 7 days).
  *       Limits: 10 per minute and 60 per day per device.
  *     security: [{ bearerAuth: [] }]

@@ -55,7 +55,7 @@
       ],
       "citations": 0,
       "ms": 1890,
-      "answer": "This check uses fictional demo data and does not reflect a real NAFDAC registration or product. \n\nHowever, according to the test records for NAFDAC number **X9-0001** and batch **DQ2310**:\n* **Verdict:** High risk — do not take it.\n* **Reason:** Batch DQ2310 has been recalled (Demo recall: failed dissolution test).\n* **Advice:** Don't take this medicine. Show it to a pharmacist or report it to NAFDAC. \n\nRemember that fakes often copy real numbers, and this result is based on made-up test data."
+      "answer": "This check uses fictional demo data and does not reflect a real NAFDAC registration or product. \n\nHowever, according to the test records for NAFDAC number **X9-0001** and batch **DQ2310**:\n* **Verdict:** High risk, do not take it.\n* **Reason:** Batch DQ2310 has been recalled (Demo recall: failed dissolution test).\n* **Advice:** Don't take this medicine. Show it to a pharmacist or report it to NAFDAC. \n\nRemember that fakes often copy real numbers, and this result is based on made-up test data."
     },
     {
       "id": "batch-recalled",
@@ -100,7 +100,7 @@
       ],
       "citations": 0,
       "ms": 13810,
-      "answer": "Based on the 7-day hotspot data, inspectors should prioritize:\n\n1. **Idumota market, Lagos** — high severity. 18 high-risk scans of recalled Demoquine batch DQ2310. Recall involved; collect samples and inspect stalls selling this batch.\n2. **Bridgehead market, Onitsha** — high severity. 13 flagged scans of Curamax batch CX0001 carrying unregistered NAFDAC number X9-0999. Inspect stalls and collect samples for lab testing.\n3. **Sabon Gari market, Kano** — medium severity. 8 scans of batch PM2402 with NAFDAC number X9-0001 printed on the wrong product. Verify product registration details at market stalls.\n\nNote: these results include simulated pilot data (demo records marked X9-)."
+      "answer": "Based on the 7-day hotspot data, inspectors should prioritize:\n\n1. **Idumota market, Lagos**, high severity. 18 high-risk scans of recalled Demoquine batch DQ2310. Recall involved; collect samples and inspect stalls selling this batch.\n2. **Bridgehead market, Onitsha**, high severity. 13 flagged scans of Curamax batch CX0001 carrying unregistered NAFDAC number X9-0999. Inspect stalls and collect samples for lab testing.\n3. **Sabon Gari market, Kano**, medium severity. 8 scans of batch PM2402 with NAFDAC number X9-0001 printed on the wrong product. Verify product registration details at market stalls.\n\nNote: these results include simulated pilot data (demo records marked X9-)."
     },
     {
       "id": "off-topic",

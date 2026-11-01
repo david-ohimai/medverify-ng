@@ -50,7 +50,7 @@ export function verifyAccessToken(token: string): AccessTokenClaims {
   return { sub: payload.sub, role: payload.role, ver: payload.ver as number };
 }
 
-/** Seconds until an access token expires — sent to the app as `expiresIn`. */
+/** Seconds until an access token expires, sent to the app as `expiresIn`. */
 export function accessTokenTtlSeconds(): number {
   const match = /^(\d+)([smhd])$/.exec(config.ACCESS_TOKEN_TTL);
   const amount = Number(match?.[1] ?? 15);

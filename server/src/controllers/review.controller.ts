@@ -25,7 +25,7 @@ export const reviewController = {
     sendSuccess(res, 200, "Review", await reviewService.get(id));
   },
 
-  /** The pack photo — never cached anywhere: it is deleted when the review is decided. */
+  /** The pack photo, never cached anywhere: it is deleted when the review is decided. */
   async image(req: Request, res: Response): Promise<void> {
     const { id } = req.validated.params as ReviewParams;
     const image = await reviewService.image(id);

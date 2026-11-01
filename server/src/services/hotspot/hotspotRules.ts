@@ -11,9 +11,9 @@ import type { ClusterRow } from "../../repositories/hotspot.repository.js";
 const SEVERITY_RANK: Record<HotspotSeverity, number> = { low: 0, medium: 1, high: 2 };
 
 /**
- * high   — a recalled batch is involved, or ≥ 5 high-risk scans, or ≥ 10 flagged scans
- * medium — ≥ 5 flagged scans, or any high-risk scan / unregistered number in it
- * low    — anything else (3–4 suspicious scans)
+ * high  , a recalled batch is involved, or ≥ 5 high-risk scans, or ≥ 10 flagged scans
+ * medium, ≥ 5 flagged scans, or any high-risk scan / unregistered number in it
+ * low   , anything else (3–4 suspicious scans)
  */
 export function severityFor(cluster: Pick<ClusterRow, "recallInvolved" | "highRiskCount" | "scanCount" | "unregisteredCount" | "maxRiskScore">): HotspotSeverity {
   if (cluster.recallInvolved || cluster.highRiskCount >= 5 || cluster.scanCount >= 10) return "high";
@@ -78,7 +78,7 @@ export function hasGrown(previous: Pick<StoredHotspot, "scanCount" | "severity">
   return added >= 3 && added >= previous.scanCount / 2;
 }
 
-/** Everything the alert is written from — and the only thing the AI sees. */
+/** Everything the alert is written from, and the only thing the AI sees. */
 export interface AlertFacts {
   area: string | null;
   /** The product registered under the number, or null if the number isn't registered. */
@@ -124,7 +124,7 @@ export function alertFacts(
   };
 }
 
-/** The alert without AI — used when every provider is unavailable, so an alert is never missing. */
+/** The alert without AI, used when every provider is unavailable, so an alert is never missing. */
 export function templateAlert(facts: AlertFacts): { title: string; body: string; recommendedAction: string } {
   const what = facts.registered_product ?? facts.name_on_packs ?? (facts.nafdac_no ? `NAFDAC ${facts.nafdac_no}` : "a medicine");
   const batch = facts.batch_no ? ` batch ${facts.batch_no}` : "";

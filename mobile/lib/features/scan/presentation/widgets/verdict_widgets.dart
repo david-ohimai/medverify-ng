@@ -109,7 +109,7 @@ class _ConfidenceChip extends StatelessWidget {
     final (label, hint) = switch (confidence) {
       Confidence.high => ('High confidence', 'Clear evidence behind this result'),
       Confidence.medium => ('Medium confidence', 'Show it to a pharmacist if in doubt'),
-      Confidence.low => ('Low confidence', 'Not enough to be sure — check with a pharmacist'),
+      Confidence.low => ('Low confidence', 'Not enough to be sure, check with a pharmacist'),
     };
     return Row(
       children: [
@@ -179,7 +179,7 @@ class DemoNotice extends StatelessWidget {
           const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Text(
-              'Demo product — fictional test data, not a real NAFDAC registration.',
+              'Demo product, fictional test data, not a real NAFDAC registration.',
               style: context.text.bodyMedium,
             ),
           ),

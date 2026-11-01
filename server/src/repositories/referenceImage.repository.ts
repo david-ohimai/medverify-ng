@@ -29,7 +29,7 @@ export const referenceImageRepository = {
     return [...firstPerSide, ...rest].slice(0, limit).map((row) => ({ ...row, data: Buffer.from(row.data) }));
   },
 
-  /** Metadata only — for listing on a product. */
+  /** Metadata only, for listing on a product. */
   listForProduct(productId: string) {
     return prisma.referenceImage.findMany({
       where: { productId },

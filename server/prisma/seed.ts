@@ -8,7 +8,7 @@
  *
  * The CSVs are the source of truth: every row is validated first (nothing is
  * written if any row is bad), then in one transaction everything listed is
- * upserted in bulk and anything no longer listed is removed — so deleting a
+ * upserted in bulk and anything no longer listed is removed, so deleting a
  * row, or running with --no-demo after a normal seed, really takes it out.
  * Finally the registry cache is cleared. Safe to run any number of times.
  */
@@ -96,7 +96,7 @@ async function main(): Promise<void> {
   ];
 
   if (errors.length > 0) {
-    console.error(`\nSeed aborted — ${errors.length} problem(s), nothing was written:\n`);
+    console.error(`\nSeed aborted, ${errors.length} problem(s), nothing was written:\n`);
     for (const error of errors) console.error(`  - ${error}`);
     process.exitCode = 1;
     return;
@@ -105,7 +105,7 @@ async function main(): Promise<void> {
   // The CSVs replace the registry, so an empty load would empty it. Refuse.
   if (products.rows.length === 0) {
     console.error(
-      `\nSeed aborted — no products found in ${DATA_DIR}${includeDemo ? "" : " (demo files skipped by --no-demo)"}.` +
+      `\nSeed aborted, no products found in ${DATA_DIR}${includeDemo ? "" : " (demo files skipped by --no-demo)"}.` +
         "\nRefusing to remove every product from the registry.\n"
     );
     process.exitCode = 1;
@@ -150,7 +150,7 @@ async function main(): Promise<void> {
 /**
  * The built-in prompt of every AI task becomes a stored version. Existing
  * versions are never changed, and a task that already has an active version
- * keeps it — so re-seeding never undoes a prompt change made through the API.
+ * keeps it, so re-seeding never undoes a prompt change made through the API.
  */
 async function seedPrompts(): Promise<void> {
   for (const task of PROMPT_TASKS) {

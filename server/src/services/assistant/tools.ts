@@ -53,7 +53,7 @@ const tool = <S extends z.ZodObject>(definition: AssistantTool<S>) => definition
 const EVERYONE = ["public", "regulator"] as const;
 const REGULATORS = ["regulator"] as const;
 
-const demoNote = (source: string) => (source === "demo" ? "FICTIONAL DEMO RECORD — not a real NAFDAC registration" : undefined);
+const demoNote = (source: string) => (source === "demo" ? "FICTIONAL DEMO RECORD, not a real NAFDAC registration" : undefined);
 const dateOnly = (date: Date | null) => (date ? date.toISOString().slice(0, 10) : null);
 
 export const ASSISTANT_TOOLS = [
@@ -139,7 +139,7 @@ export const ASSISTANT_TOOLS = [
           confidence: check.assessment.confidence,
           headline,
           advice,
-          reasons: check.signals.map((signal) => signal.label + (signal.detail ? ` — ${signal.detail}` : "")),
+          reasons: check.signals.map((signal) => signal.label + (signal.detail ? `, ${signal.detail}` : "")),
         },
         summary: `${nafdacNo}: ${check.assessment.verdict} (${check.assessment.riskScore})`,
       };
@@ -148,7 +148,7 @@ export const ASSISTANT_TOOLS = [
 
   tool({
     name: "check_batch",
-    description: "Look up a batch number in our batch records: which product it belongs to, its expiry, and whether it has been recalled. Our batch records are incomplete — also search NAFDAC alerts with search_guidance.",
+    description: "Look up a batch number in our batch records: which product it belongs to, its expiry, and whether it has been recalled. Our batch records are incomplete, also search NAFDAC alerts with search_guidance.",
     roles: EVERYONE,
     schema: z.object({ batchNo: z.string().min(2).max(60), nafdacNo: z.string().max(60).optional() }),
     async run(args) {
@@ -159,7 +159,7 @@ export const ASSISTANT_TOOLS = [
       return {
         data:
           batches.length === 0
-            ? { batchNo, found: false, note: "Not in our batch records (they are incomplete — this alone is not a warning)." }
+            ? { batchNo, found: false, note: "Not in our batch records (they are incomplete, this alone is not a warning)." }
             : batches.map((b) => ({
                 batchNo: b.batchNo,
                 product: `${b.product.brandName} (${b.product.genericName})`,
@@ -279,7 +279,7 @@ export function toolParameters(schema: z.ZodObject): Record<string, unknown> {
 
 /**
  * Runs one tool call safely: unknown or forbidden tools and invalid
- * arguments become an error the model can read and correct — never an
+ * arguments become an error the model can read and correct, never an
  * exception, never a query.
  */
 export async function runTool(name: string, rawArgs: Record<string, unknown>, context: ToolContext): Promise<ToolOutcome & { ok: boolean; args: unknown }> {
@@ -290,7 +290,7 @@ export async function runTool(name: string, rawArgs: Record<string, unknown>, co
   const parsed = (definition.schema as z.ZodObject).safeParse(rawArgs);
   if (!parsed.success) {
     const issues = parsed.error.issues.map((i) => `${i.path.join(".") || "(args)"}: ${i.message}`).join("; ");
-    return { ok: false, args: rawArgs, data: { error: `Invalid arguments — ${issues}` }, summary: "invalid arguments" };
+    return { ok: false, args: rawArgs, data: { error: `Invalid arguments, ${issues}` }, summary: "invalid arguments" };
   }
   const outcome = await (definition.run as (args: unknown, context: ToolContext) => Promise<ToolOutcome>)(parsed.data, context);
   return { ok: true, args: parsed.data, ...outcome };

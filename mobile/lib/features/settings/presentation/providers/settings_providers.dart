@@ -11,7 +11,7 @@ class SettingsTab extends Notifier<int> {
   void select(int index) => state = index;
 }
 
-/// "1.0.0 (1)" — loaded once from the platform.
+/// "1.0.0 (1)", loaded once from the platform.
 final appVersionProvider = FutureProvider<String>((ref) async {
   final info = await PackageInfo.fromPlatform();
   return info.buildNumber.isEmpty ? info.version : '${info.version} (${info.buildNumber})';

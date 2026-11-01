@@ -6,7 +6,7 @@ import { apiLimiter } from "../middleware/rateLimiter.js";
 import { validate } from "../middleware/validate.js";
 import { listReviewsSchema, reviewDecisionSchema, reviewParamsSchema } from "../validators/review.validator.js";
 
-/** Human-in-the-loop review queue — regulator mode (pharmacists / NAFDAC reviewers). */
+/** Human-in-the-loop review queue, regulator mode (pharmacists / NAFDAC reviewers). */
 export const reviewRoutes = Router();
 
 reviewRoutes.use(authenticate, authorize("regulator"), apiLimiter);
@@ -16,7 +16,7 @@ reviewRoutes.use(authenticate, authorize("regulator"), apiLimiter);
  * /api/v1/reviews:
  *   get:
  *     tags: [Review queue]
- *     summary: Photo scans waiting for a human — escalated first, then by priority and deadline
+ *     summary: Photo scans waiting for a human, escalated first, then by priority and deadline
  *     description: |
  *       Queued automatically: P1 "don't take it" (high risk / unregistered, 4 h SLA), P2 suspicious (24 h),
  *       P3 "likely genuine" but the photo raised a doubt (48 h). Overdue reviews escalate every 5 minutes.
@@ -38,7 +38,7 @@ reviewRoutes.use(authenticate, authorize("regulator"), apiLimiter);
  * /api/v1/reviews/{id}:
  *   get:
  *     tags: [Review queue]
- *     summary: One review — what the AI read, every signal, the registry match and its reference photos
+ *     summary: One review, what the AI read, every signal, the registry match and its reference photos
  *     security: [{ bearerAuth: [] }]
  *     parameters:
  *       - { in: path, name: id, required: true, schema: { type: string, format: uuid } }
@@ -48,7 +48,7 @@ reviewRoutes.use(authenticate, authorize("regulator"), apiLimiter);
  * /api/v1/reviews/{id}/image:
  *   get:
  *     tags: [Review queue]
- *     summary: The pack photo (JPEG) — kept only until the review is decided, at most 7 days
+ *     summary: The pack photo (JPEG), kept only until the review is decided, at most 7 days
  *     security: [{ bearerAuth: [] }]
  *     parameters:
  *       - { in: path, name: id, required: true, schema: { type: string, format: uuid } }
@@ -68,7 +68,7 @@ reviewRoutes.use(authenticate, authorize("regulator"), apiLimiter);
  * /api/v1/reviews/{id}/decision:
  *   post:
  *     tags: [Review queue]
- *     summary: Decide a claimed review — agree, disagree (with the right verdict) or inconclusive
+ *     summary: Decide a claimed review, agree, disagree (with the right verdict) or inconclusive
  *     description: The photo is deleted with the decision. The user sees the outcome (and note) on their scan.
  *     security: [{ bearerAuth: [] }]
  *     parameters:

@@ -1,4 +1,4 @@
-# CI for MedVerify NG — runs on every pull request and on pushes to main.
+# CI for MedVerify NG, runs on every pull request and on pushes to main.
 #
 # Cost: private repos get 2,000 free Linux minutes/month on GitHub Free.
 # Everything here runs on ubuntu-latest (1× rate; macOS would be 10×), only
@@ -86,7 +86,7 @@ jobs:
         working-directory: server
     # NODE_ENV is NOT set here: with NODE_ENV=production, `npm ci` skips
     # devDependencies (TypeScript, @types, the Prisma CLI). Only the server
-    # process itself runs in production mode — see "Build and start".
+    # process itself runs in production mode, see "Build and start".
     env:
       PORT: 3000
       LOG_LEVEL: warn

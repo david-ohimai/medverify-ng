@@ -13,7 +13,7 @@ const BODY_PARSER_ERRORS: Record<string, { code: string; message: string }> = {
   "entity.verify.failed": { code: "MALFORMED_REQUEST", message: "Request body could not be verified" },
   "request.size.invalid": { code: "MALFORMED_REQUEST", message: "Request size did not match Content-Length" },
   "request.aborted": { code: "REQUEST_ABORTED", message: "Request was aborted" },
-  "charset.unsupported": { code: "UNSUPPORTED_MEDIA_TYPE", message: "Unsupported charset — send UTF-8" },
+  "charset.unsupported": { code: "UNSUPPORTED_MEDIA_TYPE", message: "Unsupported charset, send UTF-8" },
   "encoding.unsupported": { code: "UNSUPPORTED_MEDIA_TYPE", message: "Unsupported content encoding" },
 };
 
@@ -38,7 +38,7 @@ export function notFoundHandler(req: Request, res: Response): void {
 }
 
 /**
- * Global error handler — registered last in app.ts.
+ * Global error handler, registered last in app.ts.
  * - Operational errors (AppError) go back to the client as they are.
  * - Library errors with a 4xx status keep that status and an accurate reason;
  *   a duplicate key maps to 409.

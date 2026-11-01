@@ -84,7 +84,7 @@ export const reviewRepository = {
 
   /**
    * Atomic claim: succeeds only if the review is open, already this
-   * reviewer's, or its previous claim has lapsed — two reviewers can never
+   * reviewer's, or its previous claim has lapsed, two reviewers can never
    * hold the same review.
    */
   async claim(id: string, reviewerId: string, now: Date, claimTtlMs: number): Promise<boolean> {

@@ -76,7 +76,7 @@ class ScanProduct extends Equatable {
   final String? strength;
   final String? manufacturer;
 
-  /// Fictional demo data — always labelled as such in the UI.
+  /// Fictional demo data, always labelled as such in the UI.
   final bool isDemo;
 
   @override

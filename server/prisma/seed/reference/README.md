@@ -1,4 +1,4 @@
-# Reference photos — genuine packs
+# Reference photos, genuine packs
 
 The AI compares every scanned pack with these photos (task `compare_pack`). One folder per product, named by its NAFDAC number; files named by the side of the pack they show:
 

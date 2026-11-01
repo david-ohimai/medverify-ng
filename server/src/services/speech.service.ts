@@ -31,7 +31,7 @@ function mainReason(signals: Signal[]): string | null {
   return warnings[0]?.label ?? null;
 }
 
-/** What is read aloud: the headline, the main reason and the advice — short enough to listen to. */
+/** What is read aloud: the headline, the main reason and the advice, short enough to listen to. */
 export function spokenEnglish(result: VerificationResult): string {
   const parts = [result.headline, mainReason(result.signals), result.advice];
   if (result.review?.decision) parts.push(result.review.message);
@@ -44,7 +44,7 @@ export function spokenEnglish(result: VerificationResult): string {
 /**
  * A scan's verdict as text to speak, in the user's language. English needs
  * no AI. Other languages are translated by the light model and cached by the
- * English text + language + prompt version — verdict wording repeats a lot,
+ * English text + language + prompt version, verdict wording repeats a lot,
  * so most requests cost no AI call at all.
  */
 export const speechService = {

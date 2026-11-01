@@ -10,7 +10,7 @@ declare global {
     interface Request {
       /** Set by authenticate after the access token is verified. */
       device?: AuthenticatedDevice;
-      /** Set by validate — parsed, typed input. Controllers read only from here. */
+      /** Set by validate, parsed, typed input. Controllers read only from here. */
       validated: {
         body: unknown;
         query: unknown;

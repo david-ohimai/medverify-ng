@@ -179,10 +179,7 @@ class _AlertCard extends StatelessWidget {
             ],
             if (alert.isDemoProduct) ...[
               const SizedBox(height: AppSpacing.xs),
-              Text(
-                'Demo product — fictional data',
-                style: context.text.labelSmall?.copyWith(color: palette.suspicious),
-              ),
+              Text('Demo product, fictional data', style: context.text.labelSmall?.copyWith(color: palette.suspicious)),
             ],
           ],
         ),

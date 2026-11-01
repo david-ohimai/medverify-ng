@@ -9,7 +9,7 @@ import 'package:mocktail/mocktail.dart';
 class _MockSecureStore extends Mock implements SecureStore {}
 
 void main() {
-  test('concurrent first calls share one install id — never two different devices', () async {
+  test('concurrent first calls share one install id, never two different devices', () async {
     final store = _MockSecureStore();
     final firstRead = Completer<String?>();
     when(() => store.read(StorageKeys.installId)).thenAnswer((_) => firstRead.future);

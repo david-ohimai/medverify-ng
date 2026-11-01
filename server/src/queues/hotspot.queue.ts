@@ -6,7 +6,7 @@ export const HOTSPOT_QUEUE = "hotspot-refresh";
 
 /** Every 15 minutes, whatever happens. */
 export const HOTSPOT_REFRESH_EVERY_MS = 15 * 60 * 1000;
-/** After a flagged scan, refresh within 10 s — later scans in those 10 s ride along. */
+/** After a flagged scan, refresh within 10 s, later scans in those 10 s ride along. */
 const DEBOUNCE_MS = 10_000;
 const DEBOUNCED_JOB_ID = "hotspot-refresh-debounced";
 
@@ -44,7 +44,7 @@ export async function scheduleHotspotRefresh(): Promise<void> {
 
 /**
  * Debounced refresh after a flagged scan: a fixed job id means that while
- * one refresh is waiting, further requests are ignored by BullMQ — a burst
+ * one refresh is waiting, further requests are ignored by BullMQ, a burst
  * of 50 suspicious scans costs one clustering run, not 50.
  */
 export async function requestHotspotRefresh(reason: HotspotJobData["reason"] = "flagged-scan"): Promise<void> {

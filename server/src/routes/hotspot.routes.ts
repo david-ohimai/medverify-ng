@@ -19,7 +19,7 @@ alertRoutes.use(authenticate, apiLimiter);
  * /api/v1/hotspots:
  *   get:
  *     tags: [Hotspots]
- *     summary: Active hotspots — clusters of suspicious scans in the last 7 days (PostGIS ST_ClusterDBSCAN)
+ *     summary: Active hotspots, clusters of suspicious scans in the last 7 days (PostGIS ST_ClusterDBSCAN)
  *     description: |
  *       Each has a centre (cluster centroid, not a scan), radius, counts, severity, the product and batch
  *       most scans were about, the nearest market, `includesSimulatedData`, and its latest AI-written alert.
@@ -40,7 +40,7 @@ alertRoutes.use(authenticate, apiLimiter);
  * /api/v1/hotspots/stats:
  *   get:
  *     tags: [Hotspots]
- *     summary: Map stat cards — scans, flagged, high risk, unregistered, active hotspots, top flagged products
+ *     summary: Map stat cards, scans, flagged, high risk, unregistered, active hotspots, top flagged products
  *     security: [{ bearerAuth: [] }]
  *     parameters:
  *       - { in: query, name: window, schema: { type: string, enum: [24h, 7d, 30d], default: 7d } }
@@ -64,7 +64,7 @@ hotspotRoutes.post("/refresh", hotspotController.refresh);
  * /api/v1/alerts/nearby:
  *   get:
  *     tags: [Hotspots]
- *     summary: Warnings near the user — medium and high hotspots within radiusKm (any device)
+ *     summary: Warnings near the user, medium and high hotspots within radiusKm (any device)
  *     description: Product, batch, area and the alert title; nothing about individual scans.
  *     security: [{ bearerAuth: [] }]
  *     parameters:

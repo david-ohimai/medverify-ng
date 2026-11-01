@@ -1,5 +1,5 @@
 {
-  "$comment": "The knowledge base the assistant answers from. ONLY official pages from the World Health Organization (who.int) and NAFDAC (nafdac.gov.ng) — the fetcher and the ingester both refuse any other host. `npm run kb:fetch` downloads each page into kb/documents/<id>.md (with its URL, retrieval date and a content hash); review the diff, then `npm run kb:ingest`.",
+  "$comment": "The knowledge base the assistant answers from. ONLY official pages from the World Health Organization (who.int) and NAFDAC (nafdac.gov.ng), the fetcher and the ingester both refuse any other host. `npm run kb:fetch` downloads each page into kb/documents/<id>.md (with its URL, retrieval date and a content hash); review the diff, then `npm run kb:ingest`.",
   "sources": [
     {
       "id": "who-sf-fact-sheet",

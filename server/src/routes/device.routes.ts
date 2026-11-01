@@ -56,7 +56,7 @@ deviceRoutes.post("/register", registerLimiter, validate(registerDeviceSchema), 
  *               refreshToken: { type: string }
  *     responses:
  *       200: { description: New token pair }
- *       401: { description: "REFRESH_INVALID, REFRESH_EXPIRED or REFRESH_REUSED — the app re-registers" }
+ *       401: { description: "REFRESH_INVALID, REFRESH_EXPIRED or REFRESH_REUSED, the app re-registers" }
  */
 deviceRoutes.post("/refresh", refreshLimiter, validate(refreshTokenSchema), deviceController.refresh);
 

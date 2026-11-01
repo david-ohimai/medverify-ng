@@ -1,4 +1,4 @@
-# FICTIONAL demo batches — one of each case the rules handle: valid, expired, recalled.
+# FICTIONAL demo batches, one of each case the rules handle: valid, expired, recalled.
 nafdac_no,batch_no,mfg_date,expiry_date,recalled,recall_note,source
 X9-0001,DQ2401,2024-09-01,2027-08,false,,demo
 X9-0001,DQ2299,2022-03-01,2025-02,false,,demo

@@ -53,7 +53,7 @@ enum ProductStatus {
 }
 
 /// Where a registry row came from. `demo` rows are fictional placeholders
-/// for development and tests — never presented as real NAFDAC data.
+/// for development and tests, never presented as real NAFDAC data.
 enum RegistrySource {
   greenbook
   pack_label
@@ -155,7 +155,7 @@ model AuditLog {
 /// A registered medicine (one NAFDAC registration number).
 model Product {
   id           String         @id @default(uuid()) @db.Uuid
-  /// Normalised: upper case, ASCII hyphen, no spaces — e.g. "A4-1234".
+  /// Normalised: upper case, ASCII hyphen, no spaces, e.g. "A4-1234".
   nafdacNo     String         @unique @map("nafdac_no") @db.VarChar(20)
   brandName    String         @map("brand_name") @db.VarChar(120)
   genericName  String         @map("generic_name") @db.VarChar(200)
@@ -207,7 +207,7 @@ enum PackSide {
 
 /// A photo of the GENUINE pack, used by the AI to compare a scanned pack
 /// against. Stored in the database (re-encoded JPEG, ~100–200 kB) so the
-/// registry, its batches and its reference photos travel together — no
+/// registry, its batches and its reference photos travel together, no
 /// bucket or CDN account needed. Loaded from prisma/seed/reference/.
 model ReferenceImage {
   id        String         @id @default(uuid()) @db.Uuid
@@ -230,7 +230,7 @@ model ReferenceImage {
   @@map("reference_images")
 }
 
-/// Every verification — typed in or photographed — with its verdict and the
+/// Every verification, typed in or photographed, with its verdict and the
 /// signals that explain it. Deleting a device keeps its scans for the
 /// hotspot map but removes the link to the device.
 model Scan {
@@ -260,7 +260,7 @@ model Scan {
   /// Which AI provider read the pack (gemini / openrouter / cache).
   llmProvider String?     @map("llm_provider") @db.VarChar(20)
   /// Where the scan happened, rounded to 2 decimals (~1 km) before it is
-  /// stored — never the exact spot. Optional: the app asks permission.
+  /// stored, never the exact spot. Optional: the app asks permission.
   latitude    Float?      @db.DoublePrecision
   longitude   Float?      @db.DoublePrecision
   /// Nearest known market or area, when within a few km (lib/areas.ts).
@@ -335,7 +335,7 @@ model HotspotAlert {
   /// gemini / openrouter / template
   generatedBy       String          @map("generated_by") @db.VarChar(20)
   promptVersion     Int?            @map("prompt_version")
-  /// The exact facts the alert was written from — nothing else was given to the AI.
+  /// The exact facts the alert was written from, nothing else was given to the AI.
   facts             Json
   createdAt         DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
 
@@ -345,7 +345,7 @@ model HotspotAlert {
   @@map("hotspot_alerts")
 }
 
-/// An official page the assistant may quote (WHO or NAFDAC only — see
+/// An official page the assistant may quote (WHO or NAFDAC only, see
 /// src/lib/verifiedSources.ts). Loaded from kb/documents/ by npm run kb:ingest.
 model KbDocument {
   id        String   @id @db.VarChar(80)
@@ -365,7 +365,7 @@ model KbDocument {
 }
 
 /// One passage of a document with its embedding (pgvector). The knowledge
-/// base is a few hundred chunks, so search is an exact scan — an HNSW index
+/// base is a few hundred chunks, so search is an exact scan, an HNSW index
 /// only pays off at tens of thousands of rows.
 model KbChunk {
   id         String                      @id @default(uuid()) @db.Uuid
@@ -444,8 +444,8 @@ enum ReviewDecision {
 
 /// Human in the loop: a photo scan the system isn't sure about, or that
 /// says "don't take it", waits here for a pharmacist / NAFDAC reviewer
-/// (regulator mode). The photo is kept only while the review is open —
-/// at most 7 days — then deleted.
+/// (regulator mode). The photo is kept only while the review is open,
+/// at most 7 days, then deleted.
 model ScanReview {
   id              String          @id @default(uuid()) @db.Uuid
   scanId          String          @unique @map("scan_id") @db.Uuid

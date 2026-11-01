@@ -20,7 +20,7 @@ export interface ReferenceLoad {
 }
 
 /**
- * Reads prisma/seed/reference/<NAFDAC number>/<side>[-anything].jpg —
+ * Reads prisma/seed/reference/<NAFDAC number>/<side>[-anything].jpg,
  * photos of the GENUINE pack, e.g. reference/A4-1234/front-1.jpg. Each file
  * is decoded, re-encoded (metadata stripped) and hashed; any problem is
  * reported as `folder/file: problem` and nothing is written.

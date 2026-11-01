@@ -17,7 +17,7 @@ import '../../domain/regulator_models.dart';
 import '../providers/regulator_providers.dart';
 
 /// One review: the pack photo beside the genuine pack, what the AI read
-/// (with its confidence), every signal — then claim and decide.
+/// (with its confidence), every signal, then claim and decide.
 class ReviewScreen extends ConsumerWidget {
   const ReviewScreen({required this.reviewId, super.key});
 
@@ -275,7 +275,7 @@ class _Decided extends StatelessWidget {
     final text = switch (item.decision) {
       'agree' => 'Agreed with the system.',
       'disagree' => 'Changed the verdict to ${VerdictStyle.of(item.reviewedVerdict, context.palette).label}.',
-      _ => 'Inconclusive — the user was told to see a pharmacist.',
+      _ => 'Inconclusive, the user was told to see a pharmacist.',
     };
     return Card(
       child: ListTile(

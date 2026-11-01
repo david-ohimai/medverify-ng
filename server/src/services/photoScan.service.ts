@@ -40,7 +40,7 @@ export interface LabelFacts {
   expiry: Date | null;
 }
 
-/** The facts the registry rules need, taken from what the AI read — only fields it is sure of. */
+/** The facts the registry rules need, taken from what the AI read, only fields it is sure of. */
 export function factsFromLabel(label: LabelRead): LabelFacts {
   const sure = (field: { value: string | null; confidence: number }) =>
     field.value && field.value.trim() && field.confidence >= FIELD_CONFIDENCE_MIN ? field.value.trim() : null;
@@ -102,7 +102,7 @@ async function readLabel(image: PhotoInput, scanId: string | undefined) {
 /**
  * The photo against the genuine pack's reference photos. Never fails the
  * scan: no reference, or an AI failure, becomes PACK_NOT_COMPARED (which
- * caps confidence) — the registry facts still stand on their own.
+ * caps confidence), the registry facts still stand on their own.
  */
 async function comparePack(
   image: PhotoInput,

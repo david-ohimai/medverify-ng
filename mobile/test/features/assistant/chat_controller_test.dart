@@ -44,7 +44,7 @@ void main() {
 
     events
       ..add(const SseEvent(event: 'tool_end', data: {'name': 'search_guidance', 'ok': true, 'summary': '5 passages'}))
-      ..add(const SseEvent(event: 'answer', data: {'text': 'Yes — listed as counterfeit [1].'}))
+      ..add(const SseEvent(event: 'answer', data: {'text': 'Yes, listed as counterfeit [1].'}))
       ..add(
         const SseEvent(
           event: 'citations',

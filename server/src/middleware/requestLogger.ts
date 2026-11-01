@@ -5,7 +5,7 @@ import { logger } from "../lib/logger.js";
 import { runWithContext } from "../lib/requestContext.js";
 
 const CORRELATION_HEADER = "x-correlation-id";
-/** Accept a caller's id only if it looks like an id — never echo arbitrary text. */
+/** Accept a caller's id only if it looks like an id, never echo arbitrary text. */
 const SAFE_ID = /^[A-Za-z0-9-]{8,64}$/;
 
 /**

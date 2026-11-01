@@ -33,7 +33,7 @@ async function check(name: string, probe: () => Promise<unknown>): Promise<{ nam
  * /health/live:
  *   get:
  *     tags: [Health]
- *     summary: Liveness — the process is up
+ *     summary: Liveness, the process is up
  *     responses:
  *       200: { description: Alive }
  */
@@ -47,7 +47,7 @@ healthRoutes.get(["/health", "/health/live"], (_req, res) => {
  * /health/ready:
  *   get:
  *     tags: [Health]
- *     summary: Readiness — the database and Redis both answer
+ *     summary: Readiness, the database and Redis both answer
  *     responses:
  *       200: { description: Ready to serve traffic }
  *       503: { description: A dependency is down }

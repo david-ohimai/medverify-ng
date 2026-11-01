@@ -44,7 +44,7 @@ export async function withRetry<T>(fn: () => Promise<T>, options: RetryOptions):
  * One circuit breaker per provider. After repeated failures the circuit
  * opens and calls fail instantly for `resetTimeout`, so a dead provider
  * costs nothing and the fallback answers straight away. Only failures that
- * mean "the provider is unwell" count — a bad request or an invalid answer
+ * mean "the provider is unwell" count, a bad request or an invalid answer
  * is our problem, not the provider's.
  */
 export function createBreaker(name: string) {

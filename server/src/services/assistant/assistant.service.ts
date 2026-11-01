@@ -43,7 +43,7 @@ export function looksLikeInjection(message: string): boolean {
   return INJECTION_PATTERNS.some((pattern) => pattern.test(message));
 }
 
-/** Keeps only the sources the answer actually cites — [1], [1, 2] or [1][2] — in order. */
+/** Keeps only the sources the answer actually cites, [1], [1, 2] or [1][2], in order. */
 export function citedSources(text: string, citations: Citation[]): Citation[] {
   const used = new Set(
     [...text.matchAll(/\[(\d{1,2}(?:\s*,\s*\d{1,2})*)\]/g)].flatMap((match) => match[1]!.split(",").map((n) => Number(n.trim())))
@@ -56,7 +56,7 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
 }
 
 export const assistantService = {
-  /** The tools this role can use — for the app's "what can I ask?" sheet. */
+  /** The tools this role can use, for the app's "what can I ask?" sheet. */
   tools(role: DeviceRole) {
     return toolsFor(role).map((tool) => ({ name: tool.name, description: tool.description }));
   },
@@ -72,7 +72,7 @@ export const assistantService = {
    * ends, then the answer, the sources it cited, and done. The agent loop:
    * the model either answers or asks for tools; tools run (validated,
    * role-checked, read-only); their results go back; at most 5 rounds and
-   * 60 seconds. Everything — question, tool trace, answer — is saved.
+   * 60 seconds. Everything, question, tool trace, answer, is saved.
    */
   async *ask(
     deviceId: string,
@@ -125,7 +125,7 @@ export const assistantService = {
         provider = response.provider;
 
         if (response.toolCalls.length === 0 || lastChance) {
-          const text = response.text ?? "Sorry — I couldn't put an answer together. Please try rephrasing.";
+          const text = response.text ?? "Sorry, I couldn't put an answer together. Please try rephrasing.";
           const citations = citedSources(text, context.citations);
           await assistantRepository.addMessage({ conversationId, role: "assistant", content: text, citations: citations as unknown as object[] });
           appEvents.emit("assistant:answered", { conversationId, deviceId, rounds: round, tools: toolsUsed, provider: response.provider });
