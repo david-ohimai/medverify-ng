@@ -9,6 +9,7 @@ abstract final class ApiEndpoints {
   static const String scans = '/scans';
   static String scan(String id) => '/scans/$id';
   static String scanEvents(String id) => '/scans/$id/events';
+  static String scanSpeech(String id) => '/scans/$id/speech';
   static const String verifyManual = '/verify/manual';
 
   static String product(String nafdacNo) => '/products/${Uri.encodeComponent(nafdacNo)}';

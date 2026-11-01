@@ -5,7 +5,7 @@ import { authenticate } from "../middleware/authenticate.js";
 import { apiLimiter, scanDailyLimiter, scanUploadLimiter, verifyLimiter } from "../middleware/rateLimiter.js";
 import { uploadImage } from "../middleware/upload.js";
 import { validate } from "../middleware/validate.js";
-import { listScansSchema, scanParamsSchema, scanUploadSchema } from "../validators/scan.validator.js";
+import { listScansSchema, scanParamsSchema, scanSpeechSchema, scanUploadSchema } from "../validators/scan.validator.js";
 import { manualVerificationSchema } from "../validators/verification.validator.js";
 
 export const verificationRoutes = Router();
@@ -125,4 +125,23 @@ scanRoutes.post("/", scanUploadLimiter, scanDailyLimiter, uploadImage, validate(
  *       404: { description: Not found (or another device's scan) }
  */
 scanRoutes.get("/:id/events", validate(scanParamsSchema), photoScanController.streamEvents);
+/**
+ * @openapi
+ * /api/v1/scans/{id}/speech:
+ *   get:
+ *     tags: [Verification]
+ *     summary: The verdict as short text to read aloud, in the user's language
+ *     description: |
+ *       Headline, main reason and advice. English is built in; Nigerian Pidgin, Hausa, Yoruba and Igbo are
+ *       translated by the light AI model (numbers, names and NAFDAC kept unchanged) and cached, so repeated
+ *       verdict wording costs no AI call. Returns the BCP-47 locale for the phone's text-to-speech.
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - { in: path, name: id, required: true, schema: { type: string, format: uuid } }
+ *       - { in: query, name: lang, schema: { type: string, enum: [en, pcm, ha, yo, ig], default: en } }
+ *     responses:
+ *       200: { description: "{ text, language, ttsLocale, translatedBy }" }
+ *       404: { description: Not found (or another device's scan) }
+ */
+scanRoutes.get("/:id/speech", validate(scanSpeechSchema), verificationController.speech);
 scanRoutes.get("/:id", validate(scanParamsSchema), verificationController.getScan);

@@ -27,7 +27,7 @@ aiRoutes.use(authenticate, authorize("regulator"), apiLimiter);
  *     summary: Every prompt version, newest first per task
  *     security: [{ bearerAuth: [] }]
  *     parameters:
- *       - { in: query, name: task, schema: { type: string, enum: [read_label, compare_pack, alert_summary, assistant] } }
+ *       - { in: query, name: task, schema: { type: string, enum: [read_label, compare_pack, alert_summary, translate_verdict, assistant] } }
  *     responses:
  *       200: { description: Prompt versions }
  *   post:
@@ -42,7 +42,7 @@ aiRoutes.use(authenticate, authorize("regulator"), apiLimiter);
  *             type: object
  *             required: [task, system]
  *             properties:
- *               task: { type: string, enum: [read_label, compare_pack, alert_summary, assistant] }
+ *               task: { type: string, enum: [read_label, compare_pack, alert_summary, translate_verdict, assistant] }
  *               system: { type: string, description: "System prompt, 50–8000 characters" }
  *               notes: { type: string, description: "What changed and why" }
  *               activate: { type: boolean, default: false }
@@ -64,7 +64,7 @@ aiRoutes.use(authenticate, authorize("regulator"), apiLimiter);
  *     summary: Recent AI calls from ai_audit_logs (provider, model, prompt version, tokens, latency, errors)
  *     security: [{ bearerAuth: [] }]
  *     parameters:
- *       - { in: query, name: task, schema: { type: string, enum: [read_label, compare_pack, alert_summary, assistant] } }
+ *       - { in: query, name: task, schema: { type: string, enum: [read_label, compare_pack, alert_summary, translate_verdict, assistant] } }
  *       - { in: query, name: limit, schema: { type: integer, default: 20, maximum: 100 } }
  *     responses:
  *       200: { description: AI calls, newest first }
