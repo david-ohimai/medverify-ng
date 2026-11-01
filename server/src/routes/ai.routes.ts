@@ -67,7 +67,7 @@ aiRoutes.use(authenticate, authorize("regulator"), apiLimiter);
  *       - { in: query, name: task, schema: { type: string, enum: [read_label, compare_pack, alert_summary, translate_verdict, assistant] } }
  *       - { in: query, name: limit, schema: { type: integer, default: 20, maximum: 100 } }
  *     responses:
- *       200: { description: AI calls, newest first }
+ *       200: { description: "AI calls, newest first" }
  */
 aiRoutes.get("/status", aiController.status);
 aiRoutes.get("/prompts", validate(listPromptsSchema), aiController.listPrompts);

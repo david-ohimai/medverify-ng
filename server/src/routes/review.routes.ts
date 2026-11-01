@@ -64,7 +64,7 @@ reviewRoutes.use(authenticate, authorize("regulator"), apiLimiter);
  *       - { in: path, name: id, required: true, schema: { type: string, format: uuid } }
  *     responses:
  *       200: { description: Claimed }
- *       409: { description: Claimed by another reviewer, or already decided }
+ *       409: { description: "Claimed by another reviewer, or already decided" }
  * /api/v1/reviews/{id}/decision:
  *   post:
  *     tags: [Review queue]
@@ -86,7 +86,7 @@ reviewRoutes.use(authenticate, authorize("regulator"), apiLimiter);
  *               note: { type: string, example: "Logo and fonts differ from the genuine pack; do not use." }
  *     responses:
  *       200: { description: Decided }
- *       409: { description: Not claimed by you, or already decided }
+ *       409: { description: "Not claimed by you, or already decided" }
  *       422: { description: Missing / unexpected reviewedVerdict }
  */
 reviewRoutes.get("/", validate(listReviewsSchema), reviewController.list);

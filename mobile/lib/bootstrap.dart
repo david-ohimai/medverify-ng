@@ -28,6 +28,12 @@ Future<void> bootstrap() async {
     LiquidGlassWidgets.wrap(
       // Glass follows the app's light/dark choice, not just the OS setting.
       brightnessResolver: Theme.maybeBrightnessOf,
+      // Premium glass (the default) overran the 16 ms frame budget on a
+      // mid-range Android phone; standard keeps the look on any GPU.
+      theme: GlassThemeData(
+        light: GlassThemeVariant.light.copyWith(quality: GlassQuality.standard),
+        dark: GlassThemeVariant.dark.copyWith(quality: GlassQuality.standard),
+      ),
       child: ProviderScope(
         // Riverpod 3 retries failing providers by default. Session and network
         // failures are handled explicitly (retry buttons), so turn that off.

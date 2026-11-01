@@ -25,7 +25,7 @@ alertRoutes.use(authenticate, apiLimiter);
  *       most scans were about, the nearest market, `includesSimulatedData`, and its latest AI-written alert.
  *     security: [{ bearerAuth: [] }]
  *     responses:
- *       200: { description: Hotspots, most severe first }
+ *       200: { description: "Hotspots, most severe first" }
  *       403: { description: Needs regulator mode }
  * /api/v1/hotspots/alerts:
  *   get:
@@ -72,6 +72,6 @@ hotspotRoutes.post("/refresh", hotspotController.refresh);
  *       - { in: query, name: lng, required: true, schema: { type: number }, example: 3.3881 }
  *       - { in: query, name: radiusKm, schema: { type: number, default: 25, maximum: 100 } }
  *     responses:
- *       200: { description: Nearby alerts, closest first }
+ *       200: { description: "Nearby alerts, closest first" }
  */
 alertRoutes.get("/nearby", validate(nearbyAlertsSchema), hotspotController.nearby);
