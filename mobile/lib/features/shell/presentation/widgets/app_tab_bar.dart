@@ -21,6 +21,9 @@ class AppTabBar extends ConsumerWidget {
     final palette = context.palette;
 
     return GlassTabBar.bottom(
+      // Explicit: GlassScaffold hints premium for its bars, and premium
+      // overran the frame budget on a mid-range Android phone.
+      quality: GlassQuality.standard,
       selectedIndex: selectedIndex,
       onTabSelected: onTabSelected,
       selectedIconColor: palette.action,

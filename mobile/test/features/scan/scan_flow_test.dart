@@ -118,6 +118,47 @@ void main() {
     });
   });
 
+  group('HistoryController', () {
+    late _MockRepository repository;
+    late ProviderContainer container;
+    late List<AsyncValue<HistoryPage>> states;
+
+    void historyReturns(Result<List<ScanResult>> result) => when(
+      () => repository.history(
+        page: any(named: 'page'),
+        limit: any(named: 'limit'),
+      ),
+    ).thenAnswer((_) async => result);
+
+    setUp(() async {
+      repository = _MockRepository();
+      historyReturns(Success([ScanModels.result(_resultJson(status: 'processing'))]));
+      container = ProviderContainer(overrides: [scanRepositoryProvider.overrideWithValue(repository)]);
+      addTearDown(container.dispose);
+      states = [];
+      container.listen(historyProvider, (_, next) => states.add(next), fireImmediately: true);
+      await container.read(historyProvider.future);
+    });
+
+    test('a background refresh updates the list without a loading state', () async {
+      historyReturns(Success([ScanModels.result(_resultJson())]));
+      states.clear();
+
+      await container.read(historyProvider.notifier).refresh();
+
+      expect(states.any((s) => s.isLoading), isFalse);
+      expect(container.read(historyProvider).value!.items.single.status, ScanStatus.done);
+    });
+
+    test('a failed refresh keeps what is on screen', () async {
+      historyReturns(const Err(NetworkFailure('Offline')));
+
+      await container.read(historyProvider.notifier).refresh();
+
+      expect(container.read(historyProvider).value!.items.single.status, ScanStatus.processing);
+    });
+  });
+
   group('ManualCheckController', () {
     test('expiry: MM/YYYY becomes YYYY-MM; blank is null', () {
       expect(ManualCheckController.normaliseExpiry('8/2027'), '2027-08');

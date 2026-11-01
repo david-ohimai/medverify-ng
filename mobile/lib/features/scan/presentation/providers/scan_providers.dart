@@ -170,7 +170,7 @@ class ScanProgressController extends Notifier<ScanProgress> {
     state = state.finish(result: result);
     _subscription?.cancel();
     _poll?.cancel();
-    ref.invalidate(historyProvider);
+    ref.read(historyProvider.notifier).refresh();
   }
 
   void _startPolling() {
@@ -232,13 +232,66 @@ final historyProvider = AsyncNotifierProvider<HistoryController, HistoryPage>(Hi
 class HistoryController extends AsyncNotifier<HistoryPage> {
   static const _pageSize = 20;
 
+  /// How often to look again while a scan on the first page is still running,
+  /// or waiting for a pharmacist's review.
+  static const _whileRunning = Duration(seconds: 5);
+  static const _whileInReview = Duration(minutes: 1);
+
+  Timer? _recheck;
+  bool _refreshing = false;
+
   @override
   Future<HistoryPage> build() async {
+    ref.onDispose(() => _recheck?.cancel());
     final result = await ref.read(scanRepositoryProvider).history(limit: _pageSize);
     return switch (result) {
-      Success(:final value) => HistoryPage(items: value, page: 1, hasMore: value.length == _pageSize),
+      Success(:final value) => _scheduleRecheck(HistoryPage(items: value, page: 1, hasMore: value.length == _pageSize)),
       Err(:final failure) => throw failure,
     };
+  }
+
+  /// Re-reads the newest page in the background. What's on screen stays put
+  /// (no skeleton), only changed scans redraw, and a failed refresh keeps the
+  /// list as it was. Called on visiting Home or History, on returning to the
+  /// app, after a check finishes, and while scans are still running.
+  Future<void> refresh() async {
+    if (state.value == null) {
+      // Nothing to keep: a failed first load just tries again.
+      if (state.hasError) ref.invalidateSelf();
+      return;
+    }
+    if (_refreshing) return;
+    _refreshing = true;
+    try {
+      final result = await ref.read(scanRepositoryProvider).history(limit: _pageSize);
+      final latest = state.value;
+      if (!ref.mounted || latest == null || result is! Success<List<ScanResult>>) return;
+      final fresh = result.value;
+      final freshIds = {for (final scan in fresh) scan.id};
+      // Everything not in the newest page is older, so it keeps its place below.
+      final page = HistoryPage(
+        items: [...fresh, ...latest.items.where((scan) => !freshIds.contains(scan.id))],
+        page: latest.page,
+        hasMore: latest.page == 1 ? fresh.length == _pageSize : latest.hasMore,
+        loadingMore: latest.loadingMore,
+      );
+      if (page != latest) state = AsyncData(page);
+      _scheduleRecheck(page);
+    } finally {
+      _refreshing = false;
+    }
+  }
+
+  HistoryPage _scheduleRecheck(HistoryPage page) {
+    _recheck?.cancel();
+    final newest = page.items.take(_pageSize);
+    final wait = newest.any((scan) => !scan.status.finished)
+        ? _whileRunning
+        : newest.any((scan) => scan.review != null && !scan.review!.decided)
+        ? _whileInReview
+        : null;
+    if (wait != null) _recheck = Timer(wait, refresh);
+    return page;
   }
 
   Future<void> loadMore() async {
@@ -246,14 +299,19 @@ class HistoryController extends AsyncNotifier<HistoryPage> {
     if (current == null || !current.hasMore || current.loadingMore) return;
     state = AsyncData(HistoryPage(items: current.items, page: current.page, hasMore: true, loadingMore: true));
     final result = await ref.read(scanRepositoryProvider).history(page: current.page + 1, limit: _pageSize);
+    if (!ref.mounted) return;
+    // New scans shift the pages down, so the next page can repeat a few.
+    // A background refresh may have landed meanwhile; build on what it saw.
+    final items = state.value?.items ?? current.items;
+    final seen = {for (final scan in items) scan.id};
     state = AsyncData(switch (result) {
       Success(:final value) => HistoryPage(
-        items: [...current.items, ...value],
+        items: [...items, ...value.where((scan) => !seen.contains(scan.id))],
         page: current.page + 1,
         hasMore: value.length == _pageSize,
       ),
       // Keep what we have; the next scroll tries again.
-      Err() => HistoryPage(items: current.items, page: current.page, hasMore: true),
+      Err() => HistoryPage(items: items, page: current.page, hasMore: true),
     });
   }
 }
@@ -356,7 +414,7 @@ class ManualCheckController extends Notifier<ManualCheckState> {
     switch (result) {
       case Success(:final value):
         state = state.copyWith(submitting: false);
-        ref.invalidate(historyProvider);
+        ref.read(historyProvider.notifier).refresh();
         return value.id;
       case Err(:final failure):
         state = state.copyWith(

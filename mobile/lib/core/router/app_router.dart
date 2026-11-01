@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/alerts/presentation/providers/alerts_providers.dart';
 import '../../features/alerts/presentation/screens/alerts_screen.dart';
 import '../../features/assistant/presentation/screens/assistant_screen.dart';
 import '../../features/history/presentation/screens/history_screen.dart';
@@ -12,6 +13,7 @@ import '../../features/onboarding/presentation/screens/onboarding_screen.dart';
 import '../../features/regulator/presentation/screens/regulator_dashboard_screen.dart';
 import '../../features/regulator/presentation/screens/review_queue_screen.dart';
 import '../../features/regulator/presentation/screens/review_screen.dart';
+import '../../features/scan/presentation/providers/scan_providers.dart';
 import '../../features/scan/presentation/screens/manual_check_screen.dart';
 import '../../features/scan/presentation/screens/scan_progress_screen.dart';
 import '../../features/scan/presentation/screens/scan_screen.dart';
@@ -104,13 +106,22 @@ final routerProvider = Provider<GoRouter>((ref) {
     ],
   );
 
-  // Home's tips change every time Home comes back into view — from another
-  // tab, or back from a pushed screen (verdict, assistant, scanner…).
+  // Every time Home, History or Alerts comes back into view (from another tab,
+  // or back from a pushed screen like a verdict), its data is re-read in the
+  // background and Home's tips change. Nothing on screen blanks meanwhile.
   var lastPath = '';
   void onNavigate() {
     final path = router.routerDelegate.currentConfiguration.uri.path;
-    if (path == AppRoutes.home && lastPath != AppRoutes.home && lastPath.isNotEmpty) {
-      ref.read(homeInsightsProvider.notifier).shuffle();
+    if (path != lastPath && lastPath.isNotEmpty) {
+      switch (path) {
+        case AppRoutes.home:
+          ref.read(homeInsightsProvider.notifier).shuffle();
+          ref.read(historyProvider.notifier).refresh();
+        case AppRoutes.history:
+          ref.read(historyProvider.notifier).refresh();
+        case AppRoutes.alerts:
+          ref.read(nearbyAlertsProvider.notifier).refresh();
+      }
     }
     lastPath = path;
   }

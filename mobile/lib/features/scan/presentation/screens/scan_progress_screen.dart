@@ -95,7 +95,7 @@ class _Failed extends StatelessWidget {
           FilledButton.icon(
             onPressed: () => context.pop(),
             icon: const Icon(Iconsax.camera),
-            label: const Text('Retake the photo'),
+            label: const Text('Rescan the medicine pack'),
           ),
           const SizedBox(height: AppSpacing.xs),
           TextButton(
