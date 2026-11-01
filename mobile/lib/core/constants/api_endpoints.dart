@@ -19,4 +19,14 @@ abstract final class ApiEndpoints {
   static const String alertsNearby = '/alerts/nearby';
 
   static const String assistantMessages = '/assistant/messages';
+
+  // Regulator mode.
+  static const String hotspots = '/hotspots';
+  static const String hotspotStats = '/hotspots/stats';
+  static const String reviews = '/reviews';
+  static const String reviewStats = '/reviews/stats';
+  static String review(String id) => '/reviews/$id';
+  static String reviewImage(String id) => '/reviews/$id/image';
+  static String reviewClaim(String id) => '/reviews/$id/claim';
+  static String reviewDecision(String id) => '/reviews/$id/decision';
 }

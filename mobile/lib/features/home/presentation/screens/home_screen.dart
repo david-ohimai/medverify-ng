@@ -12,6 +12,7 @@ import '../../../../shared/widgets/async_value_view.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/page_layout.dart';
 import '../../../../shared/widgets/quick_action_tile.dart';
+import '../../../regulator/presentation/providers/regulator_providers.dart';
 import '../../../scan/presentation/providers/scan_providers.dart';
 import '../../../scan/presentation/widgets/scan_tile.dart';
 import '../providers/home_providers.dart';
@@ -53,18 +54,29 @@ class _Insights extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) => AiInsightCard(lines: ref.watch(homeInsightsProvider));
 }
 
-class _QuickActions extends StatelessWidget {
+class _QuickActions extends ConsumerWidget {
   const _QuickActions();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final palette = context.palette;
+    // Only this row rebuilds when regulator mode switches on or off.
+    final isRegulator = ref.watch(isRegulatorProvider);
     return SizedBox(
       height: 116,
       child: ListView(
         scrollDirection: Axis.horizontal,
         clipBehavior: Clip.none,
         children: [
+          if (isRegulator) ...[
+            QuickActionTile(
+              icon: Iconsax.shield_tick,
+              label: 'Regulator',
+              tint: palette.genuine,
+              onTap: () => context.push(AppRoutes.regulator),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+          ],
           QuickActionTile(
             icon: Iconsax.scan_barcode,
             label: 'Scan a pack',

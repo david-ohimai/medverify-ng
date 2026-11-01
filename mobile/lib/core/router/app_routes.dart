@@ -13,6 +13,10 @@ abstract final class AppRoutes {
   static const String manualCheck = '/check';
   static const String camera = '/camera';
   static const String assistant = '/assistant';
+  static const String regulator = '/regulator';
+  static const String reviewQueue = '/regulator/reviews';
+  static const String reviewPattern = '/regulator/reviews/:id';
+  static String review(String id) => '/regulator/reviews/$id';
 
   static String scanProgress(String scanId) => '/progress/$scanId';
   static String scanResult(String scanId) => '/result/$scanId';
