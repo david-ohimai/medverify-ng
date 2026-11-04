@@ -35,6 +35,7 @@
     "eval:rag": "tsx scripts/eval-rag.ts",
     "eval:report": "tsx scripts/eval-report.ts",
     "simulate": "tsx scripts/simulate-scans.ts",
+    "registry:fetch": "tsx scripts/registry-fetch.ts",
     "kb:fetch": "tsx scripts/kb-fetch.ts",
     "kb:ingest": "tsx scripts/kb-ingest.ts",
     "demo-images": "tsx scripts/generate-demo-images.ts"

@@ -76,7 +76,18 @@ export function registrySignals(input: RegistryCheckInput): Signal[] {
     });
   }
 
-  if (product.status !== "active") {
+  // About a third of the Greenbook isn't marked active, including common
+  // medicines, often because the renewal isn't listed. So a lapsed registration
+  // is a caution for a pharmacist, not a sign of a fake. Cancelled stays a warning.
+  if (product.status === "expired") {
+    signals.push({
+      code: "REGISTRATION_LAPSED",
+      label: "The Greenbook doesn't list this registration as active",
+      weight: 10,
+      severity: "warning",
+      detail: `${product.brandName} (${product.nafdacNo}) may be awaiting renewal. Ask a pharmacist.`,
+    });
+  } else if (product.status !== "active") {
     signals.push({
       code: "REGISTRATION_INACTIVE",
       label: `This registration is ${product.status}`,

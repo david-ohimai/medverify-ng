@@ -31,21 +31,21 @@
 
 ## 0. MVP status, built vs planned
 
-*Updated 1 Nov 2026. The rest of this file is the original plan; this table is what actually exists.*
+*Updated 4 Nov 2026. The rest of this file is the original plan; this table is what actually exists. To present it, follow [docs/demo-guide.md](docs/demo-guide.md).*
 
 | Area | Built ✅ | Not built (yet) |
 |---|---|---|
-| Device identity & security | Silent registration, rotating refresh tokens with reuse detection, instant token revocation, regulator role via PIN (API), layered rate limits, Helmet/CORS/sanitising, audit log | Regulator-mode PIN screen in the app |
-| Registry & typed-in check | CSV import with validation, fuzzy search (pg_trgm), `POST /verify/manual` with explainable signals | Real Greenbook rows (demo `X9-` rows only, labelled fictional) |
-| Photo scan | Live camera scanner (scan box, torch) + gallery; `POST /scans` 202 → BullMQ worker → AI label reading → registry → batch → **pack comparison** → score; SSE progress with polling fallback; photos never kept except for human review | Live OCR chips and auto-capture in the scanner; a second shot of the back of the pack; real reference photos |
+| Device identity & security | Silent registration, rotating refresh tokens with reuse detection, instant token revocation, regulator role via PIN (API and app), layered rate limits, Helmet/CORS/sanitising, audit log | Personal access codes per regulator (one shared demo PIN today) |
+| Registry & typed-in check | CSV import with validation, fuzzy search (pg_trgm), `POST /verify/manual` with explainable signals; **8,679 real Greenbook products** (`npm run registry:fetch`), alongside the labelled fictional `X9-` rows | Batch records for real products (the Greenbook doesn't list them) |
+| Photo scan | Live camera scanner (scan box, torch) + gallery; `POST /scans` 202 → BullMQ worker → AI label reading → registry → batch → **pack comparison** → score; SSE progress with polling fallback; photos never kept except for human review | Live OCR chips and auto-capture in the scanner; a second shot of the back of the pack; genuine reference photos for real products, so pack comparison only runs on the demo pack |
 | Verdict | Verdict, risk ring, confidence, every signal, yours vs genuine, review banner, demo notice, **Listen in 5 languages** | "Share warning" and "Report to NAFDAC" buttons |
 | Languages & voice | `GET /scans/:id/speech?lang=` (AI translation, cached) + on-device text-to-speech; text shown when the phone has no voice | The rest of the UI is in English only |
 | AI control plane | Gemini → OpenRouter fallback, retries, circuit breaker, timeouts, free-quota guard, Zod-validated JSON, versioned prompts, `ai_audit_logs`, `/ai/*` admin API | Local embeddings fallback |
-| Hotspots | Coarse location, PostGIS DBSCAN job + debounced trigger, AI alert summaries, `/hotspots*`, `/alerts/nearby`, simulated pilot data | Hotspot map in the app, Socket.io live pushes |
-| Assistant (RAG + agent) | 14 official WHO/NAFDAC documents, hybrid search, 8 read-only tools, SSE chat with live tool chips and citations | "Ask the data" screen for regulators in the app (tools exist on the API) |
-| Human in the loop | Review queue with priorities, SLAs, escalation job, claim/decide API, reviewer verdict shown to the user | Reviewer screens in the app |
+| Hotspots | Coarse location, PostGIS DBSCAN job + debounced trigger, AI alert summaries, `/hotspots*`, `/alerts/nearby`, simulated pilot data; regulator dashboard with stats and a hotspot list in the app | Hotspot map in the app, Socket.io live pushes |
+| Assistant (RAG + agent) | 14 official WHO/NAFDAC documents, hybrid search, 8 read-only tools, SSE chat with live tool chips and citations; "Ask the data" for regulators, from the dashboard | Answers with charts or tables |
+| Human in the loop | Review queue with priorities, SLAs, escalation job, claim/decide API, reviewer verdict shown to the user; review queue and decision screens in the app | A second reviewer when a warning is turned into "likely genuine" |
 | Evaluation | Photo pipeline, retrieval and assistant evals + live reviewer agreement → [docs/eval-results.md](docs/eval-results.md) | Real pack photos in the eval set |
-| App extras | Splash, onboarding, Home (random safety tips, recent checks), History (infinite scroll), Alerts (unseen badge), Settings (theme, language) | Report a seller, Home insights from live data, history search/filters, offline history, notifications, export my data, a **Delete my data** button |
+| App extras | Launcher icon, native and Flutter splash, onboarding, Home (random safety tips, recent checks), History (infinite scroll), Alerts (unseen badge), background refresh of all three, Settings (theme, language, regulator mode) | Report a seller, Home insights from live data, history search/filters, offline history, notifications, export my data, a **Delete my data** button |
 | Deployment |, | Not deployed by choice: the demo runs locally |
 
 ---
@@ -644,10 +644,10 @@ Backend + AI first, that's what's assessed. Each day ends with tests passing, CI
 | **Sun 1 Nov** (done 29 Oct) | ✅ **RAG + agent:** 14 official documents (3 WHO, 3 NAFDAC pages, 8 NAFDAC public alerts 2024–26), verified-domain allowlist enforced at fetch, ingest and search; Gemini embeddings in pgvector; hybrid vector + full-text search with RRF; agent with 8 read-only, Zod-validated, role-gated tools, 5 rounds / 60 s, SSE stream with citations, saved execution trace; `npm run eval:agent` **10/10** (right tools 10/10, cited 4/4). 247 tests. |, |
 | **Mon 2 Nov** (done 29 Oct) | ✅ **HITL:** photo scans that say don't take it (P1, 4 h), suspicious (P2, 24 h) or "genuine" with photo doubts (P3, 48 h) → review queue with atomic claim (1 h), agree / disagree / inconclusive, reviewer's verdict shown to the user, SLA escalation job every 5 min, photo kept only while open (≤ 7 days, gone on delete-my-data), live agreement rate. **Eval:** retrieval eval (hit@1 15/16, recall@3 16/16, MRR 0.96, off-topic 2/2) and `npm run eval:report` → [docs/eval-results.md](docs/eval-results.md). 264 tests. |, |
 | Tue 3 Nov (app done 30 Oct) | **Feature freeze.** No deployment, the server runs locally for the demo (decided 29 Oct). Fix eval misses, README pass | ✅ **Mobile app** against the local server: camera/gallery → `POST /scans` → live SSE timeline → verdict with "yours vs genuine" and review banner → history; typed-in check; nearby alerts (coarse location or city); Ask MedVerify chat with live tool chips and official sources |
-| Wed 4 Nov | Bug fixes only | **Functions Overview Document + slide deck**; rehearse the defense |
+| Wed 4 Nov | Bug fixes only | ✅ **Functions Overview Document + slide deck**, [demo guide](docs/demo-guide.md); rehearse the defense |
 | **Thu 5 Nov** |, | **Submit:** repo, document, slides, check every link |
 
-**Mobile app (wanted for social media, not required by the brief):** built after the backend froze, against the server running locally (phone over USB with `adb reverse`). Screen recordings for social media come from that setup; polish continues after submission.
+**Mobile app (wanted for social media, not required by the brief):** built after the backend froze, against the server running locally (phone over USB with `adb reverse`, or wireless debugging). Added 31 Oct to 1 Nov: voice in 5 languages, regulator mode (PIN, dashboard, hotspots, review queue, Ask the data), background refresh, native splash and launcher icon. Screen recordings for social media come from that setup; polish continues after submission.
 
 **Cut list if behind** (in this order): Flutter screens → translation/voice → MCP server → AI alert summaries (keep the clusters) → HITL SLA escalation (keep the queue). **Never cut:** registry verify, scan pipeline with an explainable verdict, the eval numbers, the agent with tools, the document and slides.
 
@@ -655,14 +655,16 @@ Backend + AI first, that's what's assessed. Each day ends with tests passing, CI
 
 ## 8. Demo script (5 min)
 
-1. **Hook (30 s):** "The WHO estimates about 1 in 10 medicines in low- and middle-income countries is substandard or falsified. In Nigeria, you find out after you swallow it." Hold up two identical-looking packs.
-2. **Genuine scan (60 s):** scan the real pack, chips pop, steps tick, green *Likely genuine*, compare tab shows the match.
-3. **Fake scan (75 s):** scan prop (c), red *High risk 82*, phone buzzes, "Why we think so", side-by-side differences. Tap 🔊 → Pidgin.
-4. **Regulator view (75 s):** projector already on the map, the pulse from step 3 lands; AI Alert card appears for the planted cluster. Type *"Which batches are spreading fastest this week?"*, tool chips run, answer with a table.
-5. **Engineering (45 s):** architecture slide + eval table + "no AI where SQL works" + "the AI can only search through tools we wrote" + no-signup decision + "₦0 running cost on free tiers".
-6. **Close (15 s):** "Verify before you swallow."
+**The script that matches what was built is [docs/demo-guide.md](docs/demo-guide.md),** with setup, timings, what to say, recovery and likely questions. In short:
 
-Backup: pre-recorded video of the full flow; phone on mobile data + Wi-Fi; regulator dashboard pre-loaded; server woken up 2 minutes before.
+1. **Scan a fake (90 s):** the altered demo pack from the gallery, steps tick, *Suspicious*, every reason, your pack beside the genuine one.
+2. **Hear it (30 s):** Listen in Naija Pidgin.
+3. **Regulator (90 s):** PIN, dashboard, hotspots, then claim and decide the scan in the review queue.
+4. **Ask the data (45 s):** tool chips run, an answer ranks the hotspots.
+5. **Under the hood (45 s):** Swagger, then the evaluation slide.
+6. **Close:** "Verify before you swallow."
+
+Backup: a recorded video of the full flow.
 
 ---
 

@@ -1,38 +1,51 @@
 # MedVerify NG
 
-**Verify a medicine before you take it.** MedVerify NG is a proposed AI-powered tool for spotting counterfeit and substandard drugs in Nigeria at the point of purchase.
+**Verify a medicine before you take it.** MedVerify NG is an AI-powered tool for spotting counterfeit and substandard drugs in Nigeria at the point of purchase.
 
 This repository started as a **solution proposal** (Week 3 Group Assignment, AI Solution Challenge, Mastering Backend AI Engineering Bootcamp) and is now a **working MVP**, built individually as the **Final Flagship Project** by David Ohimai. The proposal is kept below from section A onward.
 
 ## The MVP today
 
-A backend and AI service, plus a Flutter app, that **run locally** (Docker for PostgreSQL and Redis, Node for the API, a phone over USB). The project isn't deployed.
+A backend and AI service, plus a Flutter app, that **run locally** (Docker for PostgreSQL and Redis, Node for the API, a phone connected over USB or wireless debugging). The project isn't deployed. Giving a demo? Follow [docs/demo-guide.md](docs/demo-guide.md).
 
 | | What works |
 |---|---|
 | **Scan a pack** | The live camera scanner (scan box, torch) or a gallery photo → `POST /scans` (202) → a BullMQ worker: the AI reads the label → NAFDAC register lookup → batch, expiry and recall check → the AI compares the pack with a photo of the genuine one → an explainable risk score. Progress streams live (SSE): *"watch the AI think"* |
 | **Verdict** | Likely genuine / suspicious / high risk / unregistered, a 0–100 risk score, a confidence level and every reason with its weight. Shows your pack next to the genuine one. Never says "safe" |
 | **Listen** | The verdict read aloud in **English, Pidgin, Hausa, Yoruba or Igbo**: translated by the light AI model (cached), spoken by the phone's own voices. If the phone has no voice for a language, the translated text is shown instead |
+| **The real register** | 8,679 products imported from the public NAFDAC Greenbook (`npm run registry:fetch`), so a real pack can be looked up |
 | **Typed-in check** | NAFDAC number (+ name, batch, expiry) against the register, with no photo and no AI |
 | **Ask MedVerify** | An assistant with 8 read-only, validated tools (register, batches, your scans, nearby warnings, official guidance). It answers **only from official WHO and NAFDAC documents**, with the sources cited |
 | **Hotspots** | PostGIS clustering of suspicious scans → AI-written alerts for regulators; nearby warnings for everyone |
 | **Human review** | Risky or doubtful photo scans go to a pharmacist / NAFDAC review queue with deadlines (SLAs) and escalation; the reviewer's verdict reaches the user |
+| **Regulator mode** | A demo PIN in the app unlocks a dashboard: stats, active hotspots with their alerts, the review queue (claim, agree, disagree, inconclusive) and "Ask the data" |
+| **Always current** | Home, History and Alerts refresh on their own in the background, with no skeleton flash; a failed refresh keeps what's on screen |
 | **Model control plane** | Gemini, with OpenRouter as the automatic fallback; retries, circuit breaker, a daily free-quota guard, versioned prompts, and an audit row for every AI call |
 | **Evaluation** | [docs/eval-results.md](docs/eval-results.md): photo pipeline 8/8 with **0 of 5 fakes passed as genuine**; retrieval hit@1 15/16; assistant 10/10 |
 
-**Not built yet:** report-a-seller, Home insights from live data (Home shows random safety tips), auto-capture in the scanner, regulator screens in the app (the regulator features are API-only: Swagger / Postman), the "delete my data" button in the app (the endpoint exists), and real pack photos and NAFDAC registry rows (the demo uses **fictional** `X9-` packs, clearly labelled). The full list is in [mvp.md §0](mvp.md#0-mvp-status--built-vs-planned).
+**Tests:** 283 on the server, 63 in the app, with CI on every push.
+
+**Not built yet:** report-a-seller, Home insights from live data (Home shows random safety tips), auto-capture in the scanner, a hotspot map (hotspots are a list in the app), the "delete my data" button in the app (the endpoint exists), batch records and genuine-pack reference photos for real products, so a real pack gets the label, register and expiry checks but no pack comparison yet (the fictional `X9-` demo packs show the comparison, clearly labelled). The full list is in [mvp.md §0](mvp.md#0-mvp-status--built-vs-planned).
 
 | Part | Stack | Guide |
 |---|---|---|
 | `server/` | Node 24 · TypeScript 7 · Express 5 · Prisma 7 · PostgreSQL 18 (PostGIS, pgvector) · Redis 8 · BullMQ · Gemini (OpenRouter fallback) · Swagger at `/api-docs` | [docs/server-setup.md](docs/server-setup.md) · [docs/database-setup.md](docs/database-setup.md) |
-| `mobile/` | Flutter 3.47 · Riverpod 3 · go_router · Dio · camera · flutter_tts · liquid glass UI | [docs/mobile-setup.md](docs/mobile-setup.md) |
+| `mobile/` | Flutter 3.47 · Riverpod 3 · go_router · Dio · camera · flutter_tts · liquid glass UI | [docs/mobile-setup.md](docs/mobile-setup.md) · [mobile/README.md](mobile/README.md) |
+| Demo | Script, setup checklist, what to do if something breaks, likely questions | [docs/demo-guide.md](docs/demo-guide.md) |
 
 **Quick start** (full steps in the guides):
 
 ```bash
 cd server && npm install && cp .env.example .env   # add JWT_ACCESS_SECRET and GEMINI_API_KEY
-npm run db:up && npm run prisma:deploy && npm run seed && npm run kb:ingest && npm run simulate
+npm run db:up && npm run prisma:deploy && npm run seed && npm run kb:ingest && npm run simulate   # seed loads the real register
 npm run dev                                         # http://localhost:3000/api-docs
+```
+
+The app, with a phone on USB:
+
+```bash
+adb reverse tcp:3000 tcp:3000
+cd mobile && fvm flutter run --dart-define-from-file=env/dev.json
 ```
 
 **My role:** problem research, solution design and the whole build (David Ohimai).

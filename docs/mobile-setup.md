@@ -92,6 +92,16 @@ adb shell curl -s http://localhost:3000/health/live                  # from the 
 
 (`adb` lives in `%LOCALAPPDATA%\Android\Sdk\platform-tools` if it isn't on your PATH.)
 
+**Wireless debugging (no cable, no rebuild):** adb connects over Wi-Fi and `adb reverse` works the same way, so `API_URL` stays `http://localhost:3000/api/v1`. Phone and laptop must be on the same Wi-Fi.
+
+1. On the phone: **Developer options → Wireless debugging → On → Pair device with pairing code**.
+2. `adb pair <phone-ip>:<pairing-port>`, then enter the 6-digit code. The pairing is saved, so this is a one-time step.
+3. On the main **Wireless debugging** screen, read **IP address & Port**. **This is a different port from the pairing one**; using the pairing port fails with `failed to connect` and leaves an `offline` entry (`adb disconnect <ip>:<port>` removes it).
+4. `adb connect <phone-ip>:<port>`, then `adb reverse tcp:3000 tcp:3000`.
+5. `adb devices` should list the phone as `device`.
+
+The connection port changes whenever Wireless debugging is switched off and on, or the phone restarts, so read it again if `adb connect` fails.
+
 `API_URL` is compiled into the app, so after editing `env/dev.json` **stop the app and run it again**, hot reload and hot restart keep the old URL.
 
 Plain `http://` only works in **debug** builds. Release builds refuse it (see Part C, security).
@@ -123,10 +133,24 @@ Retry works once the network path is fixed; only a changed `API_URL` needs a re-
 
 ```bash
 fvm flutter analyze          # "No issues found!"
-fvm flutter test             # 30 tests
+fvm flutter test             # 63 tests
 ```
 
 ### A6. Build an APK to install on the demo phone
+
+**For the local server (what the demo uses):** only debug builds can reach it over `http`. One APK per CPU type, far smaller than the all-in-one:
+
+```bash
+fvm flutter build apk --debug --split-per-abi --dart-define-from-file=env/dev.json
+# → build/app/outputs/flutter-apk/app-arm64-v8a-debug.apk   (most phones, including the demo phone)
+# → .../app-armeabi-v7a-debug.apk (older 32-bit phones) · .../app-x86_64-debug.apk (PC emulators)
+adb install -r build/app/outputs/flutter-apk/app-arm64-v8a-debug.apk
+adb reverse tcp:3000 tcp:3000                # adb install doesn't do this for you
+```
+
+If the launcher still shows an old icon, uninstall the app and install it again.
+
+**For a deployed server (not used yet):** a release build needs an `https://` address; it refuses to start with `http`.
 
 ```bash
 cp env/prod.example.json env/prod.json      # set the deployed https:// URL inside
@@ -135,7 +159,7 @@ fvm flutter build apk --release --obfuscate --split-debug-info=build/symbols --d
 adb install -r build/app/outputs/flutter-apk/app-release.apk
 ```
 
-`--obfuscate` renames classes and functions in the release binary; `build/symbols` keeps what's needed to read crash stack traces (git-ignored, keep it locally). A debug APK for quick testing: `fvm flutter build apk --debug --dart-define-from-file=env/dev.json`.
+`--obfuscate` renames classes and functions in the release binary; `build/symbols` keeps what's needed to read crash stack traces (git-ignored, keep it locally).
 
 ---
 
