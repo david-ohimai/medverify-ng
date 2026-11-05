@@ -1,0 +1,10 @@
+{
+  // For the editor only: these scripts run through tsx, and `npm run typecheck`
+  // doesn't cover them. Without this file VS Code checks them outside the
+  // project and can't find Node's types. kb-fetch.ts also needs DOM types.
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ES2023", "DOM"]
+  },
+  "include": ["./*.ts"]
+}

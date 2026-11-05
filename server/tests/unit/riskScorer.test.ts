@@ -49,6 +49,13 @@ describe("adviceFor", () => {
     expect(adviceFor("high_risk", [signal("EXPIRED", 35)]).headline).toBe("Expired, do not take it");
   });
 
+  it("a lapsed registration sends a likely genuine pack to a pharmacist", () => {
+    const { headline, advice } = adviceFor("likely_genuine", [signal("REGISTRATION_LAPSED", 10)]);
+    expect(headline).toBe("Likely genuine");
+    expect(advice).toContain("Ask a pharmacist");
+    expect(advice).not.toContain("Nothing in the records");
+  });
+
   it("never claims a medicine is safe", () => {
     for (const verdict of ["likely_genuine", "suspicious", "high_risk", "unregistered"] as const) {
       expect(JSON.stringify(adviceFor(verdict)).toLowerCase()).not.toMatch(/100%|guaranteed|definitely safe/);

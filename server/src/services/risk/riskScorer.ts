@@ -8,6 +8,7 @@ export type SignalCode =
   // Registry facts
   | "NOT_IN_REGISTRY"
   | "REGISTRATION_INACTIVE"
+  | "REGISTRATION_LAPSED"
   | "NAME_MATCHES_REGISTRY"
   | "NAME_MISMATCH"
   | "BATCH_KNOWN"
@@ -53,7 +54,12 @@ const HARD_EVIDENCE: ReadonlySet<SignalCode> = new Set([
 ]);
 
 /** Signals that leave us unsure what we're looking at. */
-const UNCERTAINTY: ReadonlySet<SignalCode> = new Set(["BATCH_UNKNOWN", "BATCH_NOT_GIVEN", "POOR_IMAGE"]);
+const UNCERTAINTY: ReadonlySet<SignalCode> = new Set([
+  "BATCH_UNKNOWN",
+  "BATCH_NOT_GIVEN",
+  "POOR_IMAGE",
+  "REGISTRATION_LAPSED",
+]);
 
 /**
  * Clean records, but the pack itself wasn't (fully) examined: typed in, or
@@ -134,6 +140,12 @@ export function adviceFor(verdict: Verdict, signals: readonly Signal[] = []): { 
     return {
       headline: "Expired, do not take it",
       advice: "This medicine is past its expiry date. Don't take it; return it to the pharmacy.",
+    };
+  }
+  if (verdict === "likely_genuine" && has("REGISTRATION_LAPSED")) {
+    return {
+      headline: ADVICE.likely_genuine.headline,
+      advice: "The Greenbook doesn't list this registration as active. Ask a pharmacist before taking it.",
     };
   }
   return ADVICE[verdict];

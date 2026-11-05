@@ -47,6 +47,19 @@ describe("registrySignals + assessRisk, the manual-check rules", () => {
     expect(result.verdict).toBe("suspicious");
   });
 
+  it("lapsed registration → a caution, not a warning: likely genuine with low confidence", () => {
+    const result = check({ product: { ...product, status: "expired" } });
+    expect(result.codes).toContain("REGISTRATION_LAPSED");
+    expect(result.codes).not.toContain("REGISTRATION_INACTIVE");
+    expect(result.verdict).toBe("likely_genuine");
+    expect(result.confidence).toBe("low");
+  });
+
+  it("lapsed registration plus a wrong name → suspicious", () => {
+    const result = check({ product: { ...product, status: "expired" }, nameSimilarity: 0.1 });
+    expect(result.verdict).toBe("suspicious");
+  });
+
   it("cloned number with a known batch → still suspicious (no reassurance)", () => {
     const result = check({ nameSimilarity: 0.1 });
     expect(result.codes).not.toContain("BATCH_KNOWN");

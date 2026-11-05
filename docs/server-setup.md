@@ -24,10 +24,10 @@ Shell: **Git Bash** unless noted. Working folder: `medverify-ng/server/`.
 | 7 | `npm run db:up` | Starts Postgres (port 5433) and Redis (6379) in Docker, needs Docker Desktop running ([database guide §1](database-setup.md#1-install-docker-desktop-once)) |
 | 8 | `npm run prisma:migrate` | Creates the tables |
 | 9 | `npm run prisma:generate` | Builds the typed Prisma client into `src/generated/prisma` |
-| 9b | `npm run seed` | Loads the registry CSVs, the genuine-pack reference photos and the AI prompt versions |
+| 9b | `npm run seed` | Loads the registry CSVs (8,679 real Greenbook products plus the demo rows), the genuine-pack reference photos and the AI prompt versions. `npm run registry:fetch` refreshes the Greenbook list first, when you want newer data |
 | 9b++ | `npm run kb:ingest` | Embeds the official WHO / NAFDAC documents in `kb/documents/` for the assistant (needs the Gemini key; ~1 minute) |
 | 9b+ | `npm run simulate` | Optional: ~1,400 simulated pilot scans with planted clusters, then clusters them, fills the hotspot map |
-| 9c | `npm test` | 268 unit + HTTP tests; no database, Redis or AI key needed |
+| 9c | `npm test` | 283 unit + HTTP tests; no database, Redis or AI key needed |
 | 10 | `npm run typecheck` | Strict TypeScript check of `src/` and `tests/` |
 | 11 | `npm run dev` | API on http://localhost:3000, restarts on save |
 | 12 | Open http://localhost:3000/api-docs | Swagger UI, try every endpoint |
@@ -46,7 +46,7 @@ npm run smoke
 
 | Job | What it proves |
 |---|---|
-| Server · typecheck, test, build | `prisma validate`, strict typecheck, 268 tests, production build |
+| Server · typecheck, test, build | `prisma validate`, strict typecheck, 283 tests, production build |
 | Server · migrations + smoke test | Starts the real Docker Postgres + Redis, applies every migration with `migrate deploy`, checks the extensions, seeds the registry, boots the built server and runs `npm run smoke` (device security + registry search + every verdict) |
 | Mobile · format, analyze, test | `dart format` (120 columns), `flutter analyze --fatal-infos`, all tests |
 | Mobile · Android APK | Pull requests into `main` only: obfuscated arm64 release APK, downloadable from the run for 5 days |
@@ -299,7 +299,8 @@ The rules (weights add up, clamped 0–100; ≥30 suspicious, ≥65 high risk):
 | `BATCH_RECALLED` | +50 | Always **high risk** |
 | `EXPIRED` | +35 | Always **high risk**, headline "Expired, do not take it" |
 | `NAME_MISMATCH` (real number, wrong product) | +40 | |
-| `REGISTRATION_INACTIVE` (expired/cancelled) | +35 | |
+| `REGISTRATION_INACTIVE` (cancelled) | +35 | |
+| `REGISTRATION_LAPSED` (Greenbook not active) | +10 | A caution for a pharmacist, not a sign of a fake: about a third of the Greenbook is not marked active. Confidence is low |
 | `EXPIRY_MISMATCH` (printed vs record, by month) | +30 | |
 | `BATCH_KNOWN` | −10 | Only when nothing else about the product or batch is wrong |
 | `BATCH_UNKNOWN` / `BATCH_NOT_GIVEN` | 0 | Lowers **confidence** (our batch records are incomplete) |

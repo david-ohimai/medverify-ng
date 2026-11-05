@@ -42,7 +42,7 @@ async function main(): Promise<void> {
     select: { id: true },
   });
 
-  const results = [];
+  const results: Array<{ id: string; passed: boolean; problems: string[]; called: string[]; citations: number; ms: number; answer: string }> = [];
   try {
     for (const c of cases) {
       const started = Date.now();

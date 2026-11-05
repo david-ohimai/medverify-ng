@@ -5,12 +5,19 @@ The NAFDAC registry MedVerify checks against. Loaded with `npm run seed` (from `
 | File | What | Committed |
 |---|---|---|
 | `products.demo.csv`, `batches.demo.csv` | **Fictional** rows (`source: demo`, `X9-` numbers, "MedVerify Demo Pharma (fictional)") covering every rule: valid, expired, recalled, cancelled registration. For development, tests and CI. | yes |
-| `products.csv`, `batches.csv` | **Real** rows, collected by hand | yes, public registry data |
+| `products.csv` | **Real** registrations from the public [NAFDAC Greenbook](https://greenbook.nafdac.gov.ng): 8,679 products. Written by `npm run registry:fetch`, then loaded by `npm run seed` | yes, public registry data |
+| `batches.csv` | **Real** batches, collected by hand (create it from the template). The Greenbook doesn't list batches | yes |
 | `*.template.csv` | Empty files with the right headers and instructions | yes |
 
-## Adding real data
+## Refreshing the register
 
-1. `cp products.template.csv products.csv` and `cp batches.template.csv batches.csv`.
+`npm run registry:fetch` downloads every Greenbook product, one page at a time with a pause, and replaces `products.csv`. Then run `npm run seed`. Records with no valid number are skipped, and a number listed twice keeps its active, newest row. Greenbook's `Active` becomes `active`; anything else becomes `expired`.
+
+## Adding real data by hand
+
+`npm run registry:fetch` replaces `products.csv`, so anything hand-added there is lost on the next fetch. Put hand-added products in a separate file such as `products.local.csv`.
+
+1. `cp products.template.csv products.local.csv` and `cp batches.template.csv batches.csv`.
 2. For each product, look it up on the NAFDAC Greenbook (https://greenbook.nafdac.gov.ng) or read it off a **genuine** pack, and add a row:
 
    | Column | Example | Notes |
